@@ -1,6 +1,6 @@
 # AmongResolver
 
-[![CI](https://github.com/RishiMaara/AmongResolver/actions/workflows/ci.yml/badge.svg)](https://github.com/RishiMaara/AmongResolver/actions/workflows/ci.yml)
+[![CI](https://github.com/RishiMaara/Among_Resolver/actions/workflows/ci.yml/badge.svg)](https://github.com/RishiMaara/Among_Resolver/actions/workflows/ci.yml)
 
 A multi-source settlement reconciliation engine. Built for the Razorpay AI
 Buildathon, Track 04 — AI Finance Controller.
