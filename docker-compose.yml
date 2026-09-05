@@ -1,0 +1,62 @@
+# One command to run the whole stack.
+#
+# Two services, no database. Audit trails and run history persist to SQLite
+# under engine/data, which /health reports as durable — a Postgres service was
+# added here and then removed, because it added a container and a failure mode
+# on demo day for no behaviour a reviewer could see.
+
+
+services:
+  engine:
+    build:
+      context: ./engine
+      dockerfile: Dockerfile
+    command: python -m uvicorn main:app --app-dir src --host 0.0.0.0 --port 8001
+    ports:
+      - "8001:8001"
+    environment:
+      - LLM_HEADER_MAPPING=0
+      - SETTLEMENT_QA=0
+      # - GEMINI_API_KEY=your_key_here
+    volumes:
+      # /data, not /app/data. Both things that must survive the container
+      # resolve there and neither was covered by the wrong path:
+      #
+      #   the audit trail — the Dockerfile sets AUDIT_DB_PATH=/data/audit.sqlite3
+      #   the sanctions list — compliance_agent looks at parents[2]/data/
+      #     sanctions/, which is /data/sanctions/ once src lives at /app/src
+      #
+      # So this also carries a fetched UN list into the container. Without it
+      # the engine falls back to the four-name illustrative list and says so,
+      # and the audit trail would have had container-lifetime durability while
+      # reporting itself durable — worse than none, because it looks real.
+      - ./engine/data:/data
+      # The sanctions list lives in a DIFFERENT host directory from the audit
+      # database, and both resolve to /data inside the container:
+      #
+      #   audit.py       parents[1]/data  -> engine/data      (AUDIT_DB_PATH)
+      #   compliance_agent parents[2]/data -> <repo>/data     (one level up)
+      #
+      # Running from source those are two paths; in the image, where src sits
+      # at /app/src, they collapse onto one. So the list is mounted separately
+      # rather than being silently absent — which is what happened: the engine
+      # came up healthy, reported ILLUSTRATIVE, and nothing looked wrong.
+      - ./data/sanctions:/data/sanctions:ro
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # VITE_* is inlined into the bundle at BUILD time, so this must be a
+      # build arg — a runtime `environment:` entry never reaches it.
+      #
+      # localhost, not the `engine` service name: this URL is fetched by the
+      # BROWSER on the host, where http://engine:8001 does not resolve. Both
+      # ports must also stay as they are, because the engine's CORS allowlist
+      # names localhost:8080 explicitly.
+      args:
+        VITE_ENGINE_URL: http://localhost:8001
+    ports:
+      - "8080:8080"
+    depends_on:
+      - engine

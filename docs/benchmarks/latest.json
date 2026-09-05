@@ -1,0 +1,13 @@
+{
+  "backend_tests": 335,
+  "frontend_tests": 95,
+  "stress_50k_reconcile_s": 2.65,
+  "stress_50k_wall_clock_s": 3.6,
+  "calibration_ece": 0.0863,
+  "calibration_mce": 0.2,
+  "calibration_brier": 0.0513,
+  "calibration_scenarios": 180,
+  "unanchored_autoclear_limit": 20,
+  "measured_at_utc": "2026-09-04T13:41:08+00:00",
+  "commit": "3eadadf"
+}

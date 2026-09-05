@@ -1,0 +1,74 @@
+{
+  "_comment": [
+    "A recorded-SHAPE Razorpay response, not a recording of one.",
+    "",
+    "Every field name, type and unit here is taken from Razorpay's published",
+    "API reference for GET /v1/settlements and GET /v1/settlements/recon/combined.",
+    "The VALUES are invented, because generating real ones needs a KYC-activated",
+    "merchant account and this exists precisely for the case where there isn't one.",
+    "",
+    "So this demonstrates that the mapping and the reconciliation work against the",
+    "documented contract. It does NOT demonstrate that the contract matches what a",
+    "live account returns -- only pointing scripts/pull_razorpay.py at real keys",
+    "does that, and verify_tie_out() is the check for it.",
+    "",
+    "The numbers are constructed so the arithmetic is real: each payment's credit",
+    "is gross - fee - tax with fee at 2% and tax at 18% of fee, and the settlement",
+    "amount is the exact sum of credit - debit across its own members. One refund",
+    "is included because a settlement without one is not a realistic settlement,",
+    "and it is the case that breaks a naive mapping.",
+    "",
+    "settled_at values are unix seconds, as the API returns them."
+  ],
+
+  "settlements": [
+    {
+      "id": "setl_DEMO0000000001",
+      "entity": "settlement",
+      "amount": 4523874,
+      "status": "processed",
+      "fees": 0,
+      "tax": 0,
+      "utr": "RZPX0000DEMO0001",
+      "created_at": 1757030000,
+      "currency": "INR"
+    },
+    {
+      "id": "setl_DEMO0000000002",
+      "entity": "settlement",
+      "amount": 1288530,
+      "status": "processed",
+      "fees": 0,
+      "tax": 0,
+      "utr": "RZPX0000DEMO0002",
+      "created_at": 1757116400,
+      "currency": "INR"
+    }
+  ],
+
+  "recon": [
+    {"entity_id": "pay_DEMOa0000001", "type": "payment", "amount": 1250000, "debit": 0, "credit": 1220500, "fee": 25000, "tax": 4500, "currency": "INR", "settled": true, "settled_at": 1757001100, "settlement_id": "setl_DEMO0000000001", "payment_id": null, "order_id": "order_Da0001", "method": "upi", "card_network": null, "card_issuer": null, "card_type": null, "dispute_id": null},
+    {"entity_id": "pay_DEMOa0000002", "type": "payment", "amount": 899900, "debit": 0, "credit": 878663, "fee": 17998, "tax": 3239, "currency": "INR", "settled": true, "settled_at": 1757001900, "settlement_id": "setl_DEMO0000000001", "payment_id": null, "order_id": "order_Da0002", "method": "card", "card_network": "Visa", "card_issuer": "HDFC", "card_type": "credit", "dispute_id": null},
+    {"entity_id": "pay_DEMOa0000003", "type": "payment", "amount": 450000, "debit": 0, "credit": 439380, "fee": 9000, "tax": 1620, "currency": "INR", "settled": true, "settled_at": 1757002700, "settlement_id": "setl_DEMO0000000001", "payment_id": null, "order_id": "order_Da0003", "method": "netbanking", "card_network": null, "card_issuer": null, "card_type": null, "dispute_id": null},
+    {"entity_id": "pay_DEMOa0000004", "type": "payment", "amount": 1799000, "debit": 0, "credit": 1756544, "fee": 35980, "tax": 6476, "currency": "INR", "settled": true, "settled_at": 1757003500, "settlement_id": "setl_DEMO0000000001", "payment_id": null, "order_id": "order_Da0004", "method": "upi", "card_network": null, "card_issuer": null, "card_type": null, "dispute_id": null},
+    {"entity_id": "pay_DEMOa0000005", "type": "payment", "amount": 320000, "debit": 0, "credit": 312448, "fee": 6400, "tax": 1152, "currency": "INR", "settled": true, "settled_at": 1757004300, "settlement_id": "setl_DEMO0000000001", "payment_id": null, "order_id": "order_Da0005", "method": "wallet", "card_network": null, "card_issuer": null, "card_type": null, "dispute_id": null},
+    {"entity_id": "rfnd_DEMOa000001", "type": "refund", "amount": 83661, "debit": 83661, "credit": 0, "fee": 0, "tax": 0, "currency": "INR", "settled": true, "settled_at": 1757005100, "settlement_id": "setl_DEMO0000000001", "payment_id": "pay_DEMOa0000002", "order_id": "order_Da0002", "method": "card", "card_network": "Visa", "card_issuer": "HDFC", "card_type": "credit", "dispute_id": null},
+
+    {"entity_id": "pay_DEMOb0000001", "type": "payment", "amount": 640000, "debit": 0, "credit": 624896, "fee": 12800, "tax": 2304, "currency": "INR", "settled": true, "settled_at": 1757090000, "settlement_id": "setl_DEMO0000000002", "payment_id": null, "order_id": "order_Db0001", "method": "upi", "card_network": null, "card_issuer": null, "card_type": null, "dispute_id": null},
+    {"entity_id": "pay_DEMOb0000002", "type": "payment", "amount": 199500, "debit": 0, "credit": 194792, "fee": 3990, "tax": 718, "currency": "INR", "settled": true, "settled_at": 1757090800, "settlement_id": "setl_DEMO0000000002", "payment_id": null, "order_id": "order_Db0002", "method": "card", "card_network": "MasterCard", "card_issuer": "ICIC", "card_type": "debit", "dispute_id": null},
+    {"entity_id": "pay_DEMOb0000003", "type": "payment", "amount": 480000, "debit": 0, "credit": 468672, "fee": 9600, "tax": 1728, "currency": "INR", "settled": true, "settled_at": 1757091600, "settlement_id": "setl_DEMO0000000002", "payment_id": null, "order_id": "order_Db0003", "method": "upi", "card_network": null, "card_issuer": null, "card_type": null, "dispute_id": null},
+    {"entity_id": "pay_DEMOb0000004", "type": "payment", "amount": 30000, "debit": 0, "credit": 29292, "fee": 600, "tax": 108, "currency": "INR", "settled": true, "settled_at": 1757092400, "settlement_id": "setl_DEMO0000000002", "payment_id": null, "order_id": "order_Db0004", "method": "netbanking", "card_network": null, "card_issuer": null, "card_type": null, "dispute_id": null},
+    {"entity_id": "rfnd_DEMOb000001", "type": "refund", "amount": 29122, "debit": 29122, "credit": 0, "fee": 0, "tax": 0, "currency": "INR", "settled": true, "settled_at": 1757093200, "settlement_id": "setl_DEMO0000000002", "payment_id": "pay_DEMOb0000002", "order_id": "order_Db0002", "method": "card", "card_network": "MasterCard", "card_issuer": "ICIC", "card_type": "debit", "dispute_id": null},
+
+    {"entity_id": "pay_DEMOz0000001", "type": "payment", "amount": 710000, "debit": 0, "credit": 693244, "fee": 14200, "tax": 2556, "currency": "INR", "settled": true, "settled_at": 1757006000, "settlement_id": "setl_DEMO0000000009", "payment_id": null, "order_id": "order_Dz0001", "method": "upi", "card_network": null, "card_issuer": null, "card_type": null, "dispute_id": null},
+    {"entity_id": "pay_DEMOz0000002", "type": "payment", "amount": 1220500, "debit": 0, "credit": 1191700, "fee": 24410, "tax": 4390, "currency": "INR", "settled": true, "settled_at": 1757006800, "settlement_id": "setl_DEMO0000000009", "payment_id": null, "order_id": "order_Dz0002", "method": "card", "card_network": "Amex", "card_issuer": "AMEX", "card_type": "credit", "dispute_id": null},
+    {"entity_id": "pay_DEMOz0000003", "type": "payment", "amount": 439380, "debit": 0, "credit": 429011, "fee": 8787, "tax": 1582, "currency": "INR", "settled": true, "settled_at": 1757007600, "settlement_id": "setl_DEMO0000000009", "payment_id": null, "order_id": "order_Dz0003", "method": "upi", "card_network": null, "card_issuer": null, "card_type": null, "dispute_id": null},
+    {"entity_id": "pay_DEMOz0000004", "type": "payment", "amount": 312448, "debit": 0, "credit": 305074, "fee": 6248, "tax": 1126, "currency": "INR", "settled": true, "settled_at": 1757008400, "settlement_id": "setl_DEMO0000000009", "payment_id": null, "order_id": "order_Dz0004", "method": "wallet", "card_network": null, "card_issuer": null, "card_type": null, "dispute_id": null},
+    {"entity_id": "pay_DEMOz0000005", "type": "payment", "amount": 878663, "debit": 0, "credit": 857924, "fee": 17573, "tax": 3166, "currency": "INR", "settled": true, "settled_at": 1757009200, "settlement_id": "setl_DEMO0000000009", "payment_id": null, "order_id": "order_Dz0005", "method": "netbanking", "card_network": null, "card_issuer": null, "card_type": null, "dispute_id": null},
+    {"entity_id": "pay_DEMOz0000006", "type": "payment", "amount": 194792, "debit": 0, "credit": 190194, "fee": 3895, "tax": 701, "currency": "INR", "settled": true, "settled_at": 1757010000, "settlement_id": "setl_DEMO0000000009", "payment_id": null, "order_id": "order_Dz0006", "method": "upi", "card_network": null, "card_issuer": null, "card_type": null, "dispute_id": null},
+    {"entity_id": "pay_DEMOz0000007", "type": "payment", "amount": 468672, "debit": 0, "credit": 457609, "fee": 9373, "tax": 1690, "currency": "INR", "settled": true, "settled_at": 1757010800, "settlement_id": "setl_DEMO0000000009", "payment_id": null, "order_id": "order_Dz0007", "method": "card", "card_network": "Visa", "card_issuer": "SBIN", "card_type": "debit", "dispute_id": null},
+    {"entity_id": "pay_DEMOz0000008", "type": "payment", "amount": 1756544, "debit": 0, "credit": 1715084, "fee": 35130, "tax": 6330, "currency": "INR", "settled": true, "settled_at": 1757011600, "settlement_id": "setl_DEMO0000000009", "payment_id": null, "order_id": "order_Dz0008", "method": "upi", "card_network": null, "card_issuer": null, "card_type": null, "dispute_id": null},
+
+    {"entity_id": "pay_DEMOu0000001", "type": "payment", "amount": 500000, "debit": 0, "credit": 488200, "fee": 10000, "tax": 1800, "currency": "INR", "settled": false, "settled_at": null, "settlement_id": null, "payment_id": null, "order_id": "order_Du0001", "method": "upi", "card_network": null, "card_issuer": null, "card_type": null, "dispute_id": null}
+  ]
+}

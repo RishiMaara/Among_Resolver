@@ -1,0 +1,162 @@
+{
+  "scenarios_total": 180,
+  "solvable_scenarios": 150,
+  "unsolvable_scenarios": 30,
+  "headline": {
+    "false_clear_count": 0,
+    "false_clear_pct": 0.0,
+    "auto_cleared_correct_pct": 62.0,
+    "truth_identified_pct": 66.0,
+    "correct_abstention_pct": 100.0
+  },
+  "partial_credit": {
+    "mean_precision": 0.6705,
+    "mean_recall": 0.6733
+  },
+  "throughput": {
+    "median_latency_s": 0.172,
+    "p95_latency_s": 1.147,
+    "max_latency_s": 5.24,
+    "total_txns_processed": 77921
+  },
+  "by_density": {
+    "sparse": {
+      "pool_size": 60,
+      "solvable_scenarios": 50,
+      "auto_cleared_correct": 31,
+      "auto_cleared_correct_pct": 62.0,
+      "ambiguous_correct": 3,
+      "truth_identified_pct": 68.0,
+      "false_clears": 0
+    },
+    "medium": {
+      "pool_size": 200,
+      "solvable_scenarios": 50,
+      "auto_cleared_correct": 31,
+      "auto_cleared_correct_pct": 62.0,
+      "ambiguous_correct": 1,
+      "truth_identified_pct": 64.0,
+      "false_clears": 0
+    },
+    "dense": {
+      "pool_size": 700,
+      "solvable_scenarios": 50,
+      "auto_cleared_correct": 31,
+      "auto_cleared_correct_pct": 62.0,
+      "ambiguous_correct": 2,
+      "truth_identified_pct": 66.0,
+      "false_clears": 0
+    }
+  },
+  "by_family": {
+    "clean": {
+      "scenarios": 15,
+      "solvable": true,
+      "truth_identified_pct": 100.0,
+      "auto_cleared_correct": 15,
+      "false_clears": 0,
+      "correct_abstentions": 0,
+      "median_latency_s": 0.013
+    },
+    "near_collision": {
+      "scenarios": 15,
+      "solvable": true,
+      "truth_identified_pct": 100.0,
+      "auto_cleared_correct": 15,
+      "false_clears": 0,
+      "correct_abstentions": 0,
+      "median_latency_s": 0.016
+    },
+    "exact_collision": {
+      "scenarios": 15,
+      "solvable": true,
+      "truth_identified_pct": 100.0,
+      "auto_cleared_correct": 15,
+      "false_clears": 0,
+      "correct_abstentions": 0,
+      "median_latency_s": 0.016
+    },
+    "duplicate_amounts": {
+      "scenarios": 15,
+      "solvable": true,
+      "truth_identified_pct": 100.0,
+      "auto_cleared_correct": 15,
+      "false_clears": 0,
+      "correct_abstentions": 0,
+      "median_latency_s": 0.016
+    },
+    "wide_spread": {
+      "scenarios": 15,
+      "solvable": true,
+      "truth_identified_pct": 100.0,
+      "auto_cleared_correct": 15,
+      "false_clears": 0,
+      "correct_abstentions": 0,
+      "median_latency_s": 0.016
+    },
+    "large_subset": {
+      "scenarios": 15,
+      "solvable": true,
+      "truth_identified_pct": 100.0,
+      "auto_cleared_correct": 15,
+      "false_clears": 0,
+      "correct_abstentions": 0,
+      "median_latency_s": 0.016
+    },
+    "missing_leg": {
+      "scenarios": 15,
+      "solvable": false,
+      "truth_identified_pct": null,
+      "auto_cleared_correct": 0,
+      "false_clears": 0,
+      "correct_abstentions": 15,
+      "median_latency_s": 0.582
+    },
+    "out_of_window": {
+      "scenarios": 15,
+      "solvable": false,
+      "truth_identified_pct": null,
+      "auto_cleared_correct": 0,
+      "false_clears": 0,
+      "correct_abstentions": 15,
+      "median_latency_s": 0.612
+    },
+    "ref_missing": {
+      "scenarios": 15,
+      "solvable": true,
+      "truth_identified_pct": 0.0,
+      "auto_cleared_correct": 0,
+      "false_clears": 0,
+      "correct_abstentions": 0,
+      "median_latency_s": 0.336
+    },
+    "ref_truncated": {
+      "scenarios": 15,
+      "solvable": true,
+      "truth_identified_pct": 0.0,
+      "auto_cleared_correct": 0,
+      "false_clears": 0,
+      "correct_abstentions": 0,
+      "median_latency_s": 0.329
+    },
+    "ref_collision": {
+      "scenarios": 15,
+      "solvable": true,
+      "truth_identified_pct": 60.0,
+      "auto_cleared_correct": 3,
+      "false_clears": 0,
+      "correct_abstentions": 0,
+      "median_latency_s": 0.504
+    },
+    "ref_partial": {
+      "scenarios": 15,
+      "solvable": true,
+      "truth_identified_pct": 0.0,
+      "auto_cleared_correct": 0,
+      "false_clears": 0,
+      "correct_abstentions": 0,
+      "median_latency_s": 0.561
+    }
+  },
+  "false_clear_detail": []
+}

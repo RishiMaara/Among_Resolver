@@ -1,0 +1,28 @@
+{
+  "records": 738,
+  "settlements": 60,
+  "match_rate_pct": 95.0,
+  "false_clears": 0,
+  "wall_clock_s": 2.93,
+  "records_per_sec": 252,
+  "exceptions": [
+    {
+      "settlement_id": "STL20260003",
+      "reason": "the 6 payment(s) referencing this settlement come to \u20b94,444.00, short of the \u20b94,793.00 target by \u20b9349.00 \u2014 a member is missing from the export, or the declared deductions are wrong",
+      "planted_hazard": "missing_member",
+      "residual_cents": 0
+    },
+    {
+      "settlement_id": "STL20260019",
+      "reason": "the 14 payment(s) referencing this settlement come to \u20b915,636.00, short of the \u20b915,677.39 target by \u20b941.39 \u2014 a member is missing from the export, or the declared deductions are wrong",
+      "planted_hazard": "fee_drift",
+      "residual_cents": -46190461
+    },
+    {
+      "settlement_id": "STL20260051",
+      "reason": "the payments referencing this settlement add up correctly, but 1 of them fall outside the 5-day lookback (earliest 2026-07-20) \u2014 widen the window or check the settlement date",
+      "planted_hazard": "out_of_window",
+      "residual_cents": 0
+    }
+  ]
+}

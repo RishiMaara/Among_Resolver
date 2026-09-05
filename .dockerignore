@@ -1,0 +1,29 @@
+# Build context for the frontend image.
+#
+# Without this, `COPY . .` sends 314MB of node_modules built on the host and
+# copies them OVER the ones `npm ci` just installed in the Alpine builder.
+# Native modules compiled for Windows do not run on Alpine, so the build
+# either fails or produces an image that breaks at runtime — the worst kind,
+# because it builds clean.
+node_modules
+.output
+.vinxi
+dist
+
+# Never bake VCS history or secrets into an image.
+.git
+.gitignore
+*.env
+.env*
+
+# Engine data: the audit database, fetched sanctions lists and stress
+# fixtures. Hundreds of megabytes the frontend image has no use for, and the
+# engine gets them through a volume rather than a copy.
+engine/data
+
+# Test and tooling output nothing in the image needs.
+coverage
+.tmp-*
+**/__pycache__
+**/*.pyc
+.pytest_cache

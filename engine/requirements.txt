@@ -1,0 +1,29 @@
+# Core API
+fastapi==0.115.0
+uvicorn==0.30.6
+python-multipart==0.0.12 # for file uploads
+httpx==0.28.1          # for test client
+
+# Data & matching
+pydantic>=2.11.0       # 2.9.2 has no Python 3.14 wheel; 2.11+ does
+pandas>=2.2.0
+python-dateutil==2.9.0
+rapidfuzz==3.14.5      # 3.10.0 has no Python 3.14 wheel
+ortools==9.15.6755     # 9.11.4210 has no Python 3.14 wheel; CP-SAT solver
+
+# Optional (semantic memo matching — falls back to rapidfuzz if absent)
+# sentence-transformers==3.2.1  # uncomment if torch is available
+
+# Caching / audit
+redis==5.1.1
+
+# Testing
+pytest==8.3.3
+
+# Optional: LLM features (Agent 0b header mapping, Agent 9 settlement Q&A).
+# Off unless GEMINI_API_KEY is set; disable individually with
+# LLM_HEADER_MAPPING=0 / SETTLEMENT_QA=0. Agent 0b only runs when rule-based
+# matching cannot find a required field -- it proposes, the deterministic gate
+# still decides. The engine runs identically without this package.
+google-genai>=2.0.0
+python-dotenv>=1.0

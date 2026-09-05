@@ -1,0 +1,126 @@
+{
+  "scenarios_total": 120,
+  "solvable_scenarios": 90,
+  "unsolvable_scenarios": 30,
+  "headline": {
+    "false_clear_count": 0,
+    "false_clear_pct": 0.0,
+    "auto_cleared_correct_pct": 0.0,
+    "truth_identified_pct": 1.11,
+    "correct_abstention_pct": 100.0
+  },
+  "partial_credit": {
+    "mean_precision": 0.0285,
+    "mean_recall": 0.0354
+  },
+  "throughput": {
+    "median_latency_s": 0.279,
+    "p95_latency_s": 0.65,
+    "max_latency_s": 5.21,
+    "total_txns_processed": 38730
+  },
+  "by_density": {
+    "sparse": {
+      "pool_size": 60,
+      "solvable_scenarios": 30,
+      "auto_cleared_correct": 0,
+      "auto_cleared_correct_pct": 0.0,
+      "ambiguous_correct": 1,
+      "truth_identified_pct": 3.33,
+      "false_clears": 0
+    },
+    "medium": {
+      "pool_size": 200,
+      "solvable_scenarios": 30,
+      "auto_cleared_correct": 0,
+      "auto_cleared_correct_pct": 0.0,
+      "ambiguous_correct": 0,
+      "truth_identified_pct": 0.0,
+      "false_clears": 0
+    },
+    "dense": {
+      "pool_size": 700,
+      "solvable_scenarios": 30,
+      "auto_cleared_correct": 0,
+      "auto_cleared_correct_pct": 0.0,
+      "ambiguous_correct": 0,
+      "truth_identified_pct": 0.0,
+      "false_clears": 0
+    }
+  },
+  "by_family": {
+    "clean": {
+      "scenarios": 15,
+      "solvable": true,
+      "truth_identified_pct": 6.67,
+      "auto_cleared_correct": 0,
+      "false_clears": 0,
+      "correct_abstentions": 0,
+      "median_latency_s": 0.274
+    },
+    "near_collision": {
+      "scenarios": 15,
+      "solvable": true,
+      "truth_identified_pct": 0.0,
+      "auto_cleared_correct": 0,
+      "false_clears": 0,
+      "correct_abstentions": 0,
+      "median_latency_s": 0.281
+    },
+    "exact_collision": {
+      "scenarios": 15,
+      "solvable": true,
+      "truth_identified_pct": 0.0,
+      "auto_cleared_correct": 0,
+      "false_clears": 0,
+      "correct_abstentions": 0,
+      "median_latency_s": 0.28
+    },
+    "duplicate_amounts": {
+      "scenarios": 15,
+      "solvable": true,
+      "truth_identified_pct": 0.0,
+      "auto_cleared_correct": 0,
+      "false_clears": 0,
+      "correct_abstentions": 0,
+      "median_latency_s": 0.28
+    },
+    "wide_spread": {
+      "scenarios": 15,
+      "solvable": true,
+      "truth_identified_pct": 0.0,
+      "auto_cleared_correct": 0,
+      "false_clears": 0,
+      "correct_abstentions": 0,
+      "median_latency_s": 0.28
+    },
+    "large_subset": {
+      "scenarios": 15,
+      "solvable": true,
+      "truth_identified_pct": 0.0,
+      "auto_cleared_correct": 0,
+      "false_clears": 0,
+      "correct_abstentions": 0,
+      "median_latency_s": 0.277
+    },
+    "missing_leg": {
+      "scenarios": 15,
+      "solvable": false,
+      "truth_identified_pct": null,
+      "auto_cleared_correct": 0,
+      "false_clears": 0,
+      "correct_abstentions": 15,
+      "median_latency_s": 0.27
+    },
+    "out_of_window": {
+      "scenarios": 15,
+      "solvable": false,
+      "truth_identified_pct": null,
+      "auto_cleared_correct": 0,
+      "false_clears": 0,
+      "correct_abstentions": 15,
+      "median_latency_s": 0.267
+    }
+  },
+  "false_clear_detail": []
+}

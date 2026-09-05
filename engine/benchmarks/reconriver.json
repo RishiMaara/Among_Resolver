@@ -1,0 +1,28 @@
+{
+  "anchored": {
+    "batches": 37,
+    "auto_cleared_correct": 35,
+    "auto_cleared_correct_pct": 94.59,
+    "exact_set_identified": 35,
+    "exact_set_identified_pct": 94.59,
+    "false_clears": 0,
+    "false_clear_pct": 0.0,
+    "mean_precision": 0.9459,
+    "mean_recall": 0.9459,
+    "mean_latency_s": 0.493,
+    "max_latency_s": 4.941
+  },
+  "stripped": {
+    "batches": 37,
+    "auto_cleared_correct": 8,
+    "auto_cleared_correct_pct": 21.62,
+    "exact_set_identified": 8,
+    "exact_set_identified_pct": 21.62,
+    "false_clears": 0,
+    "false_clear_pct": 0.0,
+    "mean_precision": 0.2599,
+    "mean_recall": 0.2585,
+    "mean_latency_s": 1.121,
+    "max_latency_s": 4.775
+  }
+}

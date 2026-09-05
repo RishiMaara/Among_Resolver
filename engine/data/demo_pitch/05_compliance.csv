@@ -1,0 +1,11 @@
+txn_id,ref_id,amount,currency,timestamp,status,payer_id,memo,is_cash
+pc000,PITCH-COMPLIANCE,1000.00,INR,2026-08-17T09:00:00Z,captured,cust_0,Order,false
+pc001,PITCH-COMPLIANCE,1000.00,INR,2026-08-17T10:01:00Z,captured,cust_1,Order,false
+pc002,PITCH-COMPLIANCE,1000.00,INR,2026-08-17T11:02:00Z,captured,cust_2,Order,false
+pc003,PITCH-COMPLIANCE,1000.00,INR,2026-08-17T12:03:00Z,captured,cust_3,Order,false
+pc004,PITCH-COMPLIANCE,1000.00,INR,2026-08-17T13:04:00Z,captured,cust_4,Order,false
+pc005,PITCH-COMPLIANCE,1000.00,INR,2026-08-17T14:05:00Z,captured,cust_5,Order,false
+pc006,PITCH-COMPLIANCE,1000.00,INR,2026-08-17T15:06:00Z,captured,cust_6,Order,false
+pc007,PITCH-COMPLIANCE,1000.00,INR,2026-08-17T16:07:00Z,captured,cust_7,Order,false
+pc008,PITCH-COMPLIANCE,1000.00,INR,2026-08-17T17:08:00Z,captured,cust_8,Order,false
+pc_cash,PITCH-COMPLIANCE,1200000.00,INR,2026-08-17T15:00:00Z,captured,cust_big,Cash deposit,true

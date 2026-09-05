@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+html,body{margin:0;padding:0}
+body{font-family:"DM Sans",ui-sans-serif,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:oklch(0.68 0.13 163);text-decoration:none}
+a:hover{color:oklch(0.78 0.11 163)}
+@keyframes rb-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes rb-sweep{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes rb-pip{0%,100%{opacity:.35}50%{opacity:1}}
+@keyframes rb-sheen{0%{transform:translateX(-130%)}100%{transform:translateX(240%)}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}}
+</style>
+</helmet>
+
+<div style="{{ rootVars }}background:var(--background);color:var(--foreground);min-height:100vh;font-family:'DM Sans',ui-sans-serif,system-ui,sans-serif">
+
+  <header style="position:sticky;top:0;z-index:40;border-bottom:1px solid var(--border);background:color-mix(in oklab, var(--background) 86%, transparent);backdrop-filter:blur(12px)">
+    <div style="max-width:1120px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 24px">
+      <div style="display:flex;align-items:center;gap:9px">
+        <svg width="28" height="28" viewBox="0 0 32 32" aria-label="AmongResolver" style="display:block;flex:none">
+          <rect x="0.75" y="0.75" width="30.5" height="30.5" rx="8" fill="color-mix(in oklab, var(--accent) 10%, transparent)" stroke="color-mix(in oklab, var(--accent) 38%, transparent)" stroke-width="1.5"></rect>
+          <path d="M7 9.5 C14 9.5 15 16 21.5 16" fill="none" stroke="var(--accent)" stroke-width="1.7" stroke-linecap="round" opacity="0.9"></path>
+          <path d="M7 16 H21.5" fill="none" stroke="var(--accent)" stroke-width="1.7" stroke-linecap="round" opacity="0.55"></path>
+          <path d="M7 22.5 C14 22.5 15 16 21.5 16" fill="none" stroke="var(--accent)" stroke-width="1.7" stroke-linecap="round" opacity="0.9"></path>
+          <circle cx="7" cy="9.5" r="1.9" fill="var(--accent)"></circle>
+          <circle cx="7" cy="16" r="1.9" fill="var(--accent)" opacity="0.55"></circle>
+          <circle cx="7" cy="22.5" r="1.9" fill="var(--accent)"></circle>
+          <circle cx="23.4" cy="16" r="3.1" fill="none" stroke="var(--s-withheld)" stroke-width="1.8"></circle>
+        </svg>
+        <span style="display:flex;flex-direction:column;line-height:1.05">
+          <span style="font-size:14.5px;font-weight:600;letter-spacing:-0.02em">AmongResolver</span>
+          <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:8.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted-foreground);margin-top:2px">Deterministic reconciliation</span>
+        </span>
+        <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-foreground);border:1px solid var(--border);border-radius:999px;padding:2px 8px;margin-left:6px;white-space:nowrap">Rulebook</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px">
+        <a href="./Agent Flow.dc.html" style="font-size:14px;color:var(--muted-foreground);white-space:nowrap">← Agent Flow</a>
+        <div style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+          <sc-for list="{{ themeModes }}" as="m" hint-placeholder-count="2">
+            <button onClick="{{ m.pick }}" style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:5px 9px;border:0;cursor:pointer;background:{{ m.bg }};color:{{ m.fg }}">{{ m.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div style="max-width:1120px;margin:0 auto;padding:0 24px 120px">
+
+    <section style="padding:56px 0 34px;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,0.85fr);gap:48px;align-items:end">
+      <div>
+        <p style="margin:0 0 16px;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted-foreground);animation:rb-rise 420ms ease both">Published control set · Agent 7</p>
+        <h1 style="font-family:'Instrument Serif',ui-serif,Georgia,serif;font-weight:400;letter-spacing:-0.025em;line-height:1.03;font-size:52px;margin:0 0 20px;animation:rb-rise 520ms ease both 60ms">Twelve controls, and who says so</h1>
+        <p style="margin:0;max-width:600px;font-size:16px;line-height:1.65;color:var(--muted-foreground);text-wrap:pretty;animation:rb-rise 520ms ease both 120ms">Every control this engine enforces, the authority it derives from, what that authority actually requires, and the threshold this system applies. A rule enforced because the law requires it and a rule enforced because we prefer it are different claims, so the rulebook never lets them look alike.</p>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:14px;background:var(--card);padding:16px 18px;animation:rb-rise 520ms ease both 180ms">
+        <p style="margin:0 0 8px;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--s-withheld)">Scope</p>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--muted-foreground);text-wrap:pretty">{{ scopeNote }}</p>
+      </div>
+    </section>
+
+    <section style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">
+      <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+        <div style="position:relative;overflow:hidden;border:1px solid var(--border);border-radius:14px;background:var(--card);padding:15px 16px;animation:rb-rise 460ms ease both {{ s.delay }}">
+          <p style="margin:0;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted-foreground)">{{ s.label }}</p>
+          <p style="margin:9px 0 0;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:34px;font-weight:500;line-height:1;letter-spacing:-0.03em;font-variant-numeric:tabular-nums;color:{{ s.color }}">{{ s.value }}</p>
+          <p style="margin:7px 0 0;font-size:11.5px;line-height:1.4;color:var(--muted-foreground)">{{ s.note }}</p>
+        </div>
+      </sc-for>
+    </section>
+
+    <section style="margin-top:14px;border:1px solid var(--border);border-radius:14px;background:var(--card);padding:16px 18px 18px;animation:rb-rise 460ms ease both 260ms">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <p style="margin:0;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted-foreground)">Where the authority comes from</p>
+        <p style="margin:0;font-size:11.5px;color:var(--muted-foreground)">Click a band to filter</p>
+      </div>
+      <div style="display:flex;gap:4px;margin-top:12px;height:32px">
+        <sc-for list="{{ spectrum }}" as="sp" hint-placeholder-count="3">
+          <button onClick="{{ sp.pick }}" style="position:relative;overflow:hidden;flex:{{ sp.flex }} 1 0;height:32px;border:1px solid {{ sp.border }};border-radius:8px;background:{{ sp.bg }};cursor:pointer;padding:0 10px;display:flex;align-items:center;justify-content:space-between;gap:8px;transition:flex 420ms cubic-bezier(.22,.61,.36,1), background 220ms ease, border-color 220ms ease">
+            <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:{{ sp.fg }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ sp.label }}</span>
+            <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;font-variant-numeric:tabular-nums;color:{{ sp.fg }}">{{ sp.count }}</span>
+            <span style="position:absolute;inset:0;pointer-events:none;opacity:{{ sp.sheen }}"><span style="position:absolute;top:0;bottom:0;width:34%;background:linear-gradient(90deg,transparent,color-mix(in oklab, {{ sp.tone }} 26%, transparent),transparent);animation:rb-sheen 2.4s linear infinite"></span></span>
+          </button>
+        </sc-for>
+      </div>
+      <p style="margin:11px 0 0;font-size:12.5px;line-height:1.5;color:var(--muted-foreground)">{{ spectrumNote }}</p>
+    </section>
+
+    <section style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:26px 0 16px;position:sticky;top:57px;z-index:20;padding:10px 0;background:color-mix(in oklab, var(--background) 92%, transparent);backdrop-filter:blur(10px)">
+      <div style="position:relative;flex:1 1 260px;min-width:220px">
+        <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--muted-foreground);pointer-events:none">⌕</span>
+        <input value="{{ query }}" onChange="{{ onQuery }}" onInput="{{ onQuery }}" placeholder="Search rules, authorities, provisions…" style="width:100%;box-sizing:border-box;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--foreground);font-family:'DM Sans',sans-serif;font-size:13.5px;padding:0 12px 0 30px;outline:none">
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <sc-for list="{{ chips }}" as="c" hint-placeholder-count="4">
+          <button onClick="{{ c.pick }}" style="display:flex;align-items:center;gap:7px;height:38px;padding:0 13px;border-radius:10px;border:1px solid {{ c.border }};background:{{ c.bg }};color:{{ c.fg }};font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;white-space:nowrap;transition:background 200ms ease, border-color 200ms ease, color 200ms ease">
+            <span style="width:7px;height:7px;border-radius:2px;background:{{ c.dot }};display:{{ c.dotDisplay }}"></span>{{ c.label }}
+            <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;opacity:.7">{{ c.count }}</span>
+          </button>
+        </sc-for>
+      </div>
+      <button onClick="{{ toggleCalibrated }}" style="height:38px;padding:0 13px;border-radius:10px;border:1px solid {{ calBorder }};background:{{ calBg }};color:{{ calFg }};font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;white-space:nowrap;transition:background 200ms ease, border-color 200ms ease, color 200ms ease">Numbers we chose <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;opacity:.7">{{ calCount }}</span></button>
+      <button onClick="{{ toggleAll }}" style="height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted-foreground);font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;white-space:nowrap">{{ expandLabel }}</button>
+    </section>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <sc-for list="{{ rules }}" as="r" hint-placeholder-count="12">
+        <div style="border:1px solid {{ r.cardBorder }};border-left:2px solid {{ r.edge }};border-radius:14px;background:var(--card);overflow:hidden;animation:rb-rise 420ms cubic-bezier(.22,.61,.36,1) both {{ r.delay }};transition:border-color 240ms ease, box-shadow 240ms ease;box-shadow:{{ r.shadow }}">
+          <div onClick="{{ r.toggle }}" style="display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer">
+            <span style="flex:none;width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:color-mix(in oklab, {{ r.tone }} 14%, transparent);border:1px solid color-mix(in oklab, {{ r.tone }} 32%, transparent);font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;font-weight:600;color:{{ r.tone }}">{{ r.index }}</span>
+            <div style="min-width:0;flex:1">
+              <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+                <span style="font-size:14.5px;font-weight:600;letter-spacing:-0.01em">{{ r.title }}</span>
+                <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;padding:2px 8px;border-radius:999px;border:1px solid color-mix(in oklab, {{ r.basisTone }} 34%, transparent);background:color-mix(in oklab, {{ r.basisTone }} 12%, transparent);color:{{ r.basisTone }};white-space:nowrap">{{ r.basisLabel }}</span>
+                <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;padding:2px 8px;border-radius:999px;border:1px solid {{ r.actionBorder }};background:{{ r.actionBg }};color:{{ r.actionFg }};white-space:nowrap">{{ r.actionLabel }}</span>
+              </div>
+              <p style="margin:6px 0 0;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;line-height:1.4;color:var(--muted-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.thresholdShort }}</p>
+            </div>
+            <span style="flex:none;display:flex;align-items:center;gap:12px">
+              <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--muted-foreground);white-space:nowrap">{{ r.id }}</span>
+              <span style="width:22px;height:22px;border-radius:6px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted-foreground);transform:{{ r.chev }};transition:transform 300ms cubic-bezier(.22,.61,.36,1)">▾</span>
+            </span>
+          </div>
+
+          <div style="display:grid;grid-template-rows:{{ r.rows }};transition:grid-template-rows 340ms cubic-bezier(.22,.61,.36,1)">
+            <div style="overflow:hidden">
+              <div style="padding:2px 16px 18px;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:22px;border-top:1px solid var(--border);margin-top:2px;padding-top:16px">
+                <div>
+                  <p style="margin:0;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-foreground)">What the source requires</p>
+                  <p style="margin:8px 0 0;font-size:13.5px;line-height:1.6;text-wrap:pretty">{{ r.ruleText }}</p>
+                  <p style="margin:18px 0 0;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-foreground)">Why it exists</p>
+                  <p style="margin:8px 0 0;font-size:13px;line-height:1.6;color:var(--muted-foreground);text-wrap:pretty">{{ r.why }}</p>
+                  <p style="margin:18px 0 0;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-foreground)">If it fires</p>
+                  <p style="margin:8px 0 0;font-size:13px;line-height:1.6;color:var(--muted-foreground);text-wrap:pretty">{{ r.remediation }}</p>
+                </div>
+                <div>
+                  <div style="border-radius:11px;border:1px solid color-mix(in oklab, {{ r.basisTone }} 26%, var(--border));background:color-mix(in oklab, {{ r.basisTone }} 6%, transparent);padding:12px 13px">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                      <p style="margin:0;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-foreground)">Threshold this engine applies</p>
+                      <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:{{ r.basisTone }};display:{{ r.calDisplay }};white-space:nowrap">Our number</span>
+                    </div>
+                    <p style="margin:9px 0 0;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;line-height:1.55;color:var(--foreground);text-wrap:pretty">{{ r.threshold }}</p>
+                  </div>
+                  <div style="margin-top:14px;display:flex;flex-direction:column;gap:9px">
+                    <sc-for list="{{ r.meta }}" as="m" hint-placeholder-count="3">
+                      <div style="display:grid;grid-template-columns:78px minmax(0,1fr);gap:10px;align-items:baseline">
+                        <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-foreground)">{{ m.k }}</span>
+                        <span style="font-size:12.5px;line-height:1.5;text-wrap:pretty">{{ m.v }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <a href="{{ r.url }}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:7px;margin-top:14px;font-size:12.5px">Read the official source <span style="font-size:10px">↗</span></a>
+                  <p style="margin:14px 0 0;font-size:11.5px;line-height:1.5;color:var(--s-withheld);border-left:2px solid var(--s-withheld);padding-left:10px;display:{{ r.caveatDisplay }}">{{ r.caveat }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+
+      <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
+        <div style="border:1px dashed var(--border);border-radius:14px;padding:40px;text-align:center;animation:rb-rise 300ms ease both">
+          <p style="margin:0;font-size:14px;color:var(--muted-foreground)">No control matches that filter.</p>
+          <button onClick="{{ clearFilters }}" style="margin-top:14px;font-size:13px;padding:8px 14px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--foreground);cursor:pointer">Clear filters</button>
+        </div>
+      </sc-if>
+    </div>
+
+    <section style="margin-top:44px;border-top:1px solid var(--border);padding-top:34px">
+      <p style="margin:0;font-size:10px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:var(--s-withheld)">On honesty</p>
+      <h2 style="margin:18px 0 0;font-family:'Instrument Serif',ui-serif,Georgia,serif;font-weight:400;letter-spacing:-0.025em;line-height:1.06;font-size:30px;max-width:620px">A threshold we invented is labelled as one</h2>
+      <p style="margin:15px 0 0;max-width:620px;font-size:15px;line-height:1.65;color:var(--muted-foreground);text-wrap:pretty">No Indian law caps a single transaction at ₹5 crore. The ceiling in LIMIT_EXCEEDED is ours, and the rulebook says so in the same breath it states the control. Presenting an internal threshold as a statutory requirement would misrepresent the law to whoever relies on this output.</p>
+      <p style="margin:24px 0 0;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11.5px;color:var(--muted-foreground)">12 controls · 2 block funds · reference URLs verified 2026-08-30</p>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;themeMode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;\&quot;dark\&quot; | \&quot;light\&quot;&quot;,&quot;section&quot;:&quot;Presentation&quot;},&quot;startExpanded&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Presentation&quot;}}">
+const THEMES = {
+  dark: {
+    name: "Dark",
+    v: {
+      "--background": "oklch(0.16 0.008 260)",
+      "--foreground": "oklch(0.96 0.003 106)",
+      "--card": "oklch(0.2 0.009 260)",
+      "--muted": "oklch(0.25 0.01 260)",
+      "--muted-foreground": "oklch(0.68 0.012 260)",
+      "--accent": "oklch(0.68 0.13 163)",
+      "--border": "oklch(1 0 0 / 10%)",
+      "--s-statutory": "oklch(0.65 0.19 25)",
+      "--s-guidance": "oklch(0.79 0.13 78)",
+      "--s-internal": "oklch(0.72 0.11 232)",
+      "--s-withheld": "oklch(0.79 0.13 78)"
+    }
+  },
+  light: {
+    name: "Light",
+    v: {
+      "--background": "oklch(0.986 0.003 106)",
+      "--foreground": "oklch(0.17 0.01 260)",
+      "--card": "oklch(1 0 0)",
+      "--muted": "oklch(0.955 0.004 106)",
+      "--muted-foreground": "oklch(0.5 0.012 260)",
+      "--accent": "oklch(0.56 0.11 163)",
+      "--border": "oklch(0.9 0.005 106)",
+      "--s-statutory": "oklch(0.55 0.2 27)",
+      "--s-guidance": "oklch(0.62 0.13 68)",
+      "--s-internal": "oklch(0.55 0.12 235)",
+      "--s-withheld": "oklch(0.62 0.13 68)"
+    }
+  }
+};
+
+const BASIS = {
+  statutory: { label: "Statutory", tone: "var(--s-statutory)", note: "Required by law or binding rules — the parameter is set by the source, not by us." },
+  regulatory_guidance: { label: "Regulatory guidance", tone: "var(--s-guidance)", note: "Supervisory or standard-setter guidance states the obligation; the detection parameters are ours." },
+  internal_policy: { label: "Internal policy — not law", tone: "var(--s-internal)", note: "This system's own risk appetite. No statutory force, and no external source imposes it." }
+};
+
+const SCOPE_NOTE = "This engine performs automated screening to support human review. It does not file CTRs or STRs, and it screens a static illustrative sanctions list rather than the live official lists — so its determinations are advisory inputs to a reviewer, not compliance decisions in their own right. Rules marked 'internal_policy' are this system's own risk thresholds and carry no statutory force. Obligations should be confirmed against the cited primary sources.";
+
+const RULES = [
+  {
+    id: "SANCTIONS_HIT", title: "Sanctioned party match", severity: "HIGH", action: "BLOCKED", basis: "statutory",
+    authority: "UN Security Council; Government of India (UAPA s.51A); US Treasury OFAC",
+    source: "UN Security Council Consolidated List",
+    citation: "UNSC Consolidated List; Unlawful Activities (Prevention) Act 1967 s.51A (India); RBI Master Direction – KYC (sanctions screening); 31 CFR Ch. V (OFAC, US)",
+    url: "https://scsanctions.un.org/consolidated",
+    ruleText: "Funds and financial assets of designated individuals and entities must be frozen without delay, and no funds may be made available to them. Regulated entities must screen customers and counterparties against the applicable designation lists on an ongoing basis.",
+    threshold: "Exact match of payer or payee identifier against the screened list.",
+    caveat: "Demo limitation: this engine screens a small static illustrative list, not the live UN/OFAC/MHA lists.",
+    why: "Dealing with a designated person or entity is prohibited outright. This is one of the few cases where a payment must actually be stopped rather than merely reported.",
+    remediation: "Do not release the funds. Escalate to the Principal Officer to confirm the match against the live official lists, screen for false positives on common names, and file the required report if the match is confirmed."
+  },
+  {
+    id: "LIMIT_EXCEEDED", title: "Internal single-transaction ceiling exceeded", severity: "HIGH", action: "BLOCKED", basis: "internal_policy", calibrated: true,
+    authority: "AmongResolver internal risk policy",
+    source: "Internal control standard (no external source)",
+    citation: "Internal control: single-transaction hard ceiling",
+    url: "https://fiuindia.gov.in/content/ctr.html",
+    ruleText: "NO STATUTORY RULE IMPOSES THIS CEILING. Large-value transactions are lawful. The relevant legal duty for prescribed transactions is to REPORT them to FIU-IND, not to block them. This control exists so that a payment of this size is consciously approved by a person rather than settled automatically.",
+    threshold: "Single transaction >= Rs 5,00,00,000 (Rs 5 crore)",
+    why: "An internal ceiling that halts unusually large single transfers for human sign-off before they settle. It reflects this system's risk appetite, not a legal limit.",
+    remediation: "Route to a Finance/Compliance approver for manual authorisation. Confirm the counterparty and commercial purpose, then release or reject. Separately assess any FIU-IND reporting obligation on its own merits — exceeding this internal ceiling is not by itself a reportable event."
+  },
+  {
+    id: "CTR_THRESHOLD", title: "Cash transaction at reporting threshold", severity: "MEDIUM", action: "FLAGGED", basis: "statutory",
+    authority: "Financial Intelligence Unit – India (FIU-IND)",
+    source: "PML (Maintenance of Records) Rules, 2005",
+    citation: "PML Rules 2005, r.3(1) — cash transactions above Rs 10 lakh",
+    url: "https://fiuindia.gov.in/content/ctr.html",
+    ruleText: "Reporting entities must furnish to FIU-IND a Cash Transaction Report covering all cash transactions of a value exceeding Rs 10 lakh, or their equivalent in foreign currency.",
+    threshold: "Single cash transaction >= Rs 10,00,000",
+    why: "A reporting duty, not a prohibition. The transaction remains lawful; it must simply be included in the CTR filing.",
+    remediation: "Ensure the transaction is included in the CTR filing for the period."
+  },
+  {
+    id: "CTR_AGGREGATE", title: "Aggregated cash transactions at reporting threshold", severity: "MEDIUM", action: "FLAGGED", basis: "statutory", calibrated: true,
+    authority: "Financial Intelligence Unit – India (FIU-IND)",
+    source: "PML (Maintenance of Records) Rules, 2005",
+    citation: "PML Rules 2005, r.3(1) — series of integrally connected cash transactions individually below Rs 10 lakh",
+    url: "https://fiuindia.gov.in/files/AML_Legislation/pml_rules.html",
+    ruleText: "Where a series of cash transactions are integrally connected to each other and have individually been valued below Rs 10 lakh, and together exceed that value, they must be aggregated and reported where they take place within one calendar month.",
+    threshold: "Cash transactions from one payer aggregating >= Rs 10,00,000 within a 30-day rolling window.",
+    caveat: "The statute frames this as one calendar month; this engine uses a 30-day rolling window, which is a close but not identical construction.",
+    why: "Connected cash transactions are assessed in aggregate against the reporting threshold, not one at a time.",
+    remediation: "Confirm the transactions are integrally connected, then include in the CTR filing."
+  },
+  {
+    id: "STRUCTURING_PATTERN", title: "Possible structuring (smurfing)", severity: "MEDIUM", action: "FLAGGED", basis: "regulatory_guidance", calibrated: true,
+    authority: "FIU-IND / PMLA 2002",
+    source: "PMLA 2002 and PML (Maintenance of Records) Rules, 2005",
+    citation: "PMLA 2002 s.12 (reporting obligation); PML Rules 2005 r.3 (integrally connected transactions). Detection parameters are internal.",
+    url: "https://fiuindia.gov.in/content/str.html",
+    ruleText: "Reporting entities must report suspicious transactions, including attempts to structure transactions so as to avoid a reporting threshold. The law states the obligation; it does not prescribe the detection parameters used to identify candidates.",
+    threshold: ">= 3 transactions from one payer, each below Rs 50,000, totalling >= Rs 50,000 within 24 hours. Internal calibration — not a statutory threshold.",
+    why: "Splitting one payment into several smaller ones can be an attempt to stay below a reporting threshold. Frequently benign — instalments and partial settlements look identical.",
+    remediation: "Review whether the component payments are genuinely one commercial transaction. If deliberate avoidance is suspected, consider an STR."
+  },
+  {
+    id: "CIRCULAR_FLOW", title: "Circular fund flow (possible layering)", severity: "HIGH", action: "FLAGGED", basis: "regulatory_guidance", calibrated: true,
+    authority: "FATF; FFIEC (US supervisory guidance)",
+    source: "FATF Recommendations; FFIEC BSA/AML Examination Manual",
+    citation: "FATF R.20 (suspicious transaction reporting); FFIEC BSA/AML Manual red flags",
+    url: "https://www.fatf-gafi.org/en/publications/Fatfrecommendations/Fatf-recommendations.html",
+    ruleText: "Funds moving in a closed loop between related parties with no apparent lawful purpose is a recognised layering typology and a recognised indicator for suspicious transaction reporting.",
+    threshold: "Cycle of >= 3 legs returning to the originating party within 24 hours",
+    why: "Funds returning to their origin through intermediaries without commercial rationale is a classic layering pattern.",
+    remediation: "Establish the commercial rationale for each leg; consider an STR."
+  },
+  {
+    id: "CROSS_BORDER_LIMIT", title: "Large cross-border transfer", severity: "MEDIUM", action: "FLAGGED", basis: "regulatory_guidance", calibrated: true,
+    authority: "FATF; RBI",
+    source: "FATF Recommendation 16 (wire transfers)",
+    citation: "FATF R.16 — originator and beneficiary information on wire transfers",
+    url: "https://www.fatf-gafi.org/en/publications/Fatfrecommendations/Fatf-recommendations.html",
+    ruleText: "Cross-border wire transfers must be accompanied by required and accurate originator information and required beneficiary information, so that transfers remain traceable.",
+    threshold: "Cross-border wire >= Rs 5,00,000. Internal calibration — chosen as a review trigger, not a threshold set by R.16.",
+    why: "Large cross-border transfers warrant confirmation that traceability data is complete.",
+    remediation: "Verify originator and beneficiary details are complete before release."
+  },
+  {
+    id: "DORMANT_ACCOUNT_SPIKE", title: "Dormant counterparty reactivation", severity: "LOW", action: "FLAGGED", basis: "regulatory_guidance", calibrated: true,
+    authority: "FFIEC (US supervisory guidance)",
+    source: "FFIEC BSA/AML Examination Manual",
+    citation: "FFIEC BSA/AML Manual — unusual activity red flags",
+    url: "https://bsaaml.ffiec.gov/manual",
+    ruleText: "Supervisory guidance identifies sudden, significant activity on a long-dormant account as an indicator warranting further review.",
+    threshold: ">= 90 days inactivity followed by a transaction >= Rs 1,00,000",
+    why: "A long-dormant counterparty suddenly moving large sums may indicate account takeover or misuse.",
+    remediation: "Re-verify the counterparty is still who the records say before releasing."
+  },
+  {
+    id: "HIGH_VELOCITY", title: "Abnormal transaction velocity", severity: "MEDIUM", action: "FLAGGED", basis: "internal_policy", calibrated: true,
+    authority: "AmongResolver internal risk policy",
+    source: "Internal anomaly detection standard",
+    citation: "Internal velocity threshold",
+    url: "https://bsaaml.ffiec.gov/manual",
+    ruleText: "No external rule prescribes this. Supervisory guidance treats unusual velocity as a general red flag; the parameters here are this system's own.",
+    threshold: "> 100 transactions OR > Rs 1,00,00,000 from one payer within 1 hour",
+    why: "A sudden burst of activity can indicate automated layering or account takeover.",
+    remediation: "Confirm the burst is expected activity for this counterparty."
+  },
+  {
+    id: "KEYWORD_ALERT", title: "High-risk narrative keyword", severity: "MEDIUM", action: "FLAGGED", basis: "internal_policy", calibrated: true,
+    authority: "AmongResolver internal risk policy",
+    source: "Internal keyword screening list",
+    citation: "Internal lexical screening",
+    url: "https://bsaaml.ffiec.gov/manual",
+    ruleText: "No external rule prescribes keyword screening of payment narratives. This is a crude lexical signal with a high false-positive rate — ordinary words such as 'donation' or 'crypto' trigger it. It is a prompt to look, never a finding.",
+    threshold: "Substring match against an internal high-risk term list",
+    why: "Free-text narratives occasionally reveal purpose that structured fields do not.",
+    remediation: "Read the full narrative in context before drawing any conclusion. Most hits are benign and must not be treated as evidence of wrongdoing."
+  },
+  {
+    id: "CONCENTRATION_RISK", title: "Counterparty concentration", severity: "MEDIUM", action: "FLAGGED", basis: "internal_policy", calibrated: true,
+    authority: "AmongResolver internal risk policy",
+    source: "Internal concentration standard",
+    citation: "Internal concentration threshold",
+    url: "https://www.fatf-gafi.org/en/publications/Fatfrecommendations/Fatf-recommendations.html",
+    ruleText: "No external rule prescribes this threshold. Concentration is a prudential/risk consideration, not an AML obligation.",
+    threshold: "One payer accounting for > 90% of batch volume across > 1 transaction",
+    why: "One counterparty dominating a settlement batch concentrates risk. Often entirely legitimate for a business with a single large customer.",
+    remediation: "Confirm the concentration matches the expected business model."
+  },
+  {
+    id: "DUPLICATE_TX", title: "Identical transaction recorded twice", severity: "LOW", action: "FLAGGED", basis: "internal_policy", calibrated: true,
+    authority: "AmongResolver internal data-quality control",
+    source: "Internal data-quality standard",
+    citation: "Internal duplicate detection",
+    url: "https://bsaaml.ffiec.gov/manual",
+    ruleText: "No external rule. This is a data-quality control, not an AML control, though duplicate submissions can also distort reporting.",
+    threshold: "Identical amount, timestamp, payer and payee",
+    why: "Usually double ingestion of the same record rather than financial crime.",
+    remediation: "Confirm whether this is a genuine second payment or a duplicated record."
+  }
+];
+
+class Component extends DCLogic {
+  state = { mode: "dark", query: "", basis: "all", calOnly: false, open: {}, t: 0 };
+
+  constructor(props) {
+    super(props);
+    if (props && props.themeMode) this.state.mode = props.themeMode;
+    if (props && props.startExpanded) {
+      const o = {};
+      RULES.forEach((r) => { o[r.id] = true; });
+      this.state.open = o;
+    }
+  }
+
+  componentDidMount() {
+    this.start = performance.now();
+    const step = () => {
+      const p = Math.min((performance.now() - this.start) / 900, 1);
+      this.setState({ t: 1 - Math.pow(1 - p, 3) });
+      if (p < 1) this.raf = requestAnimationFrame(step);
+    };
+    this.raf = requestAnimationFrame(step);
+  }
+  componentWillUnmount() { if (this.raf) cancelAnimationFrame(this.raf); }
+
+  counts() {
+    const c = { all: RULES.length, statutory: 0, regulatory_guidance: 0, internal_policy: 0, blocked: 0, calibrated: 0 };
+    RULES.forEach((r) => {
+      c[r.basis] += 1;
+      if (r.action === "BLOCKED") c.blocked += 1;
+      if (r.calibrated) c.calibrated += 1;
+    });
+    return c;
+  }
+
+  filtered() {
+    const q = this.state.query.trim().toLowerCase();
+    return RULES.filter((r) => {
+      if (this.state.basis !== "all" && r.basis !== this.state.basis) return false;
+      if (this.state.calOnly && !r.calibrated) return false;
+      if (!q) return true;
+      return [r.title, r.id, r.authority, r.source, r.citation, r.ruleText, r.threshold].join(" ").toLowerCase().includes(q);
+    });
+  }
+
+  onQuery = (ev) => this.setState({ query: ev.target.value });
+  pickBasis = (b) => () => this.setState({ basis: this.state.basis === b && b !== "all" ? "all" : b });
+  toggleCalibrated = () => this.setState({ calOnly: !this.state.calOnly });
+  clearFilters = () => this.setState({ query: "", basis: "all", calOnly: false });
+  toggleRule = (id) => () => this.setState({ open: Object.assign({}, this.state.open, { [id]: !this.state.open[id] }) });
+  toggleAll = () => {
+    const list = this.filtered();
+    const anyOpen = list.some((r) => this.state.open[r.id]);
+    const o = Object.assign({}, this.state.open);
+    list.forEach((r) => { o[r.id] = !anyOpen; });
+    this.setState({ open: o });
+  };
+
+  renderVals() {
+    const T = THEMES[this.state.mode === "light" ? "light" : "dark"];
+    const rootVars = Object.keys(T.v).map((k) => k + ":" + T.v[k]).join(";") + ";";
+    const c = this.counts();
+    const t = this.state.t;
+    const up = (n) => Math.round(n * t);
+    const list = this.filtered();
+    const anyOpen = list.some((r) => this.state.open[r.id]);
+
+    const chipDef = [
+      { id: "all", label: "All controls", count: c.all, dot: null },
+      { id: "statutory", label: "Statutory", count: c.statutory, dot: BASIS.statutory.tone },
+      { id: "regulatory_guidance", label: "Guidance", count: c.regulatory_guidance, dot: BASIS.regulatory_guidance.tone },
+      { id: "internal_policy", label: "Internal", count: c.internal_policy, dot: BASIS.internal_policy.tone }
+    ];
+
+    const active = this.state.basis;
+
+    return {
+      rootVars: rootVars,
+      scopeNote: SCOPE_NOTE,
+      themeModes: ["dark", "light"].map((m) => ({
+        label: THEMES[m].name,
+        bg: this.state.mode === m ? "var(--muted)" : "transparent",
+        fg: this.state.mode === m ? "var(--foreground)" : "var(--muted-foreground)",
+        pick: () => this.setState({ mode: m })
+      })),
+      stats: [
+        { label: "Controls enforced", value: up(c.all), note: "every one published in full", color: "var(--foreground)", delay: "200ms" },
+        { label: "Block funds", value: up(c.blocked), note: "the rest flag for review", color: "var(--s-statutory)", delay: "250ms" },
+        { label: "Required by law", value: up(c.statutory), note: "statutory or binding rules", color: "var(--s-guidance)", delay: "300ms" },
+        { label: "Our risk appetite", value: up(c.internal_policy), note: "internal policy, no legal force", color: "var(--s-internal)", delay: "350ms" }
+      ],
+      spectrum: ["statutory", "regulatory_guidance", "internal_policy"].map((b) => {
+        const on = active === b;
+        const dimmed = active !== "all" && !on;
+        return {
+          label: BASIS[b].label,
+          count: c[b],
+          tone: BASIS[b].tone,
+          flex: (on ? c[b] * 1.8 : dimmed ? c[b] * 0.6 : c[b]) * t + 0.001,
+          bg: on ? "color-mix(in oklab, " + BASIS[b].tone + " 22%, transparent)" : "color-mix(in oklab, " + BASIS[b].tone + " 9%, transparent)",
+          border: on ? "color-mix(in oklab, " + BASIS[b].tone + " 55%, transparent)" : "color-mix(in oklab, " + BASIS[b].tone + " 24%, transparent)",
+          fg: BASIS[b].tone,
+          sheen: on ? 1 : 0,
+          pick: this.pickBasis(b)
+        };
+      }),
+      spectrumNote: active === "all" ? "Three kinds of claim sit in this rulebook. Only the first is the law speaking." : BASIS[active].note,
+      query: this.state.query,
+      onQuery: this.onQuery,
+      chips: chipDef.map((ch) => ({
+        label: ch.label,
+        count: ch.count,
+        dot: ch.dot || "transparent",
+        dotDisplay: ch.dot ? "inline-block" : "none",
+        bg: active === ch.id ? "var(--muted)" : "transparent",
+        border: active === ch.id ? "color-mix(in oklab, var(--foreground) 30%, transparent)" : "var(--border)",
+        fg: active === ch.id ? "var(--foreground)" : "var(--muted-foreground)",
+        pick: this.pickBasis(ch.id)
+      })),
+      calCount: c.calibrated,
+      calBg: this.state.calOnly ? "color-mix(in oklab, var(--s-guidance) 14%, transparent)" : "transparent",
+      calBorder: this.state.calOnly ? "color-mix(in oklab, var(--s-guidance) 45%, transparent)" : "var(--border)",
+      calFg: this.state.calOnly ? "var(--s-guidance)" : "var(--muted-foreground)",
+      toggleCalibrated: this.toggleCalibrated,
+      clearFilters: this.clearFilters,
+      toggleAll: this.toggleAll,
+      expandLabel: anyOpen ? "Collapse all" : "Expand all",
+      empty: list.length === 0,
+      rules: list.map((r, i) => {
+        const open = !!this.state.open[r.id];
+        const blocks = r.action === "BLOCKED";
+        const tone = BASIS[r.basis].tone;
+        return {
+          id: r.id,
+          index: String(i + 1).padStart(2, "0"),
+          title: r.title,
+          basisLabel: BASIS[r.basis].label,
+          basisTone: tone,
+          tone: blocks ? "var(--s-statutory)" : tone,
+          edge: blocks ? "var(--s-statutory)" : "color-mix(in oklab, " + tone + " 45%, transparent)",
+          cardBorder: open ? "color-mix(in oklab, " + tone + " 34%, var(--border))" : "var(--border)",
+          shadow: open ? "0 18px 40px -30px rgba(0,0,0,.6)" : "none",
+          actionLabel: blocks ? "Blocks funds" : "Flags for review",
+          actionBg: blocks ? "color-mix(in oklab, var(--s-statutory) 12%, transparent)" : "transparent",
+          actionBorder: blocks ? "color-mix(in oklab, var(--s-statutory) 34%, transparent)" : "var(--border)",
+          actionFg: blocks ? "var(--s-statutory)" : "var(--muted-foreground)",
+          thresholdShort: r.threshold,
+          threshold: r.threshold,
+          ruleText: r.ruleText,
+          why: r.why,
+          remediation: r.remediation,
+          url: r.url,
+          caveat: r.caveat || "",
+          caveatDisplay: r.caveat ? "block" : "none",
+          calDisplay: r.calibrated ? "inline" : "none",
+          meta: [
+            { k: "Authority", v: r.authority },
+            { k: "Source", v: r.source },
+            { k: "Provision", v: r.citation },
+            { k: "Severity", v: r.severity }
+          ],
+          rows: open ? "1fr" : "0fr",
+          chev: open ? "rotate(180deg)" : "none",
+          delay: Math.min(i * 40, 320) + "ms",
+          toggle: this.toggleRule(r.id)
+        };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

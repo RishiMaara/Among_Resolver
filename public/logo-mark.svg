@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="AmongResolver">
+  <style>
+    .dot { fill: #d6d9dd; }
+    .ink { fill: #2eb673; stroke: #2eb673; }
+    @media (prefers-color-scheme: dark) {
+      .dot { fill: #474d57; }
+      .ink { fill: #34c285; stroke: #34c285; }
+    }
+  </style>
+  <g class="dot"><circle cx="5.5" cy="5.5" r="1.55"/><circle cx="12.5" cy="5.5" r="1.55"/><circle cx="19.5" cy="5.5" r="1.55"/><circle cx="26.5" cy="5.5" r="1.55"/><circle cx="5.5" cy="12.5" r="1.55"/><circle cx="12.5" cy="12.5" r="1.55"/><circle cx="26.5" cy="12.5" r="1.55"/><circle cx="12.5" cy="19.5" r="1.55"/><circle cx="19.5" cy="19.5" r="1.55"/><circle cx="26.5" cy="19.5" r="1.55"/><circle cx="5.5" cy="26.5" r="1.55"/><circle cx="12.5" cy="26.5" r="1.55"/><circle cx="19.5" cy="26.5" r="1.55"/></g>
+  <path class="ink" d="M5.5 19.5L19.5 12.5L26.5 26.5" fill="none" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle class="ink" cx="5.5" cy="19.5" r="2.7"/><circle class="ink" cx="19.5" cy="12.5" r="2.7"/><circle class="ink" cx="26.5" cy="26.5" r="2.7"/>
+</svg>

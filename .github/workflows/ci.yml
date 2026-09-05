@@ -1,0 +1,97 @@
+# Everything here already passed locally before this file existed. That is the
+# point: the tests were not the missing part, the evidence that they pass on a
+# machine that is not mine was.
+#
+# The suite also checks its own documentation now — test_documented_figures.py
+# fails if the test count written in the README stops matching the count pytest
+# collects. Four documents once claimed four different numbers, and nothing
+# caught it because nothing was looking.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  engine:
+    name: engine · pytest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          # 3.14, matching development. requirements.txt pins pydantic, rapidfuzz
+          # and ortools specifically to the versions that publish 3.14 wheels,
+          # with the reason written beside each — running CI on an older
+          # interpreter would test a dependency set nobody actually uses.
+          python-version: "3.14"
+          cache: pip
+      - run: pip install -r engine/requirements.txt
+
+      # The sanctions list is gitignored - a committed copy is stale a week
+      # later, and stale screening is the failure that matters. So CI fetches
+      # it, and the screening tests assert against the real 3,400-odd entries
+      # rather than the four illustrative names a fresh clone falls back to.
+      #
+      # Not fatal if the UN endpoint is down: those tests then skip and say
+      # why. A third-party outage should not turn this build red, but it must
+      # not silently pass as though the real list had been screened either.
+      - name: fetch the real sanctions list
+        continue-on-error: true
+        run: python engine/scripts/fetch_sanctions_list.py
+
+      # Failures are echoed as ::error:: annotations as well as printed. Job
+      # logs need repository admin to read through the API, so a failure that
+      # only reproduces on this runner is otherwise invisible to anyone
+      # debugging from outside — which cost real time once.
+      - name: pytest
+        run: |
+          set -o pipefail
+          python -m pytest engine/tests -q --tb=short 2>&1 | tee /tmp/pytest.log || {
+            echo "::group::pytest failure detail"
+            sed -n '/=== FAILURES ===/,$p' /tmp/pytest.log | head -80
+            echo "::endgroup::"
+            grep -E "^(FAILED|ERROR)" /tmp/pytest.log | while read -r line; do
+              echo "::error::$line"
+            done
+            exit 1
+          }
+        env:
+          # Never the developer's store, and never a path that survives a job.
+          AUDIT_DB_PATH: ${{ runner.temp }}/audit.sqlite3
+
+  web:
+    name: web · vitest, eslint, tsc
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"   # matches development (v24.14.1)
+          cache: npm
+      # ci, not install: it installs the lockfile exactly and fails if
+      # package.json and the lockfile disagree. An ESLint 10 upgrade once broke
+      # `npm ci` while `npm install` stayed happy, and it was only caught days
+      # later when a Docker build ran the stricter one.
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx eslint .
+      - run: npx vitest run
+
+  static-analysis:
+    name: engine · pylint, bandit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+      - run: pip install -r engine/requirements.txt pylint bandit
+      # Errors only. The style messages are real and unfixed, and failing the
+      # build on line length would train everyone to ignore a red X. Pylint
+      # found a genuine NameError in an audit fallback this way.
+      - run: python -m pylint engine/src --errors-only --disable=import-error
+      - run: python -m bandit -r engine/src -ll

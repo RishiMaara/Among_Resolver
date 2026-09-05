@@ -1,0 +1,61 @@
+{
+  "pairs": 180,
+  "overall_accuracy": 0.6556,
+  "mean_confidence": 0.6432,
+  "ece": 0.0863,
+  "mce": 0.2,
+  "brier": 0.0513,
+  "buckets": [
+    {
+      "range": "[0.00, 0.50)",
+      "n": 61,
+      "predicted": 0.1756,
+      "observed": 0.0984,
+      "gap": -0.0772
+    },
+    {
+      "range": "[0.50, 0.70)",
+      "n": 11,
+      "predicted": 0.54,
+      "observed": 0.3636,
+      "gap": -0.1764
+    },
+    {
+      "range": "[0.70, 0.85)",
+      "n": 5,
+      "predicted": 0.8,
+      "observed": 1.0,
+      "gap": 0.2
+    },
+    {
+      "range": "[0.85, 0.93)",
+      "n": 41,
+      "predicted": 0.8761,
+      "observed": 1.0,
+      "gap": 0.1239
+    },
+    {
+      "range": "[0.93, 1.01)",
+      "n": 62,
+      "predicted": 0.9548,
+      "observed": 1.0,
+      "gap": 0.0452
+    }
+  ],
+  "overconfident_buckets": [
+    "[0.00, 0.50)",
+    "[0.50, 0.70)"
+  ],
+  "underconfident_buckets": [
+    "[0.70, 0.85)",
+    "[0.85, 0.93)"
+  ],
+  "run": {
+    "measured_at_utc": "2026-09-03T12:00:28+00:00",
+    "scenarios": 180,
+    "seed": 7,
+    "commit": "ead0ec3",
+    "solver_workers": 1,
+    "note": "benchmark.run_scenario pins CP-SAT to one worker. Under the default parallel search this measurement does not reproduce: scenarios with more than one valid subset flip between runs."
+  }
+}

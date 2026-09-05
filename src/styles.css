@@ -1,0 +1,831 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --font-display: "Instrument Serif", ui-serif, Georgia, serif;
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* Field labels and table headers.
+     Gellix is listed first and is NOT bundled: it is a commercial face
+     (Kostas Bartsokas) with no free web distribution, so it cannot be
+     fetched here. Drop licensed .woff2 files into public/fonts/ and add the
+     @font-face block below, and every label picks it up with no other
+     change.
+     Plus Jakarta Sans is the fallback because it is the closest thing on
+     Google Fonts — geometric-humanist with the same warmth and near-identical
+     proportions — so the layout does not shift if Gellix is added later. */
+  --font-ui: "Gellix", "Plus Jakarta Sans", "DM Sans", ui-sans-serif, system-ui, sans-serif;
+
+  /* The wordmark. Croc is listed first and is NOT bundled — it is a
+     commercial display face with no free web distribution, so it cannot be
+     fetched here without a licence. Drop licensed .woff2 files into
+     public/fonts/, uncomment the @font-face block below, and all three
+     headers change at once.
+
+     The fallback is Abril Fatface, chosen after seeing Croc rendered. Croc
+     is a FAT DISPLAY SERIF — heavy, high stroke contrast, near-circular
+     bowls, ball terminals. The previous fallback here was Plus Jakarta Sans,
+     which is a geometric SANS: wrong by category, not merely by degree, so
+     adding the real file later would have changed the mark completely.
+     Abril Fatface is the closest thing on Google Fonts — same fat-face
+     ancestry, same round bowls and ball terminals — so the wordmark reads
+     as intended now and barely shifts when Croc arrives. */
+  --font-brand: "Croc", "Abril Fatface", ui-serif, Georgia, serif;
+
+  /* Narrative prose — the hero eyebrow and the lane copy under the canvas.
+     Inter, at the sizes this copy is set, is the face in the reference: a
+     neutral grotesque that stays quiet while the argument does the work.
+     Requested as its own voice, distinct from --font-sans (DM Sans, which
+     has more personality per letter) and from --font-ui (labels). The opsz
+     axis is loaded 14..32 so Inter's display cut — tighter spacing, smaller
+     apertures — applies automatically as the size goes up. */
+  --font-narrative: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Section eyebrows. Hork Beans (Maulana Creative) is listed first and is
+     NOT bundled — commercial, no free web distribution, so it cannot be
+     fetched here without a licence. Drop a licensed .woff2 into public/fonts/
+     and uncomment the @font-face block below.
+
+     Luckiest Guy is the fallback: Hork Beans is a heavy marker-drawn display
+     face with near-uniform stroke weight, soft rounded terminals and a gentle
+     wobble, and Luckiest Guy is the closest thing on Google Fonts on all
+     three counts. Hork Beans is the more condensed of the two, which at
+     eyebrow size is the difference that matters least. */
+  --font-eyebrow: "Hork Beans", "Luckiest Guy", ui-sans-serif, system-ui, sans-serif;
+
+  --shadow-hairline: 0 1px 2px oklch(0 0 0 / 0.04), 0 0 0 1px var(--border);
+  --shadow-soft: 0 1px 2px oklch(0 0 0 / 0.04), 0 8px 24px -12px oklch(0 0 0 / 0.12);
+  --shadow-lift: 0 2px 4px oklch(0 0 0 / 0.04), 0 18px 40px -18px oklch(0 0 0 / 0.22);
+}
+
+:root {
+  --radius: 0.75rem;
+  --background: oklch(0.986 0.003 106);
+  --foreground: oklch(0.17 0.01 260);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.17 0.01 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.17 0.01 260);
+  --primary: oklch(0.19 0.012 260);
+  --primary-foreground: oklch(0.98 0.003 106);
+  --secondary: oklch(0.955 0.004 106);
+  --secondary-foreground: oklch(0.24 0.012 260);
+  --muted: oklch(0.955 0.004 106);
+  --muted-foreground: oklch(0.53 0.012 260);
+  /* Logo mark. The lattice reads as background and must never compete with
+     the path drawn through it, which is the whole point of the graphic. */
+  --mark-dot: oklch(0.875 0.006 255);
+  --mark-ink: oklch(0.673 0.147 155);
+  --accent: oklch(0.56 0.11 163);
+  --accent-foreground: oklch(0.99 0.005 163);
+  --destructive: oklch(0.55 0.2 27);
+  --destructive-foreground: oklch(0.99 0.003 106);
+  --border: oklch(0.9 0.005 106);
+  --input: oklch(0.9 0.005 106);
+  --ring: oklch(0.56 0.11 163);
+
+  /* Agent-flow node states.
+     `withheld` is amber and composed, deliberately not red: abstaining on an
+     ambiguous batch is the behaviour that produces zero false clears, and a
+     visualiser that paints it as a failure argues against the engine. Red is
+     reserved for `blocked`, which is a compliance stop or a rejected file. */
+  --s-idle: oklch(0.53 0.012 260);
+  --s-running: oklch(0.56 0.11 163);
+  --s-done: oklch(0.56 0.11 163);
+  --s-withheld: oklch(0.66 0.13 78);
+  --s-blocked: oklch(0.55 0.2 27);
+  --s-skipped: oklch(0.53 0.012 260);
+
+  /* Flow canvas surfaces, verbatim from the design. */
+  /* Basis tones. Statutory / guidance / internal must never look alike —
+     the rulebook's whole argument is that they are different claims. */
+  --s-statutory: oklch(0.55 0.2 27);
+  --s-guidance: oklch(0.62 0.13 68);
+  --s-internal: oklch(0.55 0.12 235);
+
+  --canvas: oklch(0.962 0.004 106);
+  --dot: oklch(0.17 0.01 260 / 12%);
+  --band: oklch(0.17 0.01 260 / 2%);
+  --band-stroke: oklch(0.17 0.01 260 / 6%);
+  --chart-1: oklch(0.56 0.11 163);
+  --chart-2: oklch(0.42 0.03 260);
+  --chart-3: oklch(0.72 0.08 163);
+  --chart-4: oklch(0.62 0.02 260);
+  --chart-5: oklch(0.82 0.05 163);
+  --sidebar: oklch(0.98 0.003 106);
+  --sidebar-foreground: oklch(0.17 0.01 260);
+  --sidebar-primary: oklch(0.19 0.012 260);
+  --sidebar-primary-foreground: oklch(0.98 0.003 106);
+  --sidebar-accent: oklch(0.955 0.004 106);
+  --sidebar-accent-foreground: oklch(0.24 0.012 260);
+  --sidebar-border: oklch(0.9 0.005 106);
+  --sidebar-ring: oklch(0.56 0.11 163);
+}
+
+.dark {
+  --background: oklch(0.16 0.008 260);
+  --foreground: oklch(0.96 0.003 106);
+  --card: oklch(0.2 0.009 260);
+  --card-foreground: oklch(0.96 0.003 106);
+  --popover: oklch(0.2 0.009 260);
+  --popover-foreground: oklch(0.96 0.003 106);
+  --primary: oklch(0.96 0.003 106);
+  --primary-foreground: oklch(0.18 0.009 260);
+  --secondary: oklch(0.25 0.01 260);
+  --secondary-foreground: oklch(0.96 0.003 106);
+  --muted: oklch(0.25 0.01 260);
+  --muted-foreground: oklch(0.68 0.012 260);
+  /* Both shift on dark ground: the dots darken so they stay quieter than the
+     text, and the green lifts, because the light-theme green is mixed to sit
+     on white and goes muddy against near-black. */
+  --mark-dot: oklch(0.4 0.015 260);
+  --mark-ink: oklch(0.72 0.145 158);
+  --accent: oklch(0.68 0.13 163);
+  --accent-foreground: oklch(0.16 0.02 163);
+  --destructive: oklch(0.65 0.19 25);
+  --destructive-foreground: oklch(0.98 0.003 106);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.68 0.13 163);
+
+  --s-idle: oklch(0.68 0.012 260);
+  --s-running: oklch(0.68 0.13 163);
+  --s-done: oklch(0.68 0.13 163);
+  --s-withheld: oklch(0.79 0.13 78);
+  --s-blocked: oklch(0.65 0.19 25);
+  --s-skipped: oklch(0.68 0.012 260);
+
+  --s-statutory: oklch(0.65 0.19 25);
+  --s-guidance: oklch(0.79 0.13 78);
+  --s-internal: oklch(0.72 0.11 232);
+
+  --canvas: oklch(0.132 0.008 260);
+  --dot: oklch(1 0 0 / 7%);
+  --band: oklch(1 0 0 / 2%);
+  --band-stroke: oklch(1 0 0 / 5%);
+  --chart-1: oklch(0.68 0.13 163);
+  --chart-2: oklch(0.78 0.02 260);
+  --chart-3: oklch(0.55 0.1 163);
+  --chart-4: oklch(0.6 0.015 260);
+  --chart-5: oklch(0.85 0.06 163);
+  --sidebar: oklch(0.18 0.009 260);
+  --sidebar-foreground: oklch(0.96 0.003 106);
+  --sidebar-primary: oklch(0.68 0.13 163);
+  --sidebar-primary-foreground: oklch(0.16 0.02 163);
+  --sidebar-accent: oklch(0.25 0.01 260);
+  --sidebar-accent-foreground: oklch(0.96 0.003 106);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.68 0.13 163);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.02em;
+  }
+}
+
+@utility text-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  line-height: 1.03;
+}
+
+@utility surface-card {
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-soft);
+}
+
+@utility grid-fade {
+  background-image:
+    linear-gradient(to right, var(--color-border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-border) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black, transparent 75%);
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@utility animate-rise {
+  animation: rise-in 380ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+/* ── Agent flow animations ────────────────────────────────────────────── */
+@keyframes af-dashmarch {
+  to {
+    stroke-dashoffset: -48;
+  }
+}
+@keyframes af-drawin {
+  from {
+    stroke-dashoffset: var(--len);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes af-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 0 transparent,
+      0 1px 2px rgb(0 0 0 / 0.18);
+  }
+  50% {
+    box-shadow:
+      0 0 22px -2px var(--s-running),
+      0 1px 2px rgb(0 0 0 / 0.18);
+  }
+}
+@keyframes af-shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(220%);
+  }
+}
+@keyframes af-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes af-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes af-packet {
+  from {
+    offset-distance: 0%;
+  }
+  to {
+    offset-distance: 100%;
+  }
+}
+
+/* Rulebook */
+@keyframes rb-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes rb-sheen {
+  0% {
+    transform: translateX(-130%);
+  }
+  100% {
+    transform: translateX(240%);
+  }
+}
+
+/* Motion here is explanatory, not decorative — but it is still motion, and
+   some people are made ill by it. Everything collapses to an instant state
+   change rather than being removed, so the information survives. */
+@media (prefers-reduced-motion: reduce) {
+  .af-anim,
+  .af-anim * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ── Landing hero ─────────────────────────────────────────────────────────
+   A soft gradient mesh behind the upload, so the thing a first-time visitor
+   must do is the most prominent thing on the page. Four blurred radial
+   blooms rather than one linear ramp — a linear gradient reads as a banner,
+   overlapping blooms read as light.
+
+   Grain over the top. Large flat gradients band badly on 8-bit displays, and
+   a little noise breaks the banding while also stopping the surface looking
+   like plastic. It is an SVG turbulence filter as a data URI, so it costs no
+   request and scales at any size.
+
+   Muted in dark mode rather than removed. The blooms carry the same hues at
+   a fraction of the opacity: bright colour on a dark ground is how a
+   consumer product signals fun, and this one is asking a finance team to
+   trust its arithmetic. */
+.hero-mesh {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.hero-mesh::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  z-index: -2;
+  background:
+    radial-gradient(38% 44% at 22% 18%, oklch(0.72 0.15 235 / 0.55), transparent 70%),
+    radial-gradient(42% 46% at 78% 26%, oklch(0.78 0.15 155 / 0.5), transparent 72%),
+    radial-gradient(46% 50% at 30% 84%, oklch(0.8 0.12 330 / 0.42), transparent 74%),
+    radial-gradient(40% 44% at 84% 78%, oklch(0.84 0.13 75 / 0.38), transparent 72%);
+  filter: blur(56px) saturate(1.15);
+}
+
+:root:not([data-theme="light"]) .hero-mesh::before,
+[data-theme="dark"] .hero-mesh::before {
+  background:
+    radial-gradient(38% 44% at 22% 18%, oklch(0.55 0.14 235 / 0.3), transparent 70%),
+    radial-gradient(42% 46% at 78% 26%, oklch(0.58 0.14 155 / 0.26), transparent 72%),
+    radial-gradient(46% 50% at 30% 84%, oklch(0.55 0.11 330 / 0.22), transparent 74%),
+    radial-gradient(40% 44% at 84% 78%, oklch(0.6 0.12 75 / 0.18), transparent 72%);
+  filter: blur(64px) saturate(1.05);
+}
+
+.hero-mesh::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.32'/%3E%3C/svg%3E");
+}
+
+:root:not([data-theme="light"]) .hero-mesh::after,
+[data-theme="dark"] .hero-mesh::after {
+  opacity: 0.28;
+}
+
+/* The card the mesh exists to hold up. */
+.hero-card {
+  background: color-mix(in oklab, var(--card) 88%, transparent);
+  backdrop-filter: blur(14px) saturate(1.2);
+  box-shadow:
+    0 1px 2px oklch(0 0 0 / 0.05),
+    0 24px 60px -28px oklch(0 0 0 / 0.35),
+    0 0 0 1px color-mix(in oklab, var(--border) 70%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-mesh::before {
+    filter: blur(56px);
+  }
+}
+
+/* Uncomment and drop a licensed file into public/fonts/ to use real Hork Beans.
+@font-face {
+  font-family: "Hork Beans";
+  src: url("/fonts/HorkBeans-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+*/
+
+/* Uncomment and drop licensed files into public/fonts/ to use real Croc.
+@font-face {
+  font-family: "Croc";
+  src: url("/fonts/Croc-Regular.woff2") format("woff2");
+  font-weight: 400 700;
+  font-display: swap;
+}
+*/
+
+/* Uncomment and drop licensed files into public/fonts/ to use real Gellix.
+@font-face {
+  font-family: "Gellix";
+  src: url("/fonts/Gellix-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gellix";
+  src: url("/fonts/Gellix-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-display: swap;
+}
+*/
+
+/* Labels and column headers.
+   These were IBM Plex Mono, which is right for FIGURES — tabular digits stay
+   in column — and wrong for words. A label is read, not scanned down a
+   column, and monospace makes short uppercase words feel like code. */
+.label-ui {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+/* The wordmark and its tagline. Separate from .label-ui because a brand mark
+   sets its own tracking — the tagline is spaced wide to read as a lockup
+   under the name, which a form label should never do. */
+/* ── loading mark ──────────────────────────────────────────────────────────
+   The logo's own animation, looped. Total path length is 2 * hypot(14, 7) =
+   31.305; the dash values must be that number, because a guess draws the two
+   segments at visibly different rates.
+
+   The cycle draws to 45%, holds, then runs the offset negative so the line
+   retracts from its tail rather than cutting back to the start. A loading
+   indicator that blinks out and restarts reads as a stall — which is the one
+   thing it must never suggest. */
+@keyframes loading-mark-draw {
+  0% {
+    stroke-dashoffset: 31.305;
+  }
+  45% {
+    stroke-dashoffset: 0;
+  }
+  58% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -31.305;
+  }
+}
+
+/* Nodes arrive as the line reaches them and leave as it retracts past them,
+   which is why each carries its own delay rather than sharing one keyframe. */
+@keyframes loading-mark-node {
+  0%,
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  12% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  20%,
+  62% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  78% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+/* The lattice is the candidate pool being scanned, so it breathes rather than
+   sitting inert — but only barely. Anything more competes with the path, and
+   the path is the part carrying the meaning. */
+@keyframes loading-mark-dot {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.loading-mark-path {
+  stroke-dasharray: 31.305;
+  animation: loading-mark-draw 1800ms cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+.loading-mark-node {
+  /* Without fill-box the origin is the SVG's own corner and the nodes scale
+     in from off-mark. */
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: loading-mark-node 1800ms ease-in-out infinite;
+}
+.loading-mark-dot {
+  animation: loading-mark-dot 1800ms ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The travelling line is the part that has to go. The mark still has to
+     read as busy, so the whole thing pulses in place instead. */
+  .loading-mark-path {
+    stroke-dasharray: none;
+    animation: loading-mark-dot 1400ms ease-in-out infinite;
+  }
+  .loading-mark-node,
+  .loading-mark-dot {
+    animation: loading-mark-dot 1400ms ease-in-out infinite;
+  }
+}
+
+/* ── day/night toggle ──────────────────────────────────────────────────────
+   The button used the shadcn ghost variant, whose hover is hover:bg-accent —
+   and --accent in this palette is the engine's green. A green wash behind a
+   sun is the wrong signal twice over: green means CLEARED everywhere else in
+   this interface, and it fights whichever body is on screen. The hover here
+   is a neutral tint of the foreground, so it reads as "pressable" without
+   claiming a status. */
+.theme-toggle {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease;
+}
+.theme-toggle:hover {
+  background: color-mix(in oklab, var(--foreground) 7%, transparent);
+  border-color: color-mix(in oklab, var(--foreground) 13%, transparent);
+}
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* The clipping box IS the horizon — a body is gone when it has travelled
+   past this edge, which is why the overflow rule is not cosmetic. */
+.theme-toggle-sky {
+  position: relative;
+  display: block;
+  width: 1.05rem;
+  height: 1.05rem;
+  overflow: hidden;
+}
+
+.theme-toggle-body {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.theme-toggle[data-ready="true"] .theme-toggle-body {
+  transition:
+    transform 620ms cubic-bezier(0.45, 0.05, 0.2, 1),
+    opacity 400ms ease;
+}
+
+/* Sun leaves at the lower left and the moon arrives from the lower right, so
+   the pair reads as one body crossing a sky rather than two icons swapping
+   in place. The rotation is what sells it: a disc that only slides looks
+   like a sprite, one that turns as it drops looks like it is setting. */
+.theme-toggle-sun {
+  color: oklch(0.76 0.15 68);
+}
+.theme-toggle-moon {
+  color: oklch(0.74 0.06 258);
+}
+
+.theme-toggle[data-dark="false"] .theme-toggle-sun,
+.theme-toggle[data-dark="true"] .theme-toggle-moon {
+  transform: translate(0, 0) rotate(0deg) scale(1);
+  opacity: 1;
+}
+.theme-toggle[data-dark="true"] .theme-toggle-sun {
+  transform: translate(-55%, 135%) rotate(-80deg) scale(0.7);
+  opacity: 0;
+}
+.theme-toggle[data-dark="false"] .theme-toggle-moon {
+  transform: translate(55%, 135%) rotate(80deg) scale(0.7);
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle[data-ready="true"] .theme-toggle-body {
+    transition: opacity 160ms ease;
+  }
+  /* The arc is the part that has to go; a body still has to leave, so the
+     travel collapses to nothing and only the fade remains. */
+  .theme-toggle[data-dark="true"] .theme-toggle-sun,
+  .theme-toggle[data-dark="false"] .theme-toggle-moon {
+    transform: none;
+  }
+}
+
+/* Section eyebrows — the hero line, the four lane markers, "The point".
+   The size and tracking here are part of the request, not decoration on top
+   of it. These eyebrows were set at 10px with 0.22em tracking, which suits
+   the thin uppercase sans they used to be and defeats a heavy marker face:
+   at 10px the wobble that gives the face its character reads as a rendering
+   fault, and 0.22em pulls letters drawn to sit tight into unrelated marks.
+   12px and 0.09em is the smallest setting where the face still reads as
+   itself. Weight stays 400 because it is already heavy by drawing — asking
+   for 500 makes the browser synthesise a bolder face over a bold one. */
+.eyebrow-display {
+  font-family: var(--font-eyebrow);
+  font-weight: 400;
+  font-size: 12px;
+  letter-spacing: 0.09em;
+}
+
+/* Narrative prose. Applied to the hero eyebrow and to every paragraph in
+   the scroll narrative, including the intro — adjacent paragraphs in one
+   section set in two different sans faces read as a mistake, not a choice. */
+.narrative-copy {
+  font-family: var(--font-narrative);
+}
+
+/* The supplied lockup sets the name in a grotesque, split across two
+   weights: "Among" light, "Resolver" heavy. That split is what makes the
+   compound read as one name rather than two adjacent words, so it is part
+   of the logo rather than styling applied over it.
+
+   This supersedes Croc here. --font-brand is still defined and still lists
+   Croc first, so swapping this one line back to var(--font-brand) restores
+   the display-serif wordmark — but the two cannot both be true, and the
+   attached artwork is the more recent instruction. */
+.brand-name {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+.brand-name-light {
+  font-weight: 400;
+  color: var(--muted-foreground);
+}
+
+/* ── Nav and control motion ───────────────────────────────────────────────
+   Each of these says something about the thing it decorates rather than
+   moving for its own sake: a scroll unrolls, a flag catches wind, a clock
+   winds forward and back. Motion that means nothing is noise on a screen a
+   person is trying to read numbers off.
+
+   Every one is hover- or press-triggered and finite. Nothing loops
+   unprompted, because a permanently animating icon in a header is a thing
+   the eye keeps returning to while you are trying to read something else. */
+
+/* The rulebook's scroll unrolls on approach and rolls back when you leave —
+   the icon is a rolled document, so this is the gesture it already implies. */
+@keyframes nav-unroll {
+  0% {
+    transform: scaleY(1) rotate(0deg);
+  }
+  45% {
+    transform: scaleY(1.22) rotate(-7deg);
+  }
+  100% {
+    transform: scaleY(1) rotate(0deg);
+  }
+}
+.nav-scroll svg {
+  transform-origin: 50% 50%;
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.nav-scroll:hover svg {
+  animation: nav-unroll 620ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* The escalations flag catches wind. Skew rather than rotate: a flag bends
+   along its length, it does not pivot on the pole. */
+@keyframes nav-sail {
+  0% {
+    transform: skewX(0deg) translateY(0);
+  }
+  25% {
+    transform: skewX(-11deg) translateY(-0.6px);
+  }
+  55% {
+    transform: skewX(7deg) translateY(0.4px);
+  }
+  80% {
+    transform: skewX(-3deg) translateY(0);
+  }
+  100% {
+    transform: skewX(0deg) translateY(0);
+  }
+}
+.nav-flag svg {
+  transform-origin: 15% 50%; /* the pole edge, so the cloth is what moves */
+}
+.nav-flag:hover svg {
+  animation: nav-sail 900ms ease-in-out;
+}
+
+/* The history clock's wind lives in history-link.tsx, driven by the Web
+   Animations API, and is deliberately NOT declared here.
+
+   It was a transition between rotate(0deg) and rotate(360deg), which only
+   ever animated one way: those two compute to the same matrix, so the return
+   trip was a no-change and the browser started no transition at all —
+   confirmed by listening for transitionrun, which fired going out and never
+   coming back. Explicit keyframes cannot collapse like that, and keeping a
+   rule here as well would leave two sources of truth for one behaviour. */
+
+/* Controls. A press is acknowledged by the control itself rather than only
+   by whatever happens next, because the engine can take a second to answer
+   and a button that does nothing visible in that second reads as unclicked. */
+.ctl-press {
+  transition:
+    transform 140ms cubic-bezier(0.34, 1.4, 0.5, 1),
+    filter 140ms ease;
+}
+.ctl-press:active:not(:disabled) {
+  transform: scale(0.965);
+}
+.ctl-press:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+/* Run: the play triangle leans into the motion it is about to start. */
+.ctl-run:hover:not(:disabled) svg {
+  transform: translateX(1.5px) scale(1.08);
+}
+.ctl-run svg {
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Reset: the arrow actually goes back round. */
+@keyframes ctl-rewind {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+.ctl-reset:hover:not(:disabled) svg {
+  animation: ctl-rewind 640ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hide/show panel: the chevron turns to face where the panel will go. */
+.ctl-toggle svg {
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ctl-toggle[data-open="false"] svg {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-scroll:hover svg,
+  .nav-flag:hover svg,
+  .ctl-reset:hover:not(:disabled) svg {
+    animation: none !important;
+  }
+  .ctl-press,
+  .ctl-run svg,
+  .ctl-toggle svg {
+    transition-duration: 0.001ms !important;
+  }
+}

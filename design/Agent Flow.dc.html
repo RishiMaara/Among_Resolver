@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+html,body{margin:0;padding:0}
+body{font-family:"DM Sans",ui-sans-serif,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:oklch(0.68 0.13 163);text-decoration:none}
+a:hover{color:oklch(0.78 0.11 163)}
+@keyframes af-dashmarch{to{stroke-dashoffset:-48}}
+@keyframes af-drawin{from{stroke-dashoffset:var(--len)}to{stroke-dashoffset:0}}
+@keyframes af-pulse{0%,100%{box-shadow:0 0 0 0 transparent,0 1px 2px rgba(0,0,0,.18)}50%{box-shadow:0 0 22px -2px var(--s-running),0 1px 2px rgba(0,0,0,.18)}}
+@keyframes af-shimmer{0%{transform:translateX(-120%)}100%{transform:translateX(220%)}}
+@keyframes af-spin{to{transform:rotate(360deg)}}
+@keyframes af-rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes af-ready{0%{opacity:0}12%{opacity:.5}30%{opacity:0}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}}
+</style>
+</helmet>
+
+<div style="{{ rootVars }}background:var(--background);color:var(--foreground);min-height:100vh;font-family:'DM Sans',ui-sans-serif,system-ui,sans-serif">
+
+  <header style="position:sticky;top:0;z-index:40;border-bottom:1px solid var(--border);background:var(--background);backdrop-filter:blur(12px)">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 24px">
+      <div style="display:flex;align-items:center;gap:9px">
+        <svg width="28" height="28" viewBox="0 0 32 32" aria-label="AmongResolver" style="display:block;flex:none">
+          <rect x="0.75" y="0.75" width="30.5" height="30.5" rx="8" fill="color-mix(in oklab, var(--accent) 10%, transparent)" stroke="color-mix(in oklab, var(--accent) 38%, transparent)" stroke-width="1.5"></rect>
+          <path d="M7 9.5 C14 9.5 15 16 21.5 16" fill="none" stroke="var(--accent)" stroke-width="1.7" stroke-linecap="round" opacity="0.9"></path>
+          <path d="M7 16 H21.5" fill="none" stroke="var(--accent)" stroke-width="1.7" stroke-linecap="round" opacity="0.55"></path>
+          <path d="M7 22.5 C14 22.5 15 16 21.5 16" fill="none" stroke="var(--accent)" stroke-width="1.7" stroke-linecap="round" opacity="0.9"></path>
+          <circle cx="7" cy="9.5" r="1.9" fill="var(--accent)"></circle>
+          <circle cx="7" cy="16" r="1.9" fill="var(--accent)" opacity="0.55"></circle>
+          <circle cx="7" cy="22.5" r="1.9" fill="var(--accent)"></circle>
+          <circle cx="23.4" cy="16" r="3.1" fill="none" stroke="var(--s-withheld)" stroke-width="1.8"></circle>
+        </svg>
+        <span style="display:flex;flex-direction:column;line-height:1.05">
+          <span style="font-size:14.5px;font-weight:600;letter-spacing:-0.02em">AmongResolver</span>
+          <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:8.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted-foreground);margin-top:2px">Deterministic reconciliation</span>
+        </span>
+        <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-foreground);border:1px solid var(--border);border-radius:999px;padding:2px 8px;margin-left:6px;white-space:nowrap">Agent Flow</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px">
+        <a href="./Compliance Rulebook.dc.html" style="font-size:14px;color:var(--muted-foreground);white-space:nowrap">Compliance Rulebook</a>
+        <div style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+          <sc-for list="{{ themeModes }}" as="m" hint-placeholder-count="3">
+            <button onClick="{{ m.pick }}" style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:5px 9px;border:0;cursor:pointer;background:{{ m.bg }};color:{{ m.fg }}">{{ m.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div style="padding:10px 24px 16px;background:var(--background)">
+    <div style="max-width:1560px;margin:0 auto;display:flex;gap:16px;align-items:stretch;flex-wrap:{{ paneWrap }}">
+      <sc-for list="{{ panes }}" as="pane" hint-placeholder-count="1">
+        <div style="{{ pane.vars }}flex:1 1 {{ paneBasis }};min-width:0;display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--card)">
+
+          <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:11px 14px;border-bottom:1px solid var(--border);background:var(--card)">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12.5px;font-weight:500;color:var(--foreground);white-space:nowrap">{{ batchId }}</span>
+              <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:999px;border:1px solid {{ statusBorder }};background:{{ statusBg }};color:{{ statusFg }}">{{ statusLabel }}</span>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:6px">
+              <span style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-foreground)">Elapsed</span>
+              <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--foreground)">{{ elapsedText }}</span>
+            </div>
+            <div style="display:flex;gap:18px;margin-left:auto">
+              <sc-for list="{{ counters }}" as="c" hint-placeholder-count="3">
+                <div style="display:flex;flex-direction:column;gap:1px;min-width:74px">
+                  <span style="font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-foreground)">{{ c.label }}</span>
+                  <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:15px;font-variant-numeric:tabular-nums;color:{{ c.color }}">{{ c.value }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-foreground);border:1px solid var(--border);border-radius:6px;padding:3px 7px">{{ pane.themeName }}</span>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);background:var(--card)">
+            <span style="font-size:13px;font-weight:600;letter-spacing:-0.01em;white-space:nowrap">Data Sources</span>
+            <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;color:var(--muted-foreground);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ sourceSummary }}</span>
+            <button onClick="{{ toggleUpload }}" style="margin-left:auto;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;padding:5px 9px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted-foreground);cursor:pointer;white-space:nowrap">{{ uploadToggleLabel }}</button>
+          </div>
+
+          <sc-if value="{{ uploadOpen }}" hint-placeholder-val="{{ true }}">
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:12px 14px 13px;border-bottom:1px solid var(--border);background:var(--card)">
+              <sc-for list="{{ dropzones }}" as="d" hint-placeholder-count="3">
+                <div>
+                  <div onDragOver="{{ d.onDragOver }}" onDragLeave="{{ d.onDragLeave }}" onDrop="{{ d.onDrop }}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:96px;border-radius:11px;border:1px dashed {{ d.borderColor }};background:{{ d.bg }};padding:12px;text-align:center;transition:border-color 220ms ease, background 220ms ease">
+                    <sc-if value="{{ d.hasFile }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:flex;width:100%;align-items:center;justify-content:space-between;gap:8px;border-radius:9px;background:color-mix(in oklab, var(--muted) 60%, transparent);padding:9px 10px">
+                        <div style="display:flex;align-items:center;gap:9px;overflow:hidden">
+                          <span style="flex:none;width:20px;height:20px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:color-mix(in oklab, var(--accent) 16%, transparent);color:var(--accent);font-size:11px">↑</span>
+                          <div style="text-align:left;overflow:hidden">
+                            <p style="margin:0;font-size:12.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.fileName }}</p>
+                            <p style="margin:2px 0 0;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;color:var(--muted-foreground)">{{ d.fileSize }}</p>
+                          </div>
+                        </div>
+                        <button onClick="{{ d.clear }}" style="flex:none;width:24px;height:24px;border-radius:6px;border:0;background:transparent;color:var(--muted-foreground);cursor:pointer;font-size:13px">✕</button>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ d.empty }}" hint-placeholder-val="{{ true }}">
+                      <div style="display:flex;flex-direction:column;align-items:center">
+                        <span style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:{{ d.iconBg }};color:{{ d.iconFg }};font-size:14px;transition:background 220ms ease, color 220ms ease">⤒</span>
+                        <p style="margin:10px 0 0;font-size:12.5px;font-weight:500;line-height:1.3;white-space:nowrap">{{ d.label }}</p>
+                        <p style="margin:5px 0 0;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;line-height:1.4;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground);white-space:nowrap">{{ d.reqLabel }}</p>
+                        <button onClick="{{ d.browse }}" style="margin-top:10px;font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--foreground);cursor:pointer">Browse</button>
+                      </div>
+                    </sc-if>
+                    <input type="file" accept=".csv,.json" ref="{{ d.setInput }}" onChange="{{ d.onPick }}" style="display:none">
+                  </div>
+                  <sc-if value="{{ d.hasErr }}" hint-placeholder-val="{{ false }}">
+                    <p style="margin:7px 0 0;display:flex;gap:6px;font-size:12px;line-height:1.4;color:var(--destructive);animation:af-rise 200ms ease both">
+                      <span>⚠</span><span>{{ d.err }}</span>
+                    </p>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <div data-af-canvas="true" style="position:relative;height:{{ canvasH }};overflow:hidden;background:var(--canvas);background-image:radial-gradient(var(--dot) 1px, transparent 1px);background-size:22px 22px">
+            <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg, transparent, color-mix(in oklab, var(--accent) 8%, transparent), transparent);animation:af-ready 4s linear infinite;opacity:{{ readyGlow }}"></div>
+            <div style="position:absolute;left:0;top:0;width:{{ graphW }};height:{{ graphH }};transform-origin:0 0;transform:{{ camTransform }};transition:{{ camTransition }}">
+
+              <svg width="{{ svgW }}" height="{{ svgH }}" viewBox="{{ svgBox }}" style="position:absolute;left:0;top:0;overflow:visible">
+                <sc-for list="{{ lanes }}" as="lane" hint-placeholder-count="4">
+                  <rect x="{{ lane.bandX }}" y="6" width="{{ lane.bandW }}" height="434" rx="14" fill="{{ lane.bandFill }}" stroke="{{ lane.bandStroke }}" stroke-width="1"></rect>
+                </sc-for>
+                <sc-for list="{{ edges }}" as="e" hint-placeholder-count="14">
+                  <g opacity="{{ e.dim }}">
+                    <path d="{{ e.d }}" fill="none" stroke="{{ e.stroke }}" stroke-width="{{ e.w }}" stroke-linecap="round" stroke-dasharray="{{ e.dash }}" style="{{ e.anim }}"></path>
+                  </g>
+                </sc-for>
+                <sc-for list="{{ packets }}" as="p" hint-placeholder-count="0">
+                  <g opacity="{{ p.dim }}">
+                    <circle r="7" fill="{{ p.color }}" opacity="0.16">
+                      <animateMotion dur="0.7s" repeatCount="indefinite" path="{{ p.d }}" begin="-0.05s"></animateMotion>
+                    </circle>
+                    <circle r="2.6" fill="{{ p.color }}" opacity="0.45">
+                      <animateMotion dur="0.7s" repeatCount="indefinite" path="{{ p.d }}" begin="-0.09s"></animateMotion>
+                    </circle>
+                    <circle r="3.4" fill="{{ p.color }}" style="filter:drop-shadow(0 0 7px var(--s-running))">
+                      <animateMotion dur="0.7s" repeatCount="indefinite" path="{{ p.d }}"></animateMotion>
+                    </circle>
+                  </g>
+                </sc-for>
+              </svg>
+
+              <sc-for list="{{ lanes }}" as="lane" hint-placeholder-count="4">
+                <div style="position:absolute;left:{{ lane.labelX }};top:12px;opacity:{{ lane.dim }};transition:opacity 320ms ease">
+                  <span style="font-size:10px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:{{ lane.labelColor }}">{{ lane.label }}</span>
+                </div>
+              </sc-for>
+
+              <sc-for list="{{ nodes }}" as="n" hint-placeholder-count="15">
+                <div onClick="{{ n.select }}" onMouseEnter="{{ n.hoverOn }}" onMouseLeave="{{ n.hoverOff }}" style="position:absolute;left:{{ n.left }};top:{{ n.top }};width:206px;height:74px;opacity:{{ n.groupDim }};transition:opacity 320ms ease">
+                  <div style="position:relative;width:206px;height:74px;box-sizing:border-box;border-radius:11px;background:var(--card);border:1px solid var(--border);border-left-width:2px;border-style:{{ n.borderStyle }};border-left-color:{{ n.color }};opacity:{{ n.opacity }};overflow:hidden;cursor:pointer;outline:{{ n.outline }};outline-offset:3px;transition:transform 200ms cubic-bezier(.22,.61,.36,1), box-shadow 160ms ease, outline-color 200ms ease;box-shadow:{{ n.shadow }};animation:{{ n.cardAnim }};transform:{{ n.lift }}">
+                    <div style="position:absolute;inset:0;pointer-events:none;overflow:hidden;opacity:{{ n.shimmer }}">
+                      <div style="position:absolute;top:0;bottom:0;width:44%;background:linear-gradient(90deg,transparent,color-mix(in oklab, var(--s-running) 20%, transparent),transparent);animation:af-shimmer 1.4s linear infinite"></div>
+                    </div>
+                    <div style="position:relative;padding:7px 9px 0;display:flex;align-items:center;gap:7px">
+                      <span style="width:20px;height:20px;flex:none;border-radius:6px;display:flex;align-items:center;justify-content:center;background:color-mix(in oklab, {{ n.color }} 16%, transparent);border:1px solid color-mix(in oklab, {{ n.color }} 34%, transparent);font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;font-weight:600;color:{{ n.color }};animation:{{ n.iconAnim }}">{{ n.glyph }}</span>
+                      <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-foreground);white-space:nowrap">{{ n.agentLabel }}</span>
+                      <span style="margin-left:auto;display:flex;align-items:center;gap:5px">
+                        <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9px;letter-spacing:.06em;color:var(--muted-foreground);display:{{ n.llmDisplay }};white-space:nowrap;line-height:1;border:1px solid var(--border);border-radius:4px;padding:2px 4px">◇ LLM</span>
+                        <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;font-variant-numeric:tabular-nums;color:var(--muted-foreground)">{{ n.elapsed }}</span>
+                      </span>
+                    </div>
+                    <div style="position:relative;padding:4px 9px 0;font-size:13px;font-weight:600;letter-spacing:-0.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ n.title }}</div>
+                    <div style="position:relative;padding:2px 9px 0;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;font-variant-numeric:tabular-nums;color:{{ n.metricColor }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;animation:{{ n.metricAnim }}">{{ n.metric }}</div>
+                    <span style="position:absolute;left:-4px;top:33px;width:7px;height:7px;border-radius:50%;background:var(--canvas);border:1.5px solid {{ n.portColor }}"></span>
+                    <span style="position:absolute;right:-4px;top:33px;width:7px;height:7px;border-radius:50%;background:var(--canvas);border:1.5px solid {{ n.portColor }}"></span>
+                  </div>
+                </div>
+              </sc-for>
+
+              <sc-for list="{{ edgeLabels }}" as="e" hint-placeholder-count="10">
+                <span style="position:absolute;left:{{ e.lx }};top:{{ e.ly }};transform:translate(-50%,-50%);pointer-events:none;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12.5px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1;white-space:nowrap;padding:2px 5px;border-radius:5px;background:var(--canvas);color:{{ e.labelFill }};opacity:{{ e.dim }}">{{ e.label }}</span>
+              </sc-for>
+
+              <sc-if value="{{ tip }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;left:{{ tip.x }};top:{{ tip.y }};width:264px;z-index:9;pointer-events:none;border-radius:9px;border:1px solid var(--border);background:var(--popover);box-shadow:0 18px 40px -18px rgba(0,0,0,.45);padding:9px 11px;animation:af-rise 160ms ease both">
+                  <p style="margin:0 0 4px;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:{{ tip.color }}">{{ tip.key }}</p>
+                  <p style="margin:0;font-size:11.5px;line-height:1.45;color:var(--foreground)">{{ tip.detail }}</p>
+                </div>
+              </sc-if>
+            </div>
+
+            <div style="position:absolute;left:12px;bottom:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;pointer-events:none;padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:color-mix(in oklab, var(--card) 78%, transparent);backdrop-filter:blur(6px)">
+              <sc-for list="{{ legend }}" as="g" hint-placeholder-count="4">
+                <span style="display:flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-foreground)">
+                  <span style="width:7px;height:7px;border-radius:2px;background:{{ g.color }}"></span>{{ g.label }}
+                </span>
+              </sc-for>
+            </div>
+            <span style="position:absolute;right:12px;bottom:12px;pointer-events:none;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted-foreground)">Click a node for its definition</span>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 14px;border-top:1px solid var(--border);background:var(--card)">
+            <button onClick="{{ togglePlay }}" style="display:flex;align-items:center;gap:7px;font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:500;padding:7px 13px;border-radius:9px;border:0;cursor:pointer;background:var(--primary);color:var(--primary-foreground);white-space:nowrap">{{ playLabel }}</button>
+            <sc-if value="{{ showReportBtn }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ openResults }}" style="font-size:12.5px;padding:7px 12px;border-radius:9px;border:1px solid color-mix(in oklab, var(--s-withheld) 40%, transparent);background:color-mix(in oklab, var(--s-withheld) 10%, transparent);color:var(--s-withheld);cursor:pointer;white-space:nowrap">Report</button>
+            </sc-if>
+            <button onClick="{{ replay }}" style="font-size:12.5px;padding:7px 12px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--foreground);cursor:pointer">Replay</button>
+            <div style="display:flex;border:1px solid var(--border);border-radius:9px;overflow:hidden">
+              <sc-for list="{{ speeds }}" as="s" hint-placeholder-count="3">
+                <button onClick="{{ s.pick }}" style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;padding:6px 10px;border:0;cursor:pointer;background:{{ s.bg }};color:{{ s.fg }}">{{ s.label }}</button>
+              </sc-for>
+            </div>
+            <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;color:var(--muted-foreground);margin-left:4px;white-space:nowrap">◇ LLM-assisted — proposes, never decides</span>
+            <sc-if value="{{ runErr }}" hint-placeholder-val="{{ false }}">
+              <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--destructive);animation:af-rise 200ms ease both"><span>⚠</span><span>{{ runErr }}</span></span>
+            </sc-if>
+            <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;color:var(--muted-foreground);margin-left:auto">{{ scrubReadout }}</span>
+          </div>
+
+          <div style="padding:4px 14px 13px;background:var(--card)">
+            <div style="position:relative;height:26px">
+              <div style="position:absolute;left:0;right:0;top:12px;height:2px;background:var(--border)"></div>
+              <div style="position:absolute;left:0;top:12px;height:2px;width:{{ scrubPct }};background:var(--accent)"></div>
+              <sc-for list="{{ ticks }}" as="t" hint-placeholder-count="25">
+                <span style="position:absolute;left:{{ t.left }};top:{{ t.top }};width:1.5px;height:{{ t.h }};background:{{ t.color }};transform:translateX(-0.75px)"></span>
+              </sc-for>
+              <input type="range" min="-1" max="{{ maxTick }}" step="1" value="{{ playhead }}" onChange="{{ onScrub }}" onInput="{{ onScrub }}" style="position:absolute;left:0;right:0;top:0;width:100%;height:26px;margin:0;opacity:0;cursor:pointer">
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <sc-if value="{{ drawer }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;right:{{ drawerRight }};top:0;bottom:0;width:404px;z-index:60;background:var(--card);border-left:1px solid var(--border);box-shadow:-24px 0 60px -30px rgba(0,0,0,.5);display:flex;flex-direction:column;animation:af-rise 220ms cubic-bezier(.22,.61,.36,1) both">
+      <div style="padding:16px 18px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:flex-start;gap:10px">
+          <div style="flex:1">
+            <p style="margin:0;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-foreground)">{{ drawer.agentLabel }}</p>
+            <h3 style="margin:5px 0 0;font-size:17px;font-weight:600;letter-spacing:-0.015em">{{ drawer.title }}</h3>
+            <p style="margin:6px 0 0;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;color:var(--muted-foreground)">{{ drawer.auditKey }}</p>
+          </div>
+          <button onClick="{{ closeDrawer }}" style="font-size:15px;width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted-foreground);cursor:pointer">✕</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:999px;border:1px solid color-mix(in oklab, {{ drawer.color }} 40%, transparent);background:color-mix(in oklab, {{ drawer.color }} 12%, transparent);color:{{ drawer.color }}">{{ drawer.stateLabel }}</span>
+          <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:999px;border:1px solid var(--border);color:var(--muted-foreground)">{{ drawer.entryCount }}</span>
+        </div>
+      </div>
+      <div style="padding:14px 18px 4px">
+        <p style="margin:0;font-size:12.5px;line-height:1.55;color:var(--muted-foreground)">{{ drawer.blurb }}</p>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:10px 18px 24px">
+        <sc-for list="{{ drawer.entries }}" as="en" hint-placeholder-count="3">
+          <div style="border-left:1.5px solid var(--border);padding:0 0 14px 13px;position:relative">
+            <span style="position:absolute;left:-4.5px;top:5px;width:7px;height:7px;border-radius:50%;background:{{ en.dot }}"></span>
+            <p style="margin:0;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;color:var(--muted-foreground)">{{ en.timestamp_utc }}</p>
+            <p style="margin:4px 0 0;font-size:12.5px;line-height:1.5;color:var(--foreground)">{{ en.detail }}</p>
+          </div>
+        </sc-for>
+        <sc-if value="{{ drawer.empty }}" hint-placeholder-val="{{ false }}">
+          <div style="border:1px dashed var(--border);border-radius:10px;padding:16px;text-align:center">
+            <p style="margin:0;font-size:12.5px;color:var(--muted-foreground)">No audit lines. This agent was not needed for this batch — the rules ahead of it were sufficient.</p>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ resultsOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;right:0;top:0;bottom:0;width:424px;z-index:55;background:var(--card);border-left:1px solid var(--border);box-shadow:-24px 0 60px -30px rgba(0,0,0,.5);display:flex;flex-direction:column;animation:af-rise 260ms cubic-bezier(.22,.61,.36,1) both">
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:16px 18px 14px;border-bottom:1px solid var(--border)">
+        <div style="flex:1">
+          <h3 style="margin:0;font-family:'Instrument Serif',ui-serif,Georgia,serif;font-weight:400;font-size:24px;letter-spacing:-0.02em">Reconciliation Report</h3>
+          <span style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;border:1px solid color-mix(in oklab, {{ report.badgeColor }} 34%, transparent);background:color-mix(in oklab, {{ report.badgeColor }} 12%, transparent);color:{{ report.badgeColor }}">⚠ {{ report.badge }}</span>
+        </div>
+        <button onClick="{{ closeResults }}" style="flex:none;font-size:15px;width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted-foreground);cursor:pointer">✕</button>
+      </div>
+
+      <div style="flex:1;overflow-y:auto;padding:14px 18px 28px">
+        <p style="margin:0;font-size:13px;line-height:1.55;color:var(--muted-foreground);text-wrap:pretty">{{ report.headline }}</p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px">
+          <sc-for list="{{ report.stats }}" as="st" hint-placeholder-count="4">
+            <div style="border:1px solid var(--border);border-radius:10px;padding:11px 12px">
+              <p style="margin:0;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">{{ st.label }}</p>
+              <p style="margin:6px 0 0;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:19px;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:-0.02em">{{ st.value }}</p>
+              <p style="margin:5px 0 0;font-size:11px;line-height:1.4;color:var(--muted-foreground)">{{ st.note }}</p>
+            </div>
+          </sc-for>
+        </div>
+
+        <p style="margin:22px 0 10px;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted-foreground)">Cash position</p>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <sc-for list="{{ report.buckets }}" as="b" hint-placeholder-count="4">
+            <div style="border:1px solid color-mix(in oklab, {{ b.tone }} 40%, var(--border));border-radius:10px;padding:11px 12px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+                <span style="font-size:12.5px;font-weight:500">{{ b.label }}</span>
+                <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap">{{ b.amount }}</span>
+              </div>
+              <p style="margin:5px 0 0;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;color:var(--muted-foreground)">{{ b.count }}</p>
+              <p style="margin:5px 0 0;font-size:11.5px;line-height:1.45;color:var(--muted-foreground)">{{ b.note }}</p>
+            </div>
+          </sc-for>
+        </div>
+        <p style="margin:10px 0 0;font-size:11.5px;line-height:1.45;color:var(--muted-foreground);border-left:2px solid var(--border);padding-left:10px">{{ report.journalNote }}</p>
+
+        <p style="margin:22px 0 10px;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted-foreground)">Exceptions</p>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <sc-for list="{{ report.exceptions }}" as="ex" hint-placeholder-count="2">
+            <div style="border-left:2px solid var(--s-withheld);border-radius:0 10px 10px 0;background:color-mix(in oklab, var(--s-withheld) 6%, transparent);padding:11px 12px">
+              <p style="margin:0;font-size:12.5px;font-weight:600;color:var(--s-withheld)">{{ ex.reason }}</p>
+              <p style="margin:6px 0 0;font-size:11.5px;line-height:1.5;color:var(--muted-foreground)">{{ ex.note }}</p>
+              <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+                <sc-for list="{{ ex.findings }}" as="f" hint-placeholder-count="0">
+                  <div style="border:1px solid var(--border);border-radius:9px;background:var(--card);padding:10px">
+                    <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+                      <span style="font-size:12px;font-weight:600">{{ f.title }}</span>
+                      <span style="font-size:10px;font-weight:500;padding:2px 7px;border-radius:999px;border:1px solid color-mix(in oklab, {{ f.basisColor }} 34%, transparent);background:color-mix(in oklab, {{ f.basisColor }} 12%, transparent);color:{{ f.basisColor }};white-space:nowrap">{{ f.basis }}</span>
+                      <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;color:var(--muted-foreground)">{{ f.rule }}</span>
+                    </div>
+                    <p style="margin:7px 0 0;font-size:11.5px;line-height:1.45;color:var(--muted-foreground)">What triggered it: <span style="color:var(--foreground)">{{ f.observed }}</span></p>
+                    <p style="margin:4px 0 0;font-size:11.5px;line-height:1.45;color:var(--muted-foreground)">Authority: <span style="color:var(--foreground)">{{ f.authority }}</span></p>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <p style="margin:20px 0 0;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;color:var(--muted-foreground)">Audit trail · {{ report.trailCount }} · click any node to read its lines</p>
+      </div>
+    </div>
+  </sc-if>
+
+  <div style="max-width:1000px;margin:0 auto;padding:20px 24px 120px">
+    <section style="padding:34px 0 46px">
+      <p style="margin:0 0 14px;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted-foreground)">Reconciliation pipeline · 12 agents</p>
+      <h1 style="font-family:'Instrument Serif',ui-serif,Georgia,serif;font-weight:400;letter-spacing:-0.025em;line-height:1.05;font-size:38px;margin:0 0 18px;max-width:660px">Every clear, and every refusal, is on the record</h1>
+      <p style="max-width:620px;margin:0;font-size:15.5px;line-height:1.65;color:var(--muted-foreground);text-wrap:pretty">Each node above lights up because that agent wrote a line to the audit trail for this batch. Nothing there is decorative and nothing is hardcoded — every state, count and timing is derived from <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13.5px;color:var(--foreground)">GET /audit/SETTLE-001</span>. Scroll to walk the four lanes.</p>
+    </section>
+
+    <sc-for list="{{ narrative }}" as="s" hint-placeholder-count="4">
+      <section data-af-lane="{{ s.id }}" style="min-height:74vh;display:flex;flex-direction:column;justify-content:center;padding:40px 0;border-top:1px solid var(--border);opacity:{{ s.opacity }};transform:{{ s.transform }};transition:opacity 520ms cubic-bezier(.22,.61,.36,1), transform 520ms cubic-bezier(.22,.61,.36,1)">
+        <p style="margin:0;font-size:10px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:var(--muted-foreground)">{{ s.eyebrow }}</p>
+        <p style="margin:22px 0 0;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:64px;font-weight:500;line-height:1;letter-spacing:-0.03em;font-variant-numeric:tabular-nums;color:{{ s.figureColor }}">{{ s.figure }}</p>
+        <p style="margin:12px 0 0;font-size:13px;letter-spacing:.02em;color:var(--muted-foreground)">{{ s.figureCaption }}</p>
+        <h2 style="margin:30px 0 0;font-family:'Instrument Serif',ui-serif,Georgia,serif;font-weight:400;letter-spacing:-0.025em;line-height:1.06;font-size:34px;max-width:640px">{{ s.heading }}</h2>
+        <p style="margin:16px 0 0;max-width:620px;font-size:15.5px;line-height:1.65;color:var(--muted-foreground);text-wrap:pretty">{{ s.body }}</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:22px">
+          <sc-for list="{{ s.keys }}" as="k" hint-placeholder-count="3">
+            <span style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;padding:4px 9px;border-radius:6px;border:1px solid var(--border);color:var(--muted-foreground)">{{ k }}</span>
+          </sc-for>
+        </div>
+      </section>
+    </sc-for>
+
+    <section style="border-top:1px solid var(--border);padding:52px 0 0">
+      <p style="margin:0;font-size:10px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:var(--s-withheld)">The point</p>
+      <h2 style="margin:20px 0 0;font-family:'Instrument Serif',ui-serif,Georgia,serif;font-weight:400;letter-spacing:-0.025em;line-height:1.06;font-size:34px;max-width:660px">Abstaining is a result, not a failure</h2>
+      <p style="margin:16px 0 0;max-width:620px;font-size:15.5px;line-height:1.65;color:var(--muted-foreground);text-wrap:pretty">Tiebreak found two exact solutions and no discriminator between them. It stopped. On the reference dataset that behaviour produced zero false clears — which is why WITHHELD is amber and composed on this canvas, and never red.</p>
+      <p style="margin:26px 0 0;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11.5px;color:var(--muted-foreground)">0 false clears · 0 automatic ledger writes · 25 audit lines</p>
+    </section>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;themeMode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;,&quot;split&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;\&quot;dark\&quot; | \&quot;light\&quot; | \&quot;split\&quot;&quot;,&quot;section&quot;:&quot;Presentation&quot;},&quot;autoplay&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Presentation&quot;}}">
+const THEMES = {
+  dark: {
+    name: "Dark",
+    v: {
+      "--background": "oklch(0.16 0.008 260)",
+      "--foreground": "oklch(0.96 0.003 106)",
+      "--card": "oklch(0.2 0.009 260)",
+      "--popover": "oklch(0.22 0.009 260)",
+      "--primary": "oklch(0.96 0.003 106)",
+      "--primary-foreground": "oklch(0.18 0.009 260)",
+      "--muted": "oklch(0.25 0.01 260)",
+      "--muted-foreground": "oklch(0.68 0.012 260)",
+      "--accent": "oklch(0.68 0.13 163)",
+      "--border": "oklch(1 0 0 / 10%)",
+      "--destructive": "oklch(0.65 0.19 25)",
+      "--canvas": "oklch(0.132 0.008 260)",
+      "--dot": "oklch(1 0 0 / 7%)",
+      "--band": "oklch(1 0 0 / 2%)",
+      "--band-stroke": "oklch(1 0 0 / 5%)",
+      "--s-idle": "oklch(0.68 0.012 260)",
+      "--s-running": "oklch(0.68 0.13 163)",
+      "--s-done": "oklch(0.68 0.13 163)",
+      "--s-withheld": "oklch(0.79 0.13 78)",
+      "--s-blocked": "oklch(0.65 0.19 25)",
+      "--s-skipped": "oklch(0.68 0.012 260)"
+    }
+  },
+  light: {
+    name: "Light",
+    v: {
+      "--background": "oklch(0.986 0.003 106)",
+      "--foreground": "oklch(0.17 0.01 260)",
+      "--card": "oklch(1 0 0)",
+      "--popover": "oklch(1 0 0)",
+      "--primary": "oklch(0.19 0.012 260)",
+      "--primary-foreground": "oklch(0.98 0.003 106)",
+      "--muted": "oklch(0.955 0.004 106)",
+      "--muted-foreground": "oklch(0.53 0.012 260)",
+      "--accent": "oklch(0.56 0.11 163)",
+      "--border": "oklch(0.9 0.005 106)",
+      "--destructive": "oklch(0.55 0.2 27)",
+      "--canvas": "oklch(0.962 0.004 106)",
+      "--dot": "oklch(0.17 0.01 260 / 12%)",
+      "--band": "oklch(0.17 0.01 260 / 2%)",
+      "--band-stroke": "oklch(0.17 0.01 260 / 6%)",
+      "--s-idle": "oklch(0.53 0.012 260)",
+      "--s-running": "oklch(0.56 0.11 163)",
+      "--s-done": "oklch(0.56 0.11 163)",
+      "--s-withheld": "oklch(0.64 0.13 68)",
+      "--s-blocked": "oklch(0.55 0.2 27)",
+      "--s-skipped": "oklch(0.53 0.012 260)"
+    }
+  }
+};
+
+const LANES = [
+  { id: "intake", label: "Lane 1 · Intake", x: 20 },
+  { id: "constrain", label: "Lane 2 · Constrain", x: 304 },
+  { id: "resolve", label: "Lane 3 · Resolve", x: 588 },
+  { id: "report", label: "Lane 4 · Report", x: 872 }
+];
+
+const GRAPH_W = 1098, GRAPH_H = 446;
+
+// auditKey order is execution order; row is the vertical slot inside the lane.
+const NODES = [
+  { k: "file_agent", lane: 0, row: 0, glyph: "0", agent: "Agent 0", title: "File Understanding", metric: "14 / 14 headers mapped", blurb: "Maps unpredictable CSV/JSON headers to the schema. Rejects a file outright when a field reconciliation depends on is absent." },
+  { k: "llm_header_mapper", lane: 0, row: 1, glyph: "0b", agent: "Agent 0b", llm: true, title: "LLM Header Mapping", metric: "—", blurb: "Gemini fallback, runs only when the rule-based mapper fails. Proposes; never decides. Skipping it is success." },
+  { k: "ingestion", lane: 0, row: 2, glyph: "1", agent: "Agent 1", title: "Ingestion & Normalize", metric: "50,000 rows normalized", blurb: "Amounts to integer paise, timestamps to UTC with a confidence flag, references to a canonical key." },
+  { k: "compliance_agent", lane: 1, row: 0, glyph: "7", agent: "Agent 7", title: "Compliance Screening", metric: "13 of 50,000 blocked", blurb: "12 published rules. Blocked records leave the pool before any matching runs." },
+  { k: "fee_decomposition", lane: 1, row: 1, glyph: "2", agent: "Agent 2", title: "Fee Decomposition", metric: "₹51,432.18 gross target", blurb: "Net settlement amount to the gross target the transactions summed to before fees and tax." },
+  { k: "settlement_window_filter", lane: 1, row: 2, glyph: "—", agent: "Window", title: "Settlement Window", metric: "14,179 in window", blurb: "Drops candidates outside the lookback window." },
+  { k: "linkage", lane: 1, row: 3, glyph: "2b", agent: "Agent 2b", title: "Linkage", metric: "50,000 → 55 candidates", key: true, blurb: "Narrows the candidate pool by identity before any arithmetic. The architectural claim of the engine." },
+  { k: "subset_sum", lane: 2, row: 0, glyph: "3", agent: "Agent 3", title: "Subset-Sum (CP-SAT)", metric: "2 exact solutions", blurb: "Exact constraint solve for the subset summing to the target." },
+  { k: "tiebreak", lane: 2, row: 1, glyph: "—", agent: "Tiebreak", title: "Tiebreak", metric: "WITHHELD FOR REVIEW", blurb: "Chooses between competing exact solutions, or declines to. Declining is a recorded outcome, not an error." },
+  { k: "fuzzy_match", lane: 2, row: 2, glyph: "4", agent: "Agent 4", llm: true, title: "Fuzzy / Semantic Match", metric: "—", blurb: "Runs only when Agent 3 fails to clear. Never auto-clears below threshold." },
+  { k: "exception_diagnosis", lane: 2, row: 3, glyph: "5", agent: "Agent 5", title: "Exception Diagnosis", metric: "1 root cause assigned", blurb: "Assigns a root-cause category so a reviewer does not re-investigate from scratch." },
+  { k: "orchestrator", lane: 3, row: 0, glyph: "6", agent: "Agent 6", title: "Orchestrator / Governance", metric: "0 ledger writes", blurb: "Enforces the non-negotiable: nothing writes to a ledger automatically. Proposes only." },
+  { k: "tie_out", lane: 3, row: 1, glyph: "—", agent: "Tie-out", title: "Tie-out", metric: "—", blurb: "Proves matched gross − deductions − net == 0. Nothing cleared here, so there was nothing to prove." },
+  { k: "cash_position", lane: 3, row: 2, glyph: "8", agent: "Agent 8", title: "Cash Position", metric: "4 buckets · no journal", blurb: "Buckets plus a balanced double-entry journal proposal. No proposal is generated unless the batch cleared." },
+  { k: "settlement_qa", lane: 3, row: 3, glyph: "9", agent: "Agent 9", llm: true, title: "Settlement Q&A", metric: "grounded · 0 assumptions", blurb: "Answers questions grounded strictly in recorded results." }
+];
+
+const EDGES = [
+  { a: "file_agent", b: "llm_header_mapper", n: 0, untaken: true },
+  { a: "file_agent", b: "ingestion", n: 50000 },
+  { a: "ingestion", b: "compliance_agent", n: 50000 },
+  { a: "compliance_agent", b: "fee_decomposition", n: 49987 },
+  { a: "fee_decomposition", b: "settlement_window_filter", n: 49987 },
+  { a: "settlement_window_filter", b: "linkage", n: 14179 },
+  { a: "linkage", b: "subset_sum", n: 55 },
+  { a: "subset_sum", b: "tiebreak", n: 2 },
+  { a: "tiebreak", b: "fuzzy_match", n: 0, untaken: true },
+  { a: "tiebreak", b: "exception_diagnosis", n: 2 },
+  { a: "exception_diagnosis", b: "orchestrator", n: 1 },
+  { a: "orchestrator", b: "tie_out", n: 0, untaken: true },
+  { a: "tie_out", b: "cash_position", n: 0, untaken: true },
+  { a: "orchestrator", b: "cash_position", n: 1 },
+  { a: "cash_position", b: "settlement_qa", n: 1 }
+];
+
+// Mock of GET /audit/SETTLE-001 — { timestamp_utc, batch_id, agent, detail }.
+// dt is engine-time cost in ms, used for the elapsed readout and playback pacing.
+const RAW = [
+  ["file_agent", 8, "gateway_2026-08-31.csv · 14 headers detected, 14 mapped by rule (txn_id, amount_paise, settled_at_utc, reference)."],
+  ["file_agent", 6, "bank_2026-08-31.csv · 9 of 9 headers mapped by rule. LLM fallback not required."],
+  ["file_agent", 5, "erp_2026-08-31.json · 11 of 11 headers mapped by rule. No field reconciliation depends on is absent — file accepted."],
+  ["ingestion", 180, "50,000 rows read across 3 feeds. Amounts converted to integer paise."],
+  ["ingestion", 140, "Timestamps normalized to UTC. 412 rows carried a low-confidence offset flag."],
+  ["ingestion", 92, "References canonicalized to 49,613 distinct keys."],
+  ["compliance_agent", 40, "Screening 50,000 records against 12 published rules."],
+  ["compliance_agent", 30, "IN-PMLA-3.1 — 9 records blocked: single-transaction ceiling ₹10,00,000 exceeded. Statutory."],
+  ["compliance_agent", 26, "INT-RISK-2.4 — 4 records blocked: counterparty on internal watchlist. Internal policy — not law."],
+  ["compliance_agent", 12, "13 records removed from the candidate pool before matching. 49,987 remain."],
+  ["fee_decomposition", 21, "Net ₹50,000.00 + MDR 1.85% + GST 18% on fee → gross target ₹51,432.18."],
+  ["settlement_window_filter", 34, "Lookback 5 days from 2026-08-31T00:00Z — 35,808 candidates outside window dropped. 14,179 remain."],
+  ["linkage", 9, "Member source declared: gateway. Narrowing by identity before arithmetic."],
+  ["linkage", 32, "Reference prefix + merchant id + currency → 55 candidates. Pool 50,000 → 55 (99.89% reduction)."],
+  ["subset_sum", 210, "CP-SAT model built: 55 booleans, target 5,143,218 paise, tolerance 0 paise."],
+  ["subset_sum", 640, "Solution found: 12 transactions summing exactly to target."],
+  ["subset_sum", 434, "Second exact solution found: 12 transactions, identical sum, disjoint set."],
+  ["tiebreak", 9, "Two exact solutions with equal cost. No deterministic discriminator available — same day, same merchant, same amount profile."],
+  ["tiebreak", 3, "Declining to choose. Batch WITHHELD for human review; a guess here would post the wrong 12 transactions."],
+  ["exception_diagnosis", 61, "Root cause: ambiguous_subset. Candidate sets A and B recorded, both exact."],
+  ["exception_diagnosis", 27, "Reviewer needs one discriminator: the gateway UTR on the settlement advice."],
+  ["orchestrator", 6, "Outcome WITHHELD. 0 ledger writes proposed. Nothing posted automatically."],
+  ["cash_position", 21, "Buckets: awaiting_review ₹51,432.18 (24), compliance_hold ₹1,84,220.00 (13), reconciled_settled ₹0.00 (0), unexplained ₹0.00 (0)."],
+  ["cash_position", 6, "No journal proposal generated — outcome is not CLEARED."],
+  ["settlement_qa", 19, "Grounded on 24 recorded audit entries for SETTLE-001. Ready for questions."]
+];
+
+const NODE_W = 206, NODE_H = 74, ROW_STEP = 108, TOP = 38;
+const PACE = 8; // wall ms per engine ms at 1x
+
+function buildTrail() {
+  let t = 0;
+  const base = Date.UTC(2026, 7, 31, 6, 14, 2, 118);
+  return RAW.map(function (r) {
+    t += r[1];
+    const d = new Date(base + t);
+    return {
+      timestamp_utc: d.toISOString().replace("T", " ").replace("Z", "Z"),
+      batch_id: "SETTLE-001",
+      agent: r[0],
+      detail: r[2],
+      dt: r[1],
+      at: t
+    };
+  });
+}
+
+function nodeBox(n) {
+  return { x: LANES[n.lane].x, y: TOP + n.row * ROW_STEP };
+}
+
+function bez(a, b) {
+  const A = nodeBox(a), B = nodeBox(b);
+  const sameLane = a.lane === b.lane;
+  let p0, p1, p2, p3;
+  if (sameLane) {
+    // Within a lane the flow runs down the column: bottom port to top port.
+    // Rows that skip a node bow right so the path clears the card between.
+    // Negative bow swings the path into the lane gutter so it clears the card between.
+    const bow = Math.abs(b.row - a.row) > 1 ? -124 : 0;
+    p0 = { x: A.x + NODE_W / 2, y: A.y + NODE_H };
+    p3 = { x: B.x + NODE_W / 2, y: B.y };
+    p1 = { x: p0.x + bow, y: p0.y + 30 };
+    p2 = { x: p3.x + bow, y: p3.y - 30 };
+  } else {
+    const off = Math.min(160, Math.max(90, (B.x - (A.x + NODE_W)) * 0.55));
+    p0 = { x: A.x + NODE_W, y: A.y + NODE_H / 2 };
+    p3 = { x: B.x, y: B.y + NODE_H / 2 };
+    p1 = { x: p0.x + off, y: p0.y };
+    p2 = { x: p3.x - off, y: p3.y };
+  }
+  const mid = {
+    x: (p0.x + 3 * p1.x + 3 * p2.x + p3.x) / 8,
+    y: (p0.y + 3 * p1.y + 3 * p2.y + p3.y) / 8
+  };
+  let len = 0, prev = p0;
+  for (let i = 1; i <= 24; i++) {
+    const t = i / 24, u = 1 - t;
+    const pt = {
+      x: u * u * u * p0.x + 3 * u * u * t * p1.x + 3 * u * t * t * p2.x + t * t * t * p3.x,
+      y: u * u * u * p0.y + 3 * u * u * t * p1.y + 3 * u * t * t * p2.y + t * t * t * p3.y
+    };
+    len += Math.hypot(pt.x - prev.x, pt.y - prev.y);
+    prev = pt;
+  }
+  return {
+    d: "M" + p0.x + "," + p0.y + " C" + p1.x + "," + p1.y + " " + p2.x + "," + p2.y + " " + p3.x + "," + p3.y,
+    mid: mid,
+    len: Math.round(len)
+  };
+}
+
+function fmt(n) {
+  return Math.round(n).toLocaleString("en-IN");
+}
+
+class Component extends DCLogic {
+  state = {
+    selected: null, hovered: null, activeLane: null, zoom: 0.88, panX: 10, panY: 10,
+    mode: "dark", camAnim: false,
+    // Mirrors the app's Data Sources panel: gateway required, bank/erp optional.
+    files: { gateway: null, bank: null, erp: null },
+    dropErr: { gateway: null, bank: null, erp: null },
+    dragOver: null, uploadOpen: true, runErr: null, resultsOpen: false
+  };
+
+  constructor(props) {
+    super(props);
+    this.trail = buildTrail();
+    this.byKey = {};
+    NODES.forEach((n, i) => { this.byKey[n.k] = Object.assign({ order: i }, n); });
+    this.geo = {};
+    EDGES.forEach((e) => {
+      this.geo[e.a + ">" + e.b] = bez(this.byKey[e.a], this.byKey[e.b]);
+    });
+    this.ph = -1;              // playhead: index of last applied audit entry
+    this.playing = false;
+    this.speed = 1;
+    this.acc = 0;
+    this.anims = {};
+    this.statics = {};
+    this.userMoved = false;
+    if (props && props.themeMode) this.state.mode = props.themeMode;
+  }
+
+  componentDidMount() {
+    this.io = new IntersectionObserver((ents) => {
+      let best = null, ratio = 0;
+      ents.forEach((en) => {
+        if (en.isIntersecting && en.intersectionRatio > ratio) { ratio = en.intersectionRatio; best = en.target.getAttribute("data-af-lane"); }
+      });
+      if (best) this.setState({ activeLane: best });
+      else if (ents.every((e) => !e.isIntersecting)) this.setState({ activeLane: null });
+    }, { threshold: [0, 0.35, 0.7] });
+    document.querySelectorAll("[data-af-lane]").forEach((el) => this.io.observe(el));
+    const canvas = document.querySelector("[data-af-canvas]");
+    if (canvas && window.ResizeObserver) {
+      this.ro = new ResizeObserver((ents) => {
+        const r = ents[0].contentRect;
+        this.paneW = r.width; this.paneH = r.height;
+        if (!this.userMoved) this.applyFit();
+      });
+      this.ro.observe(canvas);
+    }
+    window.addEventListener("resize", this.onResize);
+    if (this.props.autoplay) this.togglePlay();
+  }
+
+  componentWillUnmount() {
+    if (this.io) this.io.disconnect();
+    if (this.ro) this.ro.disconnect();
+    if (this.raf) cancelAnimationFrame(this.raf);
+    window.removeEventListener("resize", this.onResize);
+  }
+
+  onResize = () => this.applyFit();
+
+  /* ---------- animation plumbing ---------- */
+  setAnim(key, to, dur) {
+    const cur = this.animVal(key);
+    if (cur === to) return;
+    this.anims[key] = { from: cur, to: to, start: performance.now(), dur: dur || 420 };
+    this.statics[key] = to;
+    this.ensureRaf();
+  }
+  animVal(key) {
+    const a = this.anims[key];
+    if (!a) return this.statics[key] || 0;
+    const t = Math.min((performance.now() - a.start) / a.dur, 1);
+    const e = 1 - Math.pow(1 - t, 3);
+    return a.from + (a.to - a.from) * e;
+  }
+  ensureRaf() {
+    if (this.raf) return;
+    this.last = performance.now();
+    this.raf = requestAnimationFrame(this.loop);
+  }
+  loop = (now) => {
+    this.raf = 0;
+    const dt = Math.min(now - this.last, 64);
+    this.last = now;
+    if (this.playing) {
+      this.acc += (dt / PACE) * this.speed;
+      let moved = false;
+      while (this.ph < this.trail.length - 1 && this.acc >= this.trail[this.ph + 1].dt) {
+        this.acc -= this.trail[this.ph + 1].dt;
+        this.ph += 1;
+        moved = true;
+      }
+      if (this.ph >= this.trail.length - 1) { this.playing = false; this.acc = 0; }
+      if (moved) this.sync();
+    }
+    let live = false;
+    for (const k in this.anims) {
+      if (performance.now() - this.anims[k].start >= this.anims[k].dur) delete this.anims[k];
+      else live = true;
+    }
+    this.forceUpdate();
+    if (this.playing || live) this.ensureRaf();
+  };
+
+  /* ---------- state derivation from the audit trail ---------- */
+  applied() { return this.trail.slice(0, this.ph + 1); }
+
+  nodeState(k) {
+    const seen = this.applied().filter((e) => e.agent === k);
+    const finished = this.ph >= this.trail.length - 1;
+    if (seen.length === 0) return finished ? "SKIPPED" : "IDLE";
+    const last = seen[seen.length - 1];
+    if (/WITHHELD/.test(last.detail)) return "WITHHELD";
+    if (/\bREJECTED\b/.test(last.detail)) return "BLOCKED";
+    const cur = this.ph >= 0 ? this.trail[this.ph].agent : null;
+    if (cur === k && !finished) return "RUNNING";
+    if (cur === k && finished) return "DONE";
+    return "DONE";
+  }
+
+  sync() {
+    const ap = this.applied();
+    const agents = {};
+    ap.forEach((e) => { agents[e.agent] = true; });
+    const numbered = NODES.filter((n) => n.glyph !== "—" && agents[n.k]).length;
+    this.setAnim("agents", numbered, 420);
+    this.setAnim("records", agents.ingestion ? 50000 : 0, 900);
+    this.setAnim("exceptions", agents.exception_diagnosis ? 1 : 0, 300);
+    this.setAnim("elapsed", this.ph >= 0 ? this.trail[this.ph].at : 0, 300);
+    const linkDone = ap.filter((e) => e.agent === "linkage").length >= 2;
+    if (linkDone) { if (!this.linkStarted) { this.statics.link = 50000; this.linkStarted = true; } this.setAnim("link", 55, 700); }
+    else { this.linkStarted = false; this.statics.link = 50000; delete this.anims.link; }
+    // The report column opens itself the moment the trail completes.
+    const done = this.ph >= this.trail.length - 1;
+    if (done && !this.reportShown) { this.reportShown = true; this.setState({ resultsOpen: true, uploadOpen: false }); }
+    if (!done && this.reportShown) { this.reportShown = false; this.setState({ resultsOpen: false }); }
+  }
+
+  vw() { return this.paneW || 1200; }
+  vh() { return this.paneH || 520; }
+
+  // The graph always fits: scale to the smaller axis and centre. No pan, no zoom.
+  applyFit(animate) {
+    const vw = this.vw(), vh = this.vh();
+    const z = Math.min((vw - 36) / GRAPH_W, (vh - 30) / GRAPH_H, 1.3);
+    this.setState({
+      zoom: z,
+      panX: (vw - GRAPH_W * z) / 2,
+      panY: (vh - GRAPH_H * z) / 2,
+      camAnim: !!animate
+    });
+  }
+
+  /* ---------- data sources (same contract as the app's Dropzone) ---------- */
+  inputs = {};
+  setInput = (slot) => (el) => { this.inputs[slot] = el; };
+
+  acceptFile(slot, file) {
+    if (!file) return;
+    if (!/\.(csv|json)$/i.test(file.name)) {
+      this.setState({ dropErr: Object.assign({}, this.state.dropErr, { [slot]: "Unsupported file type — upload a .csv or .json file." }) });
+      return;
+    }
+    this.setState({
+      files: Object.assign({}, this.state.files, { [slot]: { name: file.name, kb: (file.size / 1024).toFixed(1) } }),
+      dropErr: Object.assign({}, this.state.dropErr, { [slot]: null }),
+      runErr: null,
+      dragOver: null
+    });
+  }
+  clearFile(slot) {
+    if (this.inputs[slot]) this.inputs[slot].value = "";
+    this.setState({ files: Object.assign({}, this.state.files, { [slot]: null }) });
+  }
+
+  /* ---------- interaction ---------- */
+  togglePlay = () => {
+    if (!this.state.files.gateway) {
+      this.setState({ runErr: "Please upload at least a Gateway file.", uploadOpen: true });
+      return;
+    }
+    if (this.ph >= this.trail.length - 1) { this.ph = -1; this.acc = 0; }
+    this.playing = !this.playing;
+    this.userMoved = false;
+    this.sync();
+    this.ensureRaf();
+    this.forceUpdate();
+  };
+  replay = () => {
+    this.ph = -1; this.acc = 0; this.playing = true; this.userMoved = false;
+    this.statics = {}; this.anims = {}; this.linkStarted = false;
+    this.sync(); this.ensureRaf(); this.forceUpdate();
+  };
+  onScrub = (ev) => {
+    this.playing = false;
+    this.ph = parseInt(ev.target.value, 10);
+    this.acc = 0;
+    this.userMoved = true;
+    this.sync();
+    this.forceUpdate();
+  };
+
+  laneDim(laneId) {
+    const a = this.state.activeLane;
+    if (!a) return 1;
+    return a === laneId ? 1 : 0.78;
+  }
+
+  renderVals() {
+    const mode = this.state.mode;
+    const paneList = [mode === "light" ? "light" : "dark"];
+    const T = THEMES[paneList[0]];
+    const rootVars = Object.keys(T.v).map((k) => k + ":" + T.v[k]).join(";") + ";";
+    const finished = this.ph >= this.trail.length - 1;
+    const started = this.ph >= 0;
+
+    const stateColor = {
+      IDLE: "var(--s-idle)", RUNNING: "var(--s-running)", DONE: "var(--s-done)",
+      WITHHELD: "var(--s-withheld)", BLOCKED: "var(--s-blocked)", SKIPPED: "var(--s-skipped)"
+    };
+    const states = {};
+    NODES.forEach((n) => { states[n.k] = this.nodeState(n.k); });
+
+    const nodes = NODES.map((n) => {
+      const st = states[n.k];
+      const box = nodeBox(n);
+      const seen = this.applied().filter((e) => e.agent === n.k);
+      const ms = seen.reduce((s, e) => s + e.dt, 0);
+      let metric = n.metric;
+      if (n.k === "linkage" && st !== "IDLE") metric = fmt(this.animVal("link") || 50000) + " → 55 candidates";
+      if (st === "IDLE") metric = "—";
+      if (st === "SKIPPED") metric = "not needed";
+      if (st === "RUNNING") metric = "working…";
+      return {
+        key: n.k,
+        left: box.x + "px",
+        top: box.y + "px",
+        glyph: n.glyph,
+        agentLabel: n.agent,
+        title: n.title,
+        metric: metric,
+        metricColor: st === "WITHHELD" ? "var(--s-withheld)" : st === "DONE" ? "var(--foreground)" : "var(--muted-foreground)",
+        metricAnim: st === "DONE" || st === "WITHHELD" ? "af-rise 320ms ease both" : "none",
+        color: stateColor[st],
+        portColor: st === "IDLE" || st === "SKIPPED" ? "var(--s-idle)" : stateColor[st],
+        opacity: st === "IDLE" ? 0.82 : st === "SKIPPED" ? 0.5 : 1,
+        borderStyle: st === "SKIPPED" ? "dashed" : "solid",
+        shadow: st === "RUNNING"
+          ? "0 0 0 1.5px color-mix(in oklab, var(--s-running) 60%, transparent), 0 0 28px -6px var(--s-running)"
+          : st === "WITHHELD"
+          ? "0 0 0 3px color-mix(in oklab, var(--s-withheld) 16%, transparent), 0 2px 4px rgba(0,0,0,.14)"
+          : st === "DONE" ? "0 1px 2px rgba(0,0,0,.10), 0 10px 26px -18px rgba(0,0,0,.5)" : "none",
+        cardAnim: st === "RUNNING" ? "af-pulse 1.3s ease-in-out infinite" : "none",
+        runRing: st === "RUNNING" ? "0 0 0 1.5px color-mix(in oklab, var(--s-running) 55%, transparent)" : "none",
+        iconAnim: st === "RUNNING" ? "af-spin 3.2s linear infinite" : "none",
+        shimmer: st === "RUNNING" ? 1 : 0,
+        llmDisplay: n.llm ? "inline-block" : "none",
+        elapsed: ms > 0 ? fmt(ms) + "ms" : "",
+        groupDim: this.state.selected && this.state.selected !== n.k ? 0.42 : this.laneDim(LANES[n.lane].id),
+        outline: this.state.selected === n.k ? "1.5px solid " + (stateColor[st] || "var(--accent)") : "1.5px solid transparent",
+        lift: this.state.selected === n.k ? "translateY(-3px) scale(1.015)" : this.state.hovered === n.k ? "translateY(-2px)" : "none",
+        select: () => this.setState({ selected: this.state.selected === n.k ? null : n.k }),
+        hoverOn: () => this.setState({ hovered: n.k }),
+        hoverOff: () => this.setState({ hovered: null })
+      };
+    });
+
+    const edges = EDGES.map((e) => {
+      const g = this.geo[e.a + ">" + e.b];
+      const sa = states[e.a], sb = states[e.b];
+      const srcDone = sa === "DONE" || sa === "WITHHELD" || sa === "BLOCKED";
+      const active = srcDone && (sb === "RUNNING");
+      const settled = srcDone && (sb === "DONE" || sb === "WITHHELD" || sb === "BLOCKED");
+      const untaken = e.untaken;
+      const col = sb === "WITHHELD" ? "var(--s-withheld)" : sb === "BLOCKED" ? "var(--s-blocked)" : "var(--s-done)";
+      const w = e.n >= 10000 ? 3 : e.n >= 1000 ? 2.2 : e.n >= 100 ? 1.6 : 1.2;
+      return {
+        d: g.d,
+        lx: g.mid.x + "px",
+        ly: (g.mid.y - 11) + "px",
+        w: untaken ? 1.2 : w,
+        stroke: untaken ? "var(--s-idle)" : (active || settled) ? col : "var(--s-idle)",
+        dash: untaken ? "4 5" : settled ? "10 6" : active ? g.len + " " + g.len : "none",
+        anim: untaken ? "opacity:.3"
+          : settled ? "animation:af-dashmarch 3s linear infinite"
+            : active ? "--len:" + g.len + "px;animation:af-drawin 450ms cubic-bezier(.22,.61,.36,1) both"
+              : "opacity:.75",
+        dim: this.laneDim(LANES[this.byKey[e.a].lane].id),
+        label: untaken ? "" : fmt(e.n),
+        labelFill: (active || settled) ? col : "var(--muted-foreground)",
+        labelOpacity: untaken || !srcDone ? 0 : 1
+      };
+    });
+
+    const packets = EDGES.filter((e) => !e.untaken && states[e.b] === "RUNNING" &&
+      (states[e.a] === "DONE" || states[e.a] === "WITHHELD")).map((e) => ({
+        d: this.geo[e.a + ">" + e.b].d,
+        color: "var(--s-running)",
+        dim: this.laneDim(LANES[this.byKey[e.a].lane].id)
+      }));
+
+    const sel = this.state.selected ? this.byKey[this.state.selected] : null;
+    let drawer = null;
+    if (sel) {
+      const st = states[sel.k];
+      const entries = this.applied().filter((e) => e.agent === sel.k);
+      drawer = {
+        agentLabel: sel.agent,
+        title: sel.title,
+        auditKey: "agent: " + sel.k,
+        blurb: sel.blurb,
+        color: stateColor[st],
+        stateLabel: st === "WITHHELD" ? "Withheld for review" : st.toLowerCase(),
+        entryCount: entries.length + (entries.length === 1 ? " audit line" : " audit lines"),
+        entries: entries,
+        empty: entries.length === 0
+      };
+      drawer.entries = entries.map((e) => Object.assign({ dot: stateColor[st] }, e));
+    }
+
+    const hv = this.state.hovered;
+    let tip = null;
+    if (hv && !sel) {
+      const n = this.byKey[hv];
+      const box = nodeBox(n);
+      const seen = this.applied().filter((e) => e.agent === hv);
+      tip = {
+        x: (box.x + NODE_W + 14) + "px",
+        y: (box.y - 6) + "px",
+        key: hv,
+        color: stateColor[states[hv]],
+        detail: seen.length ? seen[seen.length - 1].detail : n.blurb
+      };
+    }
+
+    const statusDone = finished;
+    const statusLabel = !started ? "READY" : statusDone ? "WITHHELD" : "RUNNING";
+    const statusCol = !started ? "var(--muted-foreground)" : statusDone ? "var(--s-withheld)" : "var(--s-running)";
+
+    const narrativeData = [
+      { id: "intake", eyebrow: "Lane 1 · Intake", figure: "50,000", figureCaption: "rows read across gateway, bank and ERP", heading: "Three feeds, one schema, before anything is trusted", body: "The file agent maps unpredictable headers by rule and rejects a file outright when a field reconciliation depends on is missing. The LLM mapper sat this batch out — the rules were sufficient, which is the outcome you want.", keys: ["file_agent", "llm_header_mapper", "ingestion"], color: "var(--s-done)" },
+      { id: "constrain", eyebrow: "Lane 2 · Constrain", figure: "55", figureCaption: "candidates left, from 50,000", heading: "Narrow by identity before you narrow by arithmetic", body: "Compliance pulls 13 blocked records out of the pool before matching. Fees are decomposed to a gross target. Then Linkage cuts the pool by 99.89% on identity alone — the thick edge arriving and the hairline leaving is the architectural argument in one picture.", keys: ["compliance_agent", "fee_decomposition", "settlement_window_filter", "linkage"], color: "var(--s-done)" },
+      { id: "resolve", eyebrow: "Lane 3 · Resolve", figure: "2", figureCaption: "exact solutions, and no way to choose", heading: "CP-SAT found two answers that are both correct", body: "Two disjoint sets of 12 transactions sum exactly to the target. Tiebreak had no discriminator — same day, same merchant, same amount profile — so it declined and the batch was withheld. The fuzzy matcher was never reached.", keys: ["subset_sum", "tiebreak", "fuzzy_match", "exception_diagnosis"], color: "var(--s-withheld)" },
+      { id: "report", eyebrow: "Lane 4 · Report", figure: "0", figureCaption: "automatic ledger writes, ever", heading: "It reports, proposes, and waits", body: "Governance recorded the outcome and proposed nothing. Tie-out had nothing to prove, so it was skipped. Cash position still tells the controller where the money sits, and Q&A answers only from what was recorded.", keys: ["orchestrator", "tie_out", "cash_position", "settlement_qa"], color: "var(--s-done)" }
+    ];
+
+    return {
+      rootVars: rootVars,
+      panes: paneList.map((p) => ({
+        vars: Object.keys(THEMES[p].v).map((k) => k + ":" + THEMES[p].v[k]).join(";") + ";",
+        themeName: THEMES[p].name
+      })),
+      paneWrap: "wrap",
+      paneBasis: "100%",
+      themeModes: ["dark", "light"].map((m) => ({
+        label: m,
+        bg: mode === m ? "var(--muted)" : "transparent",
+        fg: mode === m ? "var(--foreground)" : "var(--muted-foreground)",
+        pick: () => { this.userMoved = false; this.setState({ mode: m }, () => this.applyFit(true)); }
+      })),
+      canvasH: this.state.uploadOpen ? "min(600px, max(400px, 100dvh - 360px))" : "min(600px, max(380px, 100dvh - 196px))",
+      legend: [
+        { label: "Done", color: "var(--s-done)" },
+        { label: "Running", color: "var(--s-running)" },
+        { label: "Withheld", color: "var(--s-withheld)" },
+        { label: "Blocked", color: "var(--s-blocked)" },
+        { label: "Not needed", color: "var(--s-skipped)" }
+      ],
+      uploadOpen: this.state.uploadOpen,
+      uploadToggleLabel: this.state.uploadOpen ? "Hide panel" : "Attach feeds",
+      toggleUpload: () => { this.userMoved = false; this.setState({ uploadOpen: !this.state.uploadOpen }); },
+      runErr: this.state.runErr,
+      sourceSummary: (() => {
+        const f = this.state.files, on = ["gateway", "bank", "erp"].filter((k) => f[k]);
+        return on.length ? on.length + " of 3 feeds attached · " + on.map((k) => f[k].name).join(", ") : "No feeds attached";
+      })(),
+      dropzones: [
+        { slot: "gateway", label: "Gateway Report", required: true },
+        { slot: "bank", label: "Bank Statement", required: false },
+        { slot: "erp", label: "ERP Ledger", required: false }
+      ].map((d) => {
+        const f = this.state.files[d.slot];
+        const active = this.state.dragOver === d.slot;
+        return {
+          slot: d.slot,
+          label: d.label,
+          reqLabel: (d.required ? "Required" : "Optional") + " · .csv / .json",
+          file: f,
+          fileName: f ? f.name : "",
+          fileSize: f ? f.kb + " KB" : "",
+          hasFile: !!f,
+          empty: !f,
+          err: this.state.dropErr[d.slot],
+          hasErr: !!this.state.dropErr[d.slot],
+          borderColor: active ? "var(--accent)" : this.state.dropErr[d.slot] ? "var(--destructive)" : "var(--border)",
+          bg: active ? "color-mix(in oklab, var(--accent) 6%, transparent)" : "transparent",
+          iconBg: active ? "color-mix(in oklab, var(--accent) 15%, transparent)" : "var(--muted)",
+          iconFg: active ? "var(--accent)" : "var(--muted-foreground)",
+          setInput: this.setInput(d.slot),
+          onPick: (ev) => this.acceptFile(d.slot, ev.target.files && ev.target.files[0]),
+          browse: () => { if (this.inputs[d.slot]) this.inputs[d.slot].click(); },
+          onDragOver: (ev) => { ev.preventDefault(); if (this.state.dragOver !== d.slot) this.setState({ dragOver: d.slot }); },
+          onDragLeave: () => this.setState({ dragOver: null }),
+          onDrop: (ev) => { ev.preventDefault(); this.acceptFile(d.slot, ev.dataTransfer.files && ev.dataTransfer.files[0]); },
+          clear: (ev) => { ev.stopPropagation(); this.clearFile(d.slot); }
+        };
+      }),
+      graphW: GRAPH_W + "px",
+      graphH: GRAPH_H + "px",
+      svgW: GRAPH_W,
+      svgH: GRAPH_H,
+      svgBox: "0 0 " + GRAPH_W + " " + GRAPH_H,
+      camTransform: "translate(" + this.state.panX + "px," + this.state.panY + "px) scale(" + this.state.zoom + ")",
+      camTransition: this.state.camAnim ? "transform 600ms cubic-bezier(.22,.61,.36,1)" : "none",
+      readyGlow: started ? 0 : 1,
+      lanes: LANES.map((l, i) => ({
+        label: l.label,
+        labelX: l.x + "px",
+        bandX: l.x - 19,
+        bandW: NODE_W + 38,
+        bandFill: "var(--band)",
+        bandStroke: "var(--band-stroke)",
+        dim: this.laneDim(l.id),
+        labelColor: this.state.activeLane === l.id ? "var(--accent)" : "var(--muted-foreground)"
+      })),
+      nodes: nodes,
+      edges: edges,
+      edgeLabels: edges.filter((e) => e.label && e.labelOpacity > 0),
+      packets: packets,
+      tip: tip,
+      drawer: drawer,
+      closeDrawer: () => this.setState({ selected: null }),
+      drawerRight: this.state.resultsOpen ? "424px" : "0px",
+      resultsOpen: this.state.resultsOpen && finished,
+      showReportBtn: finished && !this.state.resultsOpen,
+      openResults: () => this.setState({ resultsOpen: true }),
+      closeResults: () => this.setState({ resultsOpen: false }),
+      report: {
+        badge: "AMBIGUOUS (Needs Review)",
+        badgeColor: "var(--s-withheld)",
+        headline: "Found a candidate match, but it wasn't unique — flagged for human review before clearing.",
+        stats: [
+          { label: "Pool Coverage", value: "0.0847%", note: "of scanned ledger entries in window" },
+          { label: "Method Used", value: "Subset sum", note: "CP-SAT exact solve" },
+          { label: "Transactions Matched", value: "12 / 55", note: "two disjoint exact sets" },
+          { label: "False Positive Risk", value: "₹0.00", note: "nothing was cleared" }
+        ],
+        buckets: [
+          { label: "Awaiting review", amount: "₹51,432.18", count: "24 records", note: "Held until a reviewer picks between the two exact sets.", tone: "var(--s-withheld)" },
+          { label: "Compliance hold", amount: "₹1,84,220.00", count: "13 records", note: "Removed from the pool before matching by 2 rules.", tone: "var(--destructive)" },
+          { label: "Reconciled & settled", amount: "₹0.00", count: "0 records", note: "Nothing cleared in this batch.", tone: "var(--border)" },
+          { label: "Unexplained", amount: "₹0.00", count: "0 records", note: "No residual difference to explain.", tone: "var(--border)" }
+        ],
+        journalNote: "No posting proposal generated — outcome is not CLEARED. 0 ledger writes.",
+        exceptions: [
+          {
+            reason: "Ambiguous subset",
+            note: "Candidate sets A and B both sum exactly to ₹51,432.18. Reviewer needs one discriminator: the gateway UTR on the settlement advice.",
+            findings: []
+          },
+          {
+            reason: "Compliance stop",
+            note: "13 records were removed from the candidate pool before matching ran.",
+            findings: [
+              { title: "Single-transaction ceiling exceeded", rule: "IN-PMLA-3.1", basis: "Statutory", basisColor: "var(--destructive)", observed: "9 records above ₹10,00,000", authority: "PMLA 2002, Rule 3(1)(A)" },
+              { title: "Counterparty on internal watchlist", rule: "INT-RISK-2.4", basis: "Internal policy — not law", basisColor: "oklch(0.68 0.12 240)", observed: "4 records, 2 counterparties", authority: "Firm risk appetite, v4.2" }
+            ]
+          }
+        ],
+        trailCount: this.trail.length + " entries"
+      },
+      batchId: "SETTLE-001",
+      statusLabel: statusLabel,
+      statusFg: statusCol,
+      statusBg: "color-mix(in oklab, " + statusCol + " 12%, transparent)",
+      statusBorder: "color-mix(in oklab, " + statusCol + " 38%, transparent)",
+      elapsedText: fmt(this.animVal("elapsed")) + "ms",
+      counters: [
+        { label: "Agents run", value: fmt(this.animVal("agents")) + " / 12", color: "var(--foreground)" },
+        { label: "Records", value: fmt(this.animVal("records")), color: "var(--foreground)" },
+        { label: "Exceptions", value: fmt(this.animVal("exceptions")), color: this.animVal("exceptions") >= 0.5 ? "var(--s-withheld)" : "var(--muted-foreground)" }
+      ],
+      togglePlay: this.togglePlay,
+      replay: this.replay,
+      playLabel: this.playing ? "Pause" : started && !finished ? "Resume" : "Run trail",
+      speeds: [0.5, 1, 2].map((s) => ({
+        label: s + "×",
+        bg: this.speed === s ? "var(--muted)" : "transparent",
+        fg: this.speed === s ? "var(--foreground)" : "var(--muted-foreground)",
+        pick: () => { this.speed = s; this.forceUpdate(); }
+      })),
+      scrubReadout: started ? "entry " + (this.ph + 1) + " / " + this.trail.length + " · " + this.trail[this.ph].agent : "idle · 25 audit entries loaded",
+      scrubPct: (((this.ph + 1) / this.trail.length) * 100) + "%",
+      playhead: this.ph,
+      maxTick: this.trail.length - 1,
+      onScrub: this.onScrub,
+      ticks: this.trail.map((e, i) => {
+        const on = i <= this.ph;
+        const term = /WITHHELD/.test(e.detail);
+        return {
+          left: ((i + 0.5) / this.trail.length * 100) + "%",
+          top: term ? "6px" : "8px",
+          h: term ? "14px" : "10px",
+          color: term ? "var(--s-withheld)" : on ? "var(--accent)" : "var(--border)"
+        };
+      }),
+
+      narrative: narrativeData.map((s) => ({
+        id: s.id,
+        eyebrow: s.eyebrow,
+        figure: s.figure,
+        figureCaption: s.figureCaption,
+        figureColor: s.color,
+        heading: s.heading,
+        body: s.body,
+        keys: s.keys,
+        opacity: this.state.activeLane === s.id || !this.state.activeLane ? 1 : 0.45,
+        transform: this.state.activeLane === s.id || !this.state.activeLane ? "none" : "translateY(8px)"
+      }))
+    };
+  }
+}
+
+</script>
+</body>
+</html>

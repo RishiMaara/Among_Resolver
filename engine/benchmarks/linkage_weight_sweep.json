@@ -1,0 +1,90 @@
+{
+  "baseline": {
+    "false_clears": 0,
+    "auto_clear_pct": 62.0,
+    "truth_found_pct": 65.0
+  },
+  "delta": 0.1,
+  "rows": [
+    {
+      "weight": "W_SETTLEMENT_ID",
+      "value": 0.45,
+      "false_clears": 0,
+      "auto_clear_pct": 62.0,
+      "truth_found_pct": 65.0,
+      "auto_clear_delta": 0.0
+    },
+    {
+      "weight": "W_SETTLEMENT_ID",
+      "value": 0.65,
+      "false_clears": 0,
+      "auto_clear_pct": 62.0,
+      "truth_found_pct": 66.0,
+      "auto_clear_delta": 0.0
+    },
+    {
+      "weight": "W_SHARED_REF_TOKEN",
+      "value": 0.15,
+      "false_clears": 0,
+      "auto_clear_pct": 62.0,
+      "truth_found_pct": 65.0,
+      "auto_clear_delta": 0.0
+    },
+    {
+      "weight": "W_SHARED_REF_TOKEN",
+      "value": 0.35,
+      "false_clears": 0,
+      "auto_clear_pct": 62.0,
+      "truth_found_pct": 66.0,
+      "auto_clear_delta": 0.0
+    },
+    {
+      "weight": "W_REF_PREFIX_CLUSTER",
+      "value": 0.05,
+      "false_clears": 0,
+      "auto_clear_pct": 62.0,
+      "truth_found_pct": 65.0,
+      "auto_clear_delta": 0.0
+    },
+    {
+      "weight": "W_REF_PREFIX_CLUSTER",
+      "value": 0.25,
+      "false_clears": 0,
+      "auto_clear_pct": 62.0,
+      "truth_found_pct": 66.0,
+      "auto_clear_delta": 0.0
+    },
+    {
+      "weight": "W_CROSS_SOURCE_AMOUNT",
+      "value": 0.0,
+      "false_clears": 0,
+      "auto_clear_pct": 62.0,
+      "truth_found_pct": 67.0,
+      "auto_clear_delta": 0.0
+    },
+    {
+      "weight": "W_CROSS_SOURCE_AMOUNT",
+      "value": 0.2,
+      "false_clears": 0,
+      "auto_clear_pct": 62.0,
+      "truth_found_pct": 65.0,
+      "auto_clear_delta": 0.0
+    },
+    {
+      "weight": "W_OUT_OF_WINDOW_PENALTY",
+      "value": 0.2,
+      "false_clears": 0,
+      "auto_clear_pct": 62.0,
+      "truth_found_pct": 65.0,
+      "auto_clear_delta": 0.0
+    },
+    {
+      "weight": "W_OUT_OF_WINDOW_PENALTY",
+      "value": 0.4,
+      "false_clears": 0,
+      "auto_clear_pct": 62.0,
+      "truth_found_pct": 65.0,
+      "auto_clear_delta": 0.0
+    }
+  ]
+}
