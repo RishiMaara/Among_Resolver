@@ -38,6 +38,8 @@ from fuzzy_match import (
     score_subset_plausibility, build_similarity_context, bulk_fuzzy_recover,
 )
 import erp_sync
+import compliance_agent
+import cash_position
 from exception_diagnosis import diagnose_batch_exceptions
 from linkage import LinkageResult, build_candidate_links, link_confidence, txn_key
 import audit
@@ -1181,16 +1183,14 @@ def reconcile_many(
             matched_ids = [t.source_txn_id for t in matched]
             
             res = MatchResult(
-                cleared=True,
+                batch_id=batch.batch_id,
+                matched_txn_ids=matched_ids,
                 method=MatchMethod.EXACT_SUBSET_SUM,
                 confidence=0.85,  # Slightly lower confidence for N:M inference
-                matched_txn_ids=matched_ids,
-                matched_txns=matched,
                 matched_sum_cents=sum(t.amount_cents for t in matched),
                 target_cents=target_cents_list[i],
-                pool_size=len(safe_candidates),
+                cleared=True,
                 reasoning="Matched via N:M global bin-packing solver.",
-                linkage=None,
             )
             
             position = cash_position.build_cash_position(
@@ -1200,31 +1200,30 @@ def reconcile_many(
             
             rep = ReconciliationReport(
                 batch_id=batch.batch_id,
-                batch=batch,
-                match=res,
-                position=position,
+                total_candidates=len(safe_candidates),
+                match_result=res,
             )
             reports.append(rep)
     else:
         # Fallback to failing them all individually if N:M fails
         for batch in batches:
             res = MatchResult(
-                cleared=False,
+                batch_id=batch.batch_id,
+                matched_txn_ids=[],
                 method=MatchMethod.EXACT_SUBSET_SUM,
                 confidence=0.0,
-                matched_txn_ids=[],
-                matched_txns=[],
                 matched_sum_cents=0,
                 target_cents=target_cents_list[batches.index(batch)],
-                pool_size=len(safe_candidates),
+                cleared=False,
                 reasoning="N:M global solver failed to find a valid assignment.",
-                linkage=None,
             )
             position = cash_position.build_cash_position(
                 batch, candidates, [], cleared=False, rate_card=rate_card
             )
             reports.append(ReconciliationReport(
-                batch_id=batch.batch_id, batch=batch, match=res, position=position
+                batch_id=batch.batch_id,
+                total_candidates=len(safe_candidates),
+                match_result=res,
             ))
 
     return reports
