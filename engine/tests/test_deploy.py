@@ -342,7 +342,20 @@ def test_each_sample_preset_delivers_the_result_its_label_promises(preset, monke
     assert conf and abs(float(conf.group(1)) - float(s["confidence"])) < 0.005, (
         f"UI promises '{promised}', engine returned confidence {s['confidence']}"
     )
+    # A count is only promised where the answer is unique. For a withheld,
+    # ambiguous settlement the solver returns ONE of several valid sets, and
+    # which one depends on the parallel search — this preset matched 13 on a
+    # laptop and 14 on the CI runner. A label promising either would be wrong
+    # somewhere, so the label promises the reason instead, and that is checked.
     matched = re.search(r"(\d+) matched", promised)
-    assert matched and int(matched.group(1)) == s["matched_count"], (
-        f"UI promises '{promised}', engine matched {s['matched_count']}"
+    if matched:
+        assert int(matched.group(1)) == s["matched_count"], (
+            f"UI promises '{promised}', engine matched {s['matched_count']}"
+        )
+    if "more than one set adds up" in promised:
+        assert s.get("withheld_reason") == "alternate_subset", (
+            f"UI promises '{promised}', engine withheld for {s.get('withheld_reason')!r}"
+        )
+    assert matched or not s["cleared"], (
+        "a cleared preset has a unique answer and must promise its count"
     )

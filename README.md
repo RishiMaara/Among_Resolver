@@ -1,20 +1,6 @@
 # AmongResolver
 
-**CI:** [three jobs — engine · pytest, web · vitest/eslint/tsc, engine · pylint/bandit](https://github.com/RishiMaara/AmongResolver/actions/workflows/ci.yml)
-
-<!-- No badge image, deliberately. This README previously carried
-     ![CI](.../RishiMaara/Among_Resolver/actions/workflows/ci.yml/badge.svg)
-     — the SUBMITTED repository, not this one. It rendered red here while
-     every job in this repository passed, because it was reporting a
-     different repository's result: the submitted entry is frozen and
-     still carries a Prettier error in src/components/wordmark.tsx that
-     fails its web job. Nothing fixable here could ever turn that badge
-     green.
-
-     Pointing it at this repository instead does not work either: this
-     one is private, and GitHub proxies README images anonymously, so a
-     private repo's badge.svg comes back 404 and renders broken. A link
-     to the Actions tab is the option that tells the truth. -->
+[![CI](https://github.com/RishiMaara/Among_Resolver/actions/workflows/ci.yml/badge.svg)](https://github.com/RishiMaara/Among_Resolver/actions/workflows/ci.yml)
 
 A multi-source settlement reconciliation engine. Built for the Razorpay AI
 Buildathon, Track 04 — AI Finance Controller.
