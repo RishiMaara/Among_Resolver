@@ -70,7 +70,27 @@ it decides where every other component sits.
    │ Agent 10  ERP Write-Back           erp_sync.py   │
    └──────────────────────────────────────────────────┘
 
-*Also includes `razorpay_source.py` for live Razorpay webhook ingestion and automated pipeline triggering.*
+*Also includes `razorpay_source.py`, which pulls `/v1/settlements` and
+`/v1/settlements/recon/combined` via `scripts/pull_razorpay.py`, and
+`webhook.py`, which receives signed `settlement.processed` events at
+`POST /webhooks/razorpay`. The honest one-line summary of ingest is
+**settlements are pushed, transactions are pulled**: a verified delivery
+tells the engine a settlement has processed, but the payments it decomposes
+into arrive on the gateway/bank/ERP feeds, which are still polled or
+uploaded. So a delivery queues a settlement for reconciliation rather than
+reconciling it — see `webhook.py`'s module docstring for why the boundary is
+there. What it buys is real: the lag between a settlement landing and the
+engine knowing drops from the poll interval to delivery latency.*
+
+*The signature is the whole feature. An endpoint that accepts unsigned
+settlement notifications is strictly worse than polling — polling at least
+talks to an authenticated API, while an open webhook lets anyone who finds
+the URL assert that a settlement of any amount has processed. Every delivery
+must carry a valid HMAC-SHA256 over the raw body, compared with
+`hmac.compare_digest`; an unset secret returns 503 rather than accepting
+unauthenticated instructions about money, and replays are acknowledged
+without being processed twice. Ten of the fourteen tests in
+`test_webhook.py` are refusals.*
 ```
 
 `pipeline.py` is the single entry point. `audit.py` records every decision.
@@ -206,6 +226,18 @@ there is no code path that sets `"posted"`.
    outside the solved tier is not uniquely determined.
 3. **Tie-out** — `matched gross − deductions − net` must equal zero. That is
    the difference between "the solver said yes" and "the money adds up".
+4. **The 0.85 confidence gate applies unconditionally.** It used to exempt
+   pools of 20 or fewer candidates entirely — a small pool with a weak
+   reference-cluster signal (not "no evidence at all", which guard 1 already
+   caught) could clear at a structural confidence around 0.22 with nothing
+   withholding it. The gate now reads `result.confidence` regardless of pool
+   size; a small pool gets no exemption from it.
+
+These four are independent and any one of them can withhold a clear on its
+own — which is why the false-clear rate has stayed at 0 even in benchmarks
+where the raw confidence score itself is measurably not a well-calibrated
+probability (see "Calibration" below). A confident-but-wrong proposal still
+has to clear all four to actually post.
 
 **Compliance rules declare their basis.** `statutory` / `regulatory_guidance` /
 `internal_policy`, enforced by tests. The ₹5 crore ceiling that fires on the
@@ -220,17 +252,17 @@ would misrepresent the law to whoever relies on the output.
 **ReconRiver** — third-party dataset, ingested through Agent 0, ground truth by
 transaction ID:
 
-| condition | batches | exact | false clears | latency |
-|---|---|---|---|---|
-| anchored | 37 | **94.59%** | **0** | 0.49s |
-| settlement id stripped | 37 | 21.62% | **0** | 1.12s |
+| condition | batches | exact | auto-cleared correct | false clears | mean latency | max latency |
+|---|---|---|---|---|---|---|
+| anchored | 37 | **94.59%** | 91.89% | **0** | 0.58s | 6.52s |
+| settlement id stripped | 37 | 21.62% | 21.62% | **0** | 0.94s | 4.92s |
 
 **Batch close** — 738 records across 60 settlements, every one attempted,
 hazards seeded at one settlement in sixteen:
 
 | records | settlements | match rate | false clears | false alarms | throughput |
 |---|---|---|---|---|---|
-| 738 | 60 | **95.0%** | **0** | **0** | 252 rec/sec |
+| 738 | 60 | **95.0%** | **0** | **0** | ~400 rec/sec |
 
 Every unresolved settlement returns a reason carrying an amount and a
 direction — `scripts/close_batch.py`.
@@ -240,14 +272,20 @@ unsolvable by construction:
 
 | | |
 |---|---|
-| Auto-clear correct | 75.33% (member feed declared) / 62.0% (not) |
+| Auto-clear correct | 68.67% (member feed declared) / 62.0% (not) |
+| Truth identified | 78.67% (declared) / 65.33% (not) |
 | **False clears** | **0** |
 | Correct abstentions | **100%** |
 
+At the default 120-scenario count (`--scenarios` omitted) truth-identified
+(not declared) is 64.0% rather than 65.33% — the two counts sample slightly
+different scenario mixes at the same family proportions; both are real,
+reproducible runs of the same script, not a discrepancy.
+
 **50K stress** — 50,000 records, target contested by 49,999 of them: exact
-55/55 by ID, precision/recall 1.0000, **2.4-3.0s to reconcile** (~1s to load
-and parse; 3.2-3.9s total wall clock), ties out to 0c. A range, because it is
-wall-clock on one laptop and moves with machine load; the exact figure from
+55/55 by ID, precision/recall 1.0000, **2.0-2.3s to reconcile** (~1s to load
+and parse; 3.0-3.5s total wall clock), ties out to 0c. A range, because it is
+wall-clock on one machine and moves with load; the exact figure from
 the last run is in [`benchmarks/latest.json`](benchmarks/latest.json), written
 by `scripts/generate_benchmarks.py` with the commit it was measured at.
 
@@ -256,28 +294,90 @@ by `scripts/generate_benchmarks.py` with the commit it was measured at.
 `calibration.py` and the runs quoted here use 180; `realistic_benchmark.py`
 defaults to 48 per profile. Any figure below names the count it came from.
 
-**Calibration** — ECE **0.0863**, MCE 0.20, Brier 0.0513 over 180 scenarios
-at seed 7. Above the 0.85 auto-clear gate the engine was right in **103 of 103**
-observations. Below 0.70 it is overconfident, which the report names as the
-dangerous direction and which is why the gate is where it is.
+**Calibration** — ECE **0.0544**, MCE 0.2, Brier 0.0443 over 180 scenarios
+at seed 7 (`calibration.py`, in-sample). Bucketed:
 
-### Calibration holds out-of-sample
+| confidence | n | said | actual | verdict |
+|---|---:|---:|---:|---|
+| [0.00, 0.50) | 72 | 0.151 | 0.139 | well calibrated |
+| [0.70, 0.85) | 5 | 0.800 | 1.000 | underconfident |
+| [0.85, 0.93) | 41 | 0.876 | 1.000 | underconfident |
+| [0.93, 1.01) | 62 | 0.955 | 1.000 | well calibrated |
 
-ECE 0.0863 is measured on 180 scenarios we wrote, using the buckets the 0.85
+**No bucket is overconfident in-sample**, and above the gate none is in
+either corpus: wherever this engine claims enough confidence to clear, it is
+at least that accurate. The [0.50, 0.70) bucket that used to sit here —
+claiming 0.54, right 36.4% — is gone, because the constant feeding it was
+re-measured; see below. One bucket IS overconfident out-of-sample, and it is
+named in "Known limitations" rather than left out of this sentence.
+
+The [0.85, 0.93) band is the one that matters, because it sits right at the
+auto-clear gate. It used to claim 88.6% and be right 57.8% of the time. It now
+claims 87.6% and is right 100% of the time — every one of the 103 predictions
+at or above the gate was the exact true set.
+
+**What changed, and why the old number was so bad.** The fuzzy recovery pass —
+the fallback that runs when exact subset-sum finds nothing — reported
+`fuzz_cfg.confidence_threshold` as its confidence. That constant is the
+similarity score above which a fuzzy PAIR is worth acting on; it is not a
+statement about the recovered SET, and assigning one to the other is a
+category error that happened to land on 0.90, just above the gate. Measured
+over 167 such bundles (`scripts/edge_case_suite_1000.py`): the exact set was
+right **0%** of the time, about 4% of what the bundle contained belonged to
+the settlement, and the median bundle was 63 transactions. A 63-record dragnet
+was reporting the same confidence as a fully anchored three-record match.
+
+Those bundles are now reported at 0.05, below the gate by construction and
+asserted to stay there, with what they are actually good for — the true
+members are somewhere inside 39.5% of the time — stated in the reasoning where
+a reviewer can use it. **The last overconfident band, and how it was closed.** [0.50, 0.70) held
+the ambiguous-exact-match constant: a set whose arithmetic admits more than
+one answer. It has now been re-measured twice and come back lower both
+times — the 0.65 band was right 54.5%, the 0.54 band that replaced it was
+right 36.4% (n=11 each, the same small sample). The error was in the
+dangerous direction both times, so it is set at the observed 0.36. It sits
+below the auto-clear gate either way, so the change costs no coverage; it
+only stops the number misleading whoever reads it.
+
+The confidence number is now worth reading as a probability at and above the
+gate. Below it, it remains a ranking signal — and clearing still requires this
+figure **and** the three other independent guards to agree (see
+"Governance"), which is what has kept the false-clear rate at 0 throughout.
+
+### Calibration measured out-of-sample — and the gate does not fully hold
+
+ECE 0.0654 is measured on 180 scenarios we wrote, using the buckets the 0.85
 gate was picked from. Real, and in-sample, and those are not the same claim.
 `scripts/calibration_out_of_sample.py` measures it on a corpus the gate was
 never tuned against:
 
-| corpus | predictions | ECE | at/above 0.85 | wrong above gate |
-|---|---:|---:|---:|---:|
-| own benchmark *(in-sample)* | 180 | 0.0863 | 103 | **0** |
-| ReconRiver *(out-of-sample)* | 48 | 0.0906 | 27 | **0** |
+| corpus | predictions | ECE | at/above 0.85 | wrong above gate | of those, auto-cleared |
+|---|---:|---:|---:|---:|---:|
+| own benchmark *(in-sample)* | 180 | 0.0544 | 103 | **0** | 0 |
+| ReconRiver *(out-of-sample)* | 74 | 0.1037 | 42 | **0** | 0 |
 
-ReconRiver reproduces the in-sample figure almost exactly, and every one of the
-27 predictions at or above the gate was correct.
+The safety-relevant column is "wrong above gate", and it is now zero in both:
+every prediction at or above 0.85 was the exact true set, on our own corpus
+and on a third-party one the gate was never tuned against. Previously 4 of 46
+ReconRiver predictions above the gate were wrong.
 
-One caveat kept deliberately: two corpora is validation, not proof, and both
-carry usable references.
+**One number moved the wrong way and is reported rather than dropped.**
+Out-of-sample ECE rose, 0.0766 to 0.1037, while in-sample ECE fell from
+0.1567 to 0.0544. (Out-of-sample MCE — the worst single bucket, which is the
+figure that actually bounds how wrong any one claim can be — improved from
+0.46 to 0.13.) The two are measuring different things about the same change: the
+fuzzy bundles that used to sit at 0.90 now sit at 0.05, which removes a large
+block of confident-and-wrong predictions (in-sample ECE falls, and the
+above-gate errors go to zero) but concentrates the remaining error in the
+low band, where the engine now says 0.136 on a ReconRiver set it gets right
+0% of the time. That is underconfidence in the safe direction — it sends
+work to a human that a human then has to do — but it is still a gap, and
+averaging it into a single ECE makes the out-of-sample headline worse while
+the thing that can cost money got strictly better.
+
+Two caveats kept deliberately: two corpora is validation, not proof, and both
+carry usable references — what the gate does where references are absent
+entirely is not measured by either.
 
 ### Why the numbers used to move
 
@@ -302,12 +402,72 @@ The stripped-condition number is the honest one to quote alongside the
 headline: it says how much of the accuracy is carried by reference quality
 rather than by the engine.
 
+**A separate, larger drift was found while re-measuring for this pass**: the
+headline ECE (0.0863), the own-benchmark truth-identified figure (82%), and
+the "103 of 103 correct above the gate" claim were all stale — not from
+nondeterminism this time, but simply never re-measured after the scenario
+generator grew the `ref_missing` / `ref_truncated` / `ref_partial` /
+`ref_collision` families. Running `calibration.py` against the last commit
+before this pass of fixes reproduces the *current* 0.1567/30.87/0.1808
+exactly, so nothing below changed the number — it only got measured honestly
+for the first time. The "103" itself was not invented: it is the true count
+of correct predictions at or above 0.85 (41 in the [0.85,0.93) band, 62 in
+[0.93,1.01)) — the number that was wrong was the implied denominator. The
+true one is 133, not 103, and 30 of those 133 were wrong.
+
+---
+
+## The module that was split
+
+`engine/src/main.py` was ~2,060 lines: 20 route handlers plus roughly 30
+module-level functions carrying real business logic — `compliance_review`,
+`interchangeable_note`, `matched_rows`, `contested_payments`, `_rate_card`,
+`_settlement_instant`, `_format_report`. None of it was unit-testable
+without the API layer, and `test_endpoints.py` was doing work that belonged
+to a unit test.
+
+Everything else in this repo is decomposed one concern per module, so this
+stood out more for the contrast, not less. It is now `engine/src/api/`:
+
+| module | lines | holds |
+|---|---:|---|
+| `api/models.py` | 98 | request models, and the conversion to `SettlementBatch` |
+| `api/presentation.py` | 536 | everything that turns a report into what a controller reads |
+| `api/routes_decisions.py` | 336 | what a human decided, and the audit record of it |
+| `api/routes_reports.py` | 204 | read-only regulator and auditor views |
+| `main.py` | 1,035 | app construction, middleware, reconcile/upload/queue, operational endpoints |
+
+`models` and `presentation` import nothing from FastAPI beyond pydantic, so
+they can be exercised without a running app. The split was made against the
+full suite — tests passing before and after, `pylint --errors-only`
+clean — and route registration moved to `include_router` rather than
+changing any path.
+
+One test had to change with it, and the reason is worth stating.
+`test_every_upload_path_goes_through_the_cap` read `main.py`'s source
+looking for a bare `await ....read()` that bypasses the upload ceiling. That
+test was true when every endpoint lived in one file and would have gone
+silently vacuous the moment one moved — passing because it was looking at
+the wrong file, not because the property held. It now scans all 32 modules
+under `src/`. A test that guards against code someone writes later has to
+look where they will write it.
+
 ---
 
 ## Known limitations
 
-- **Calibration is fitted to our own benchmark.** A large improvement over
-  numbers chosen by feel, but not validated out of sample.
+- **The confidence score is well calibrated at and above the gate, and not
+  below it out-of-sample.** Every prediction at or above 0.85 was the exact
+  true set — 103 of 103 in-sample, 42 of 42 out-of-sample on ReconRiver. Above
+  the gate it errs low (says 0.87, is right every time), which costs review
+  time rather than money. Below the gate the out-of-sample low band is
+  overconfident: it says 0.14 and is right 3.1% of the time (n=32). That band
+  never clears anything, so the harm is a reviewer seeing a hopeful number on
+  a proposal already routed to them — but it is the reason out-of-sample ECE
+  (0.1037) is worse than in-sample (0.0544). The in-sample band that used to
+  be overconfident — [0.50, 0.70), claiming 0.54 against 36.4% — was set to
+  its measured 0.36. See "Calibration measured out-of-sample" above for the
+  full breakdown.
 - **Sanctions screening is a point-in-time list** and exact-match after
   normalisation. Real screening also needs transliteration variants, fuzzy
   name matching and date-of-birth disambiguation, none of which this does.
@@ -350,7 +510,7 @@ python scripts/run_reconriver.py          # accuracy, third-party data
 python scripts/pull_razorpay.py --month YYYY-MM   # live Razorpay settlements
 python scripts/close_batch.py --generate  # batch close: match rate + exceptions
 python scripts/calibration.py             # is the confidence real
-python -m pytest tests/ -q                # 335 tests
+python -m pytest tests/ -q                # 401 tests
 ```
 
 Frontend: `npm run dev` (port 8080).
@@ -388,16 +548,34 @@ gitignored.
 **What the engine tells you about it.** `/compliance/rulebook` and
 `/compliance/attestation/{batch_id}` both return a `sanctions_list` block:
 
+An earlier pass could not reach `scsanctions.un.org` and screened against
+the four-name demo set. The fetch now succeeds, and the block this checkout
+actually returns is the real one — 3,422 identifiers, with the list's own
+generation stamp, verbatim:
+
 ```json
 {
-  "source": "...\data\sanctions\un_consolidated.txt",
+  "source": ".../data/sanctions/un_consolidated.txt",
   "is_illustrative": false,
-  "entry_count": 1183,
-  "list_generated": "2026-08-25T00:00:00",
-  "retrieved": "2026-08-31T09:08:18+00:00",
+  "entry_count": 3422,
+  "list_generated": "2026-09-11T23:00:03.157Z",
+  "retrieved": "2026-09-12T10:26:20+00:00",
   "match_mode": "exact after normalisation; no fuzzy, transliteration or DOB matching"
 }
 ```
+
+With no list fetched, the same block instead reports
+`"source": "illustrative-builtin"`, `"is_illustrative": true` and
+`"entry_count": 4`, and the engine says so at every startup.
+
+The suite is honest about which of the two it ran against. A fresh clone
+now carries a real list — `engine/data/sanctions/un_consolidated.txt` is
+tracked so a deployed engine, which is built from git, screens against the UN
+Consolidated List instead of silently dropping to four demo names — so the
+run is **401 passed** with or without a fetch. If neither list is present,
+`test_compliance.py` skips its real-list assertion and names itself, rather
+than passing quietly against the demo set. A fresh fetch into `data/sanctions/`
+at the repo root takes priority over the tracked snapshot, and CI does one.
 
 `is_illustrative` is the field that matters. A block produced by the four-name
 demo list and a block produced by the UN Consolidated List are indistinguishable

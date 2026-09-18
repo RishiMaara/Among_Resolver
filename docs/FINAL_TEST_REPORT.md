@@ -1,32 +1,45 @@
 # AmongResolver — Final Test & Verification Report
 
-This document compiles the exhaustive testing results for the AmongResolver architecture, proving its correctness, performance, and institutional-grade safety.
+This document compiles the testing results for the AmongResolver architecture: what was measured, how, and — where a number turned out worse than an earlier draft of this report claimed — what actually changed and why.
 
 ---
 
 ## 1. Unit & Integration Test Suite (`pytest`)
-The core pipeline is covered by 335 rigorous backend tests validating every edge case, from file parsing hazards to time-zone misalignment and un-anchored math fallbacks.
+The core pipeline is covered by 401 rigorous backend tests, from file parsing hazards to time-zone misalignment, cross-feed identity collisions, un-anchored math fallbacks, and — added after a 1,000-scenario adversarial sweep found it — a settlement's anchored leg being assigned to a different settlement in the joint N:M path.
 
 ```text
 ============================= test session starts ==============================
-collected 335 items
+collected 401 items
 
 ... <truncated for brevity> ...
 tests/test_real_data_hazards.py::TestNoLinkageSignalNeverAutoClears::test_arithmetic_alone_does_not_clear_however_small_the_pool PASSED [ 86%]
 tests/test_real_data_hazards.py::TestOperability::test_the_audit_store_is_durable PASSED [ 87%]
 tests/test_real_data_hazards.py::TestCurrencyIsPartOfTheComparison::test_a_foreign_currency_leg_is_never_summed_in PASSED [ 88%]
+tests/test_reconcile_many.py::TestFallbackWhenJointlyInfeasible::test_one_unreachable_target_does_not_sink_a_reachable_sibling PASSED [ 90%]
+tests/test_reconcile_many.py::TestAnchorEvidenceBindsAssignment::test_a_leg_naming_one_settlement_is_not_assigned_to_another PASSED [ 91%]
+tests/test_reconcile_many.py::TestCrossBatchDoubleClaim::test_two_batches_clearing_one_payment_are_both_withheld PASSED [ 91%]
 tests/test_settlement_qa.py::TestPromptHardening::test_system_prompt_forbids_inventing_figures PASSED [ 94%]
+tests/test_subset_sum_nm.py::TestIdentityIsCollisionSafe::test_a_bare_id_collision_across_two_targets_pools_does_not_merge_records PASSED [ 96%]
 tests/test_target_preservation.py::TestTieOut::test_books_tie_when_deductions_are_declared PASSED [ 97%]
 tests/test_upload_limits.py::test_a_file_over_the_limit_is_refused_with_413 PASSED [ 98%]
 
-====================== 335 passed, 96 warnings in 30.23s ======================
+============================ 401 passed in 35.1s =============================
 ```
-**Result:** ✅ 335 / 335 tests passed.
+**Result:** ✅ 401 passed, 0 failed — screening the UN Consolidated List (3,422 identifiers).
+
+The count used to depend on one environmental fact: with no sanctions list on
+disk, `test_compliance.py` skipped its real-list assertion rather than passing
+quietly against the four-name demo set. A snapshot of the list is now tracked
+at `engine/data/sanctions/un_consolidated.txt` — a deployed engine is built
+from git and would otherwise screen demo names in production — so a fresh
+clone runs all 401. Its retrieval date is in its header and `/health` reports
+it; `python engine/scripts/fetch_sanctions_list.py` writes a fresher copy that
+takes priority, and CI runs that fetch before pytest.
 
 ---
 
 ## 2. The 50,000-Record Stress Test
-This test simulates an extreme edge case: a 50,000 transaction pool scattered across 3 massive sources (Bank, Gateway, ERP), with only 55 transactions composing the true ₹8,16,863.41 target. It proves both the speed of the CP-SAT engine and the structural integrity of the entity-resolution layer.
+This test simulates an extreme edge case: a 50,000 transaction pool scattered across 3 sources (Bank, Gateway, ERP), with only 55 transactions composing the true ₹8,16,863.41 target. It proves both the speed of the CP-SAT engine and the structural integrity of the entity-resolution layer.
 
 ```text
 ================================================================
@@ -34,9 +47,9 @@ This test simulates an extreme edge case: a 50,000 transaction pool scattered ac
 ================================================================
 Sources merged:         bank(15000) + gateway(25000) + erp(10000)
 Total candidate pool:   50000  (expected 50000)
-Load/parse/normalize:   0.82s
-Reconciliation time:    2.08s
-Total wall clock:       2.90s
+Load/parse/normalize:   0.97s
+Reconciliation time:    2.24s
+Total wall clock:       3.22s
 ----------------------------------------------------------------
 Cleared:                True
 Method:                 exact_subset_sum
@@ -45,56 +58,89 @@ Matched txn count:      55  (expected 55)
 Exact set match:        True   <- by transaction ID, not count
 Precision / recall:     1.0000 / 1.0000
 Matched sum (INR):      816863.41  (target gross 816863.41)
-Exceptions raised:      1
+Exceptions raised:      2
 ================================================================
 ```
-**Result:** ✅ 100% Precision & Recall. Massive payload successfully resolved in 2.9 seconds. 0 False Clears.
+**Result:** ✅ 100% precision & recall, exact 55/55 set by ID, in 3.22s wall clock. 0 false clears. This is one real run, not an average — wall-clock timing moves with machine load; `docs/benchmarks/latest.json` (regenerated by `scripts/generate_benchmarks.py`) carries whatever the most recent run actually measured, and four runs during this pass spanned 2.0–2.3s to reconcile.
 
 ---
 
-## 3. The Randomized Accuracy Benchmark (100 Datasets)
-A reconciliation engine must know when to fail. We ran 100 heavily randomized datasets simulating missing legs, exact arithmetic collisions, duplicate amounts, and out-of-window noise to ensure the engine never hallucinates an auto-clear.
+## 3. The Randomized Accuracy Benchmark (120 scenarios)
+A reconciliation engine must know when to fail. `scripts/benchmark.py` runs 120 scenarios — 12 hazard families × 3 pool densities — simulating missing legs, exact arithmetic collisions, duplicate amounts, degraded/missing/truncated references, and out-of-window noise, to check the engine never hallucinates an auto-clear even under adversarial reference quality.
 
 ```text
 ========================================================================
 RECONCILIATION ACCURACY BENCHMARK
 ========================================================================
-Scenarios              : 100 (84 solvable, 16 unsolvable by design)
+Scenarios              : 120 (100 solvable, 20 unsolvable by design)
 ------------------------------------------------------------------------
 FALSE CLEARS           : 0  (0.0%)   <- cleared a WRONG set
-Auto-cleared & correct : 64.29%   (of solvable)
-Truth identified       : 67.86%   (of solvable; incl. flagged-for-review)
+Auto-cleared & correct : 62.0%   (of solvable)
+Truth identified       : 64.0%   (of solvable; incl. flagged-for-review)
 Correct abstentions    : 100.0%   (of unsolvable)
-Mean precision / recall: 0.6858 / 0.7565
+Mean precision / recall: 0.6575 / 0.7353
 ------------------------------------------------------------------------
-Latency median/p95/max : 0.009s / 0.735s / 1.149s
-Transactions processed : 39,235
+Latency median/p95/max : 0.042s / 1.35s / 2.002s
+Transactions processed : 47,775
 
 ------------------------------------------------------------------------
 BY POOL DENSITY  (how many subsets compete for the same target)
 density      pool     n  auto-clear ok   truth found   false
 ------------------------------------------------------------------------
-sparse         60    30         63.33%        66.67%       0
+sparse         60    40          62.5%         65.0%       0
 medium        200    30         63.33%        66.67%       0
-dense         700    24         66.67%        70.83%       0
+dense         700    30          60.0%         60.0%       0
+
+------------------------------------------------------------------------
+family                  n   truth found   false  abstain   med s
+------------------------------------------------------------------------
+clean                  10        100.0%       0        0   0.005
+near_collision         10        100.0%       0        0   0.004
+exact_collision        10        100.0%       0        0   0.004
+duplicate_amounts      10        100.0%       0        0   0.007
+wide_spread            10        100.0%       0        0   0.004
+large_subset           10        100.0%       0        0   0.004
+missing_leg            10           n/a       0       10   0.259
+out_of_window          10           n/a       0       10   0.337
+ref_missing            10          0.0%       0        0   0.254
+ref_truncated          10          0.0%       0        0   0.204
+ref_collision          10         40.0%       0        0   0.388
+ref_partial            10          0.0%       0        0   0.271
 ========================================================================
 ```
-**Result:** ✅ **0 False Clears.** 100% correct abstentions on unsolvable data.
+**Result:** ✅ 0 false clears, 100% correct abstentions on the genuinely unsolvable scenarios. The by-family breakdown is the honest read: the six families with a clean settlement reference identify the true set 100% of the time; the four families where references are missing, truncated, partial, or colliding pull the overall average down to 64%. That gap is the finding, not a flaw to explain away — it says accuracy here is carried by reference quality, and quantifies by how much. See `docs/ARCHITECTURE.md`, "Own benchmark", for the same breakdown at 180 scenarios and with the member feed declared.
+
+An earlier version of this report quoted 100 scenarios (84 solvable, 16 unsolvable) at 64.29%/67.86%. `benchmark.py`'s actual default is 120 scenarios, and running it — including against the commit before this report's fixes — reproduces the numbers above exactly. The 100-scenario figures were a different, non-default invocation that was never labelled as such.
 
 ---
 
-## 4. Specific "Hard 6" Feature Verification
-We executed exact data payloads to prove the engine correctly handles the newly implemented architectural guardrails.
+## 4. Specific Feature Verification
+Exact data payloads exercised against the real engine, not illustrative pseudocode.
 
 ### A. N:M (Many-to-Many) Reconciliation
-**Scenario:** A settlement target of ₹100.00 is composed of exactly three gateway transactions (₹40, ₹35, ₹25).
-**Result:**
+**Scenario:** two settlement batches submitted together — Batch A (₹65.00) and Batch B (₹60.00) — from a shared candidate pool. GW1 (₹40) and GW3 (₹25) both carry a reference token naming *both* settlements — a genuinely ambiguous reference, the kind a real feed produces when a payout spans two settlements. GW3 is the interesting one: arithmetically, Batch A can only reach ₹65.00 by including it (₹40 + ₹25); Batch B can reach its own ₹60.00 target without it at all, from GW4 + GW5. A batch-by-batch (1:N) solve run in either order could let whichever batch ran first claim GW3 for itself. Solved jointly, `/reconcile/joint` sees both targets at once and there is exactly one assignment where *both* clear.
+
+**Result (real output from `orchestrator.reconcile_many`):**
 ```text
-RESULT CLEARED: False (Routed for human review due to lack of linkage anchors)
-MATCHED IDs: ['GW1', 'GW2', 'GW3']
-REASONING: Exact subset-sum match (CP-SAT): 3 transactions sum to 10000 cents (target 10000 cents, diff 0 cents). Withheld from auto-clear: linkage found no reference, cluster or cross-source evidence anywhere in this pool, so the match rests on the arithmetic alone.
+BATCH BATCH_A  target 6500 cents
+  CLEARED: True
+  MATCHED IDs: ['GW1', 'GW3']
+  CONFIDENCE: 0.97
+  REASONING: Joint N:M subset-sum match (CP-SAT, 2 batch(es) solved
+  together): 2 transactions sum to 6500 cents (target 6500 cents,
+  diff 0 cents). Linkage: settlement_id_anchor, structural confidence
+  0.97 over 3 linked candidate(s).
+
+BATCH BATCH_B  target 6000 cents
+  CLEARED: True
+  MATCHED IDs: ['GW4', 'GW5']
+  CONFIDENCE: 0.97
+  REASONING: Joint N:M subset-sum match (CP-SAT, 2 batch(es) solved
+  together): 2 transactions sum to 6000 cents (target 6000 cents,
+  diff 0 cents). Linkage: settlement_id_anchor, structural confidence
+  0.97 over 4 linked candidate(s).
 ```
-✅ *The engine's CP-SAT solver seamlessly handled the N:M constraints and correctly withheld it from auto-clearing because it was unanchored.*
+✅ *The contested transaction (GW3) is resolved by what BOTH targets need simultaneously, not by processing order. Both batches clear, correctly, in one joint CP-SAT model. The joint path reuses linkage, anchored-refund forcing and unevidenced-match withholding from the 1:N path per batch; it does not yet generalise 1:N's tiering or substitutability guard to the joint case (see `docs/ARCHITECTURE.md`, "Where it goes next" equivalent). If a joint group can't satisfy every target at once, `reconcile_many` falls back to the proven 1:N path per batch rather than failing the whole group.*
 
 ### B. Anchorless Math Fallback (Greedy Approximation)
 **Scenario:** A massive dataset where an exact math match does not exist. The target is ₹300.00, but the closest subset sums to ₹299.99.
@@ -107,8 +153,8 @@ REASONING: CP-SAT failed/timed out. Fallback greedy approximation found 3 txns s
 ```
 ✅ *Instead of the solver crashing, the engine gracefully aborted the CP-SAT constraint and fell back to the greedy approximation, producing the closest guess for human review.*
 
-### C. Automatic ERP Write-Back (Live Webhook)
-**Scenario:** A Razorpay webhook `settlement.processed` for ₹97 (Net), ₹2 (Fees), ₹1 (Tax) triggers the pipeline.
+### C. ERP Journal Sync (mock target, not a live webhook)
+**Scenario:** A cleared settlement — ₹97 net, ₹2 fees, ₹1 tax — triggers `erp_sync.push_to_erp`.
 **Result:**
 ```json
 {
@@ -121,7 +167,7 @@ REASONING: CP-SAT failed/timed out. Fallback greedy approximation found 3 txns s
   "memo": "Auto-cleared Settlement setl_live_12345"
 }
 ```
-✅ *The engine dynamically decomposes the fees and posts a perfectly balanced double-entry journal to the ERP system without human intervention.*
+✅ *The engine dynamically decomposes the fees and posts a perfectly balanced double-entry journal.* **What this is not:** `erp_sync.push_to_erp` posts this JSON to `http://localhost:9999/mock-erp/journal` — a local stand-in endpoint, not a real ERP, and nothing in this repo runs a live Razorpay webhook listener. Ingestion is CSV upload today, or the polling `razorpay_source.py` pull (`scripts/pull_razorpay.py`) for a merchant with a live key. An earlier draft of this report showed this example under the heading "Automatic ERP Write-Back (Live Webhook)"; the journal-posting behaviour shown is real and this is genuinely what it produces, but "live webhook" was not — there is no inbound listener anywhere in the codebase.
 
 ### D. Deterministic LLM Fallback (Zero Downtime)
 **Scenario:** The external AI API throws a `503 Service Unavailable` or `429 ResourceExhausted` during header mapping.
@@ -131,13 +177,12 @@ REASONING: CP-SAT failed/timed out. Fallback greedy approximation found 3 txns s
 ---
 
 ## 5. Enterprise Alignment: The AI Finance Controller Standard
-The testing data above proves AmongResolver solves the hardest enterprise constraints for automated financial control:
 
-1. **Data Security & PII Sovereignty:** Traditional AI wrappers send raw financial data to external LLMs, violating enterprise compliance. By using local CP-SAT for math and restricting external AI solely to schema mapping, AmongResolver guarantees **zero leakage of sensitive transaction amounts or PII**.
-2. **Absolute Auditability:** Finance controllers cannot rely on "black box" neural networks for money movement. Every 100% confidence match logged in these tests is backed by a deterministic, human-readable audit trail (`audit.sqlite3`), making it instantly ready for internal compliance teams.
-3. **Real-World Business Impact:** The ability to process 50,000 transactions across 3 disparate systems in 2.9 seconds translates directly to saving **hundreds of hours of manual month-end reconciliation** while reducing human error (and write-offs) to zero.
+1. **Data handling, stated precisely.** The matching core — the money path — is local CP-SAT arithmetic; no transaction data reaches an external model to decide what composes a settlement. Two agents *do* send real data externally when enabled: header mapping (Agent 0b) sends a few sample cell values per column to disambiguate an unfamiliar schema (`llm_header_mapper.py` states this in its own module docstring), and Settlement Q&A (Agent 9) sends the recorded reconciliation result — matched transaction IDs, amounts, cash position, audit trail entries — as grounding for the model's answer (`settlement_qa.py::build_grounding`). Both are off by default (`GEMINI_API_KEY` unset), both fence that data as untrusted content the model must not treat as instructions, and neither can write a decision back into the pipeline. That is a real, defensible design — it is not "zero leakage of sensitive transaction amounts or PII," which an earlier draft of this report claimed and which the code's own comments already contradicted.
+2. **Absolute auditability.** Every decision behind a match is logged to a durable, human-readable audit trail (SQLite, WAL mode — `audit.sqlite3`), not inferred after the fact from a black-box score.
+3. **Real-world throughput.** 50,000 transactions across 3 disparate systems reconcile in roughly 2–3.5 seconds wall clock on the machine this was last measured on (see §2) — the kind of month-end volume that would otherwise be manual reconciliation work, with the exact set proven by transaction ID rather than approximated by count or sum.
 
 ---
 
-## Summary Verdict
-AmongResolver is mathematically and structurally flawless. By combining rigorous entity-resolution linkage with CP-SAT operations research, and confining AI solely to non-critical language tasks, this engine has proven exactly **0 false clears** across hundreds of dynamic simulations. It is fully ready for enterprise-scale deployment.
+## Summary
+AmongResolver auto-clears 0 wrong sets across every benchmark run for this report — batch close, both ReconRiver conditions, and the 120-scenario suite (see `docs/ARCHITECTURE.md`, "Measured results", for the full table). That guarantee holds by defense in depth: four independent guards (an unanchored-pool limit, a substitutability check, an arithmetic tie-out, and an unconditional 0.85 confidence gate) all have to agree before anything clears, which is why it holds even where the raw confidence number itself is measurably not a well-calibrated probability (see `docs/ARCHITECTURE.md`, "Calibration"). It is a system built to admit what it does not know rather than one that has eliminated uncertainty — those are different claims, and the second one would not be true.

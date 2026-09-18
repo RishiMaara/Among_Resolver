@@ -1,51 +1,183 @@
-import logging
+"""
+Agent 10 — ERP write-back.
+
+WHAT THIS ACTUALLY DOES, STATED FIRST
+-------------------------------------
+It POSTs a balanced double-entry journal to an HTTP endpoint. By default
+that endpoint is a local stand-in, not a real ERP: no NetSuite, Tally,
+QuickBooks or SAP instance has ever received one of these. Set
+ERP_JOURNAL_URL to point it somewhere real; the payload shape below is the
+one those systems accept, but "would be accepted" is a design claim and not
+a measurement, and this docstring is the wrong place to blur that.
+
+THE BUG THIS FILE USED TO HAVE
+------------------------------
+An unreachable ERP was caught and reported as success:
+
+    except requests.RequestException:
+        logger.info("Simulated ERP push successful (endpoint unreachable)")
+        position.journal.status = "posted_mock"
+        return True
+
+So a connection refused — the single most likely production failure —
+returned True and marked the journal posted. The books would then show a
+journal as posted that no ERP ever received, and nothing anywhere would say
+otherwise. For a finance tool that is worse than crashing: a crash gets
+investigated, a false success gets reconciled against next month.
+
+Every path now reports what happened:
+
+    posted                  the endpoint accepted it (2xx)
+    rejected_by_erp         it answered, and said no — status and body kept
+    unreachable             the POST failed; NOT posted, and says so
+    no_target_configured    ERP_JOURNAL_URL is unset, so nothing was tried
+    skipped_unbalanced      refused before sending, see below
+
+and `push_to_erp` returns True only for `posted`.
+
+WHY AN UNBALANCED JOURNAL IS REFUSED BEFORE SENDING
+---------------------------------------------------
+A journal whose debits and credits disagree is not a posting, it is a
+corruption, and an ERP that accepts one has a worse bug than this engine.
+Refusing locally keeps the failure where it can be read.
+"""
+
+from __future__ import annotations
+
 import json
+import logging
+import os
+
 import requests
+
 from cash_position import CashPosition
 
 logger = logging.getLogger(__name__)
 
-def push_to_erp(position: CashPosition, erp_url: str = "http://localhost:9999/mock-erp/journal") -> bool:
+# Unset by default, deliberately. A default pointing at localhost made "the
+# ERP is unreachable" indistinguishable from "no ERP was ever configured",
+# and the old code treated both as success.
+ERP_URL_ENV = "ERP_JOURNAL_URL"
+ERP_TOKEN_ENV = "ERP_API_TOKEN"
+
+# The stand-in used by the demo, named so it is obvious in a log line that
+# this is not somebody's general ledger.
+MOCK_ERP_URL = "http://localhost:9999/mock-erp/journal"
+
+TIMEOUT_S = 5.0
+
+
+def configured_url() -> str | None:
+    url = os.environ.get(ERP_URL_ENV, "").strip()
+    return url or None
+
+
+def is_mock_target(url: str | None) -> bool:
+    return url == MOCK_ERP_URL or (url or "").startswith(("http://localhost", "http://127.0.0.1"))
+
+
+def build_payload(position: CashPosition) -> dict:
     """
-    Pushes a balanced JournalEntry to an external ERP system (mocked by default).
-    This function implements Con #5 (ERP Write-Back), converting the finance-ops artifact
-    into a standard NetSuite/QuickBooks JSON payload.
+    The journal as a standard ERP JSON document.
+
+    Amounts are sent as decimal strings, not floats. The engine works in
+    integer paise throughout and `round(cents / 100, 2)` reintroduces binary
+    floating point at the one boundary where a cent must not move — 0.145
+    does not round the way a reader expects, and a general ledger is the
+    last place to discover that. `paise` carries the exact integer alongside
+    it so a receiving system can reconcile without touching the decimal at
+    all.
     """
-    if not position.journal:
-        logger.info(f"ERP Sync [Batch {position.batch_id}]: No journal entry to push.")
-        return False
-        
-    if not position.journal.is_balanced or position.journal.status == "rejected":
-        logger.warning(f"ERP Sync [Batch {position.batch_id}]: Journal is unbalanced or rejected. Skipping ERP push.")
+    journal = position.journal
+    lines = []
+    for line in journal.lines:
+        if line.debit_cents <= 0 and line.credit_cents <= 0:
+            continue
+        lines.append({
+            "account": line.account,
+            "debit": f"{line.debit_cents // 100}.{line.debit_cents % 100:02d}",
+            "credit": f"{line.credit_cents // 100}.{line.credit_cents % 100:02d}",
+            "debit_paise": line.debit_cents,
+            "credit_paise": line.credit_cents,
+            "memo": line.memo,
+        })
+    return {
+        "externalId": journal.entry_id,
+        "date": journal.date_utc.isoformat(),
+        "memo": journal.basis,
+        "lines": lines,
+    }
+
+
+def push_to_erp(position: CashPosition, erp_url: str | None = None) -> bool:
+    """
+    Post the journal, and record honestly which of the five outcomes happened.
+
+    Returns True ONLY when a target accepted it. Every other path sets a
+    status naming the reason and returns False, because a caller that cannot
+    distinguish "posted" from "nothing was reachable" will report the second
+    as the first — which is the bug this function used to have.
+    """
+    batch = position.batch_id
+    journal = position.journal
+
+    if not journal:
+        logger.info("ERP sync [%s]: no journal entry to push.", batch)
         return False
 
-    payload = {
-        "externalId": position.journal.entry_id,
-        "date": position.journal.date_utc.isoformat(),
-        "memo": position.journal.basis,
-        "lines": []
-    }
-    
-    for line in position.journal.lines:
-        if line.debit_cents > 0 or line.credit_cents > 0:
-            payload["lines"].append({
-                "account": line.account,
-                "debit": round(line.debit_cents / 100, 2),
-                "credit": round(line.credit_cents / 100, 2),
-                "memo": line.memo
-            })
-            
+    if not journal.is_balanced or journal.status == "rejected":
+        journal.status = "skipped_unbalanced"
+        logger.warning(
+            "ERP sync [%s]: journal is unbalanced or already rejected — refusing "
+            "to post. An unbalanced journal is a corruption, not a posting.",
+            batch,
+        )
+        return False
+
+    url = erp_url or configured_url()
+    payload = build_payload(position)
+
+    if url is None:
+        journal.status = "no_target_configured"
+        logger.info(
+            "ERP sync [%s]: %s is unset, so nothing was posted. The journal is "
+            "built, balanced and available on the report; set %s to deliver it. "
+            "Payload: %s",
+            batch, ERP_URL_ENV, ERP_URL_ENV, json.dumps(payload),
+        )
+        return False
+
+    headers = {"Content-Type": "application/json"}
+    token = os.environ.get(ERP_TOKEN_ENV, "").strip()
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
     try:
-        # Mocking the HTTP request. We catch connection errors gracefully.
-        response = requests.post(erp_url, json=payload, timeout=2.0)
-        if response.status_code in (200, 201):
-            logger.info(f"ERP Sync [Batch {position.batch_id}]: Successfully pushed journal to ERP.")
-            position.journal.status = "posted"
-            return True
-        else:
-            logger.error(f"ERP Sync [Batch {position.batch_id}]: ERP returned status {response.status_code}")
-            return False
-    except requests.RequestException:
-        logger.info(f"ERP Sync [Batch {position.batch_id}]: Simulated ERP push successful (ERP endpoint {erp_url} unreachable). Payload: {json.dumps(payload)}")
-        position.journal.status = "posted_mock"
+        response = requests.post(url, json=payload, headers=headers, timeout=TIMEOUT_S)
+    except requests.RequestException as exc:
+        # NOT success. This is the line the old version got wrong.
+        journal.status = "unreachable"
+        logger.error(
+            "ERP sync [%s]: POST to %s failed (%s: %s). The journal was NOT "
+            "posted. Payload retained: %s",
+            batch, url, type(exc).__name__, exc, json.dumps(payload),
+        )
+        return False
+
+    if response.status_code in (200, 201, 202):
+        journal.status = "posted_to_mock" if is_mock_target(url) else "posted"
+        logger.info(
+            "ERP sync [%s]: journal accepted by %s (%d).%s",
+            batch, url, response.status_code,
+            " This is the local stand-in, not a general ledger."
+            if is_mock_target(url) else "",
+        )
         return True
+
+    journal.status = "rejected_by_erp"
+    body = (response.text or "")[:300]
+    logger.error(
+        "ERP sync [%s]: %s rejected the journal with %d: %s",
+        batch, url, response.status_code, body,
+    )
+    return False

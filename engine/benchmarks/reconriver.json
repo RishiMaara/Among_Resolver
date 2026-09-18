@@ -1,16 +1,16 @@
 {
   "anchored": {
     "batches": 37,
-    "auto_cleared_correct": 35,
-    "auto_cleared_correct_pct": 94.59,
+    "auto_cleared_correct": 34,
+    "auto_cleared_correct_pct": 91.89,
     "exact_set_identified": 35,
     "exact_set_identified_pct": 94.59,
     "false_clears": 0,
     "false_clear_pct": 0.0,
-    "mean_precision": 0.9459,
-    "mean_recall": 0.9459,
-    "mean_latency_s": 0.493,
-    "max_latency_s": 4.941
+    "mean_precision": 0.946,
+    "mean_recall": 0.973,
+    "mean_latency_s": 0.458,
+    "max_latency_s": 6.755
   },
   "stripped": {
     "batches": 37,
@@ -20,9 +20,9 @@
     "exact_set_identified_pct": 21.62,
     "false_clears": 0,
     "false_clear_pct": 0.0,
-    "mean_precision": 0.2599,
-    "mean_recall": 0.2585,
-    "mean_latency_s": 1.121,
-    "max_latency_s": 4.775
+    "mean_precision": 0.2628,
+    "mean_recall": 0.3211,
+    "mean_latency_s": 1.207,
+    "max_latency_s": 6.561
   }
 }

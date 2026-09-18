@@ -18,11 +18,12 @@ BASE_TIME = datetime(2026, 8, 20, tzinfo=timezone.utc)
 SETTLED_AT = BASE_TIME + timedelta(hours=72)
 
 
-def make_txn(txn_id: str, amount_cents: int, hours_offset: float = 24.0) -> NormalizedTxn:
+def make_txn(txn_id: str, amount_cents: int, hours_offset: float = 24.0,
+             ref_id_canonical: str | None = None) -> NormalizedTxn:
     return NormalizedTxn(
         source=SourceType.GATEWAY,
         source_txn_id=txn_id,
-        ref_id_canonical=f"REF{txn_id}",
+        ref_id_canonical=ref_id_canonical if ref_id_canonical is not None else f"REF{txn_id}",
         amount_cents=amount_cents,
         currency="INR",
         timestamp_utc=BASE_TIME + timedelta(hours=hours_offset),
@@ -51,11 +52,17 @@ class TestHappyPath:
     """Exact subset-sum match, no exceptions."""
 
     def test_exact_match_clears(self):
-        # true subset: T1 + T2 + T3 = 30000 cents (Rs 300)
+        # true subset: T1 + T2 + T3 = 30000 cents (Rs 300). Anchored to the
+        # batch id (BATCHHAPPY canonically) so this is a genuinely evidenced
+        # happy path, not just an arithmetic coincidence — an unanchored
+        # exact sum over an unevidenced pool is exactly what the confidence
+        # gate now correctly withholds (see orchestrator._apply_confidence_gate),
+        # so a "happy path" test has to give the engine real evidence to be
+        # a happy path at all.
         true_subset = [
-            make_txn("T1", 10000),
-            make_txn("T2", 12000),
-            make_txn("T3", 8000),
+            make_txn("T1", 10000, ref_id_canonical="BATCH_HAPPY-T1"),
+            make_txn("T2", 12000, ref_id_canonical="BATCH_HAPPY-T2"),
+            make_txn("T3", 8000, ref_id_canonical="BATCH_HAPPY-T3"),
         ]
         noise = [make_txn("N1", 5000), make_txn("N2", 7500)]
 
@@ -86,7 +93,15 @@ class TestHappyPath:
         deliberately holds every uncleared entry in the window, most of
         which belong to other settlements.
         """
-        true_subset = [make_txn("T1", 10000), make_txn("T2", 12000), make_txn("T3", 8000)]
+        # Anchored to the batch id, same reasoning as test_exact_match_clears
+        # above — this test is about exception routing on a cleared match,
+        # which requires the match to actually clear, which requires real
+        # evidence now that the confidence gate applies regardless of pool size.
+        true_subset = [
+            make_txn("T1", 10000, ref_id_canonical="BATCH_NO_RESIDUAL_EXC-T1"),
+            make_txn("T2", 12000, ref_id_canonical="BATCH_NO_RESIDUAL_EXC-T2"),
+            make_txn("T3", 8000, ref_id_canonical="BATCH_NO_RESIDUAL_EXC-T3"),
+        ]
         # a large residual pool that is NOT part of this settlement
         noise = [make_txn(f"N{i}", 3300 + i) for i in range(25)]
 

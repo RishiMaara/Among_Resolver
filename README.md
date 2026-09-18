@@ -1,6 +1,20 @@
 # AmongResolver
 
-[![CI](https://github.com/RishiMaara/Among_Resolver/actions/workflows/ci.yml/badge.svg)](https://github.com/RishiMaara/Among_Resolver/actions/workflows/ci.yml)
+**CI:** [three jobs — engine · pytest, web · vitest/eslint/tsc, engine · pylint/bandit](https://github.com/RishiMaara/AmongResolver/actions/workflows/ci.yml)
+
+<!-- No badge image, deliberately. This README previously carried
+     ![CI](.../RishiMaara/Among_Resolver/actions/workflows/ci.yml/badge.svg)
+     — the SUBMITTED repository, not this one. It rendered red here while
+     every job in this repository passed, because it was reporting a
+     different repository's result: the submitted entry is frozen and
+     still carries a Prettier error in src/components/wordmark.tsx that
+     fails its web job. Nothing fixable here could ever turn that badge
+     green.
+
+     Pointing it at this repository instead does not work either: this
+     one is private, and GitHub proxies README images anonymously, so a
+     private repo's badge.svg comes back 404 and renders broken. A link
+     to the Actions tab is the option that tells the truth. -->
 
 A multi-source settlement reconciliation engine. Built for the Razorpay AI
 Buildathon, Track 04 — AI Finance Controller.
@@ -25,8 +39,15 @@ the same rupee amount. Measured across 120 scenarios, using subset-sum to find
 the members scored **0.0% accuracy**.
 
 You can run that yourself — `AMONGRESOLVER_NO_LINKAGE=1 python
-scripts/benchmark.py`, about forty seconds. If you are wondering why a
-language model is not doing this instead, that question has its own page:
+scripts/benchmark.py`, about forty seconds.
+
+This is an AI system that had to decide where AI belongs. Two agents use an
+LLM — schema mapping and settlement Q&A, both language problems. Twelve do
+not, because "which payments compose this settlement" is a money problem with
+millions of arithmetically valid answers, and the number above is what
+happens when you let a search pick one anyway: 0.0%. The judgment call is the
+contribution, not a limitation to apologize for. The full argument, including
+what would change our mind, is its own page:
 **[Why not just an LLM?](docs/WHY_NOT_AN_LLM.md)**
 
 So the engine reframes the problem: **reconciliation is entity resolution
@@ -50,12 +71,12 @@ For a deeper dive into how this engine stacks up against industry standards, rea
 
 ## Core Capabilities
 
-1. **N:M (Many-to-Many) Reconciliation:** Beyond simple 1:N subset matching, the engine handles complex N:M scenarios using advanced CP-SAT constraints.
+1. **N:M (Many-to-Many) Reconciliation:** `POST /reconcile/joint` solves several settlement targets in one CP-SAT model, so a transaction contested between two batches is resolved by what the *other* batch needs, not by whichever batch happened to run first. It reuses the same evidence-based safety the 1:N path has — linkage narrows each batch's own candidates, an anchored refund is still forced, an unevidenced arithmetic match is still withheld — and falls back to running the proven 1:N path per batch if the joint model can't satisfy every target at once, so N:M is never worse than calling the 1:N path on each batch separately. See `engine/src/subset_sum_nm.py` and `orchestrator.reconcile_many`.
 2. **Anchorless Math Fallbacks:** If the pool is too massive for exact subset-sum, the engine gracefully degrades to a custom greedy approximation solver (`approximate_subset_sum_greedy`) rather than timing out.
-3. **Automatic ERP Write-Back:** Live two-way integration. The engine listens for Razorpay webhooks, reconciles, and directly syncs balanced double-entry journal postings back to your ERP.
+3. **ERP Journal Sync (no real ERP has received one):** On a genuine clear, the engine builds a balanced double-entry journal and POSTs it to `ERP_JOURNAL_URL`. Unset by default, and unset means **nothing is posted and the journal says `no_target_configured`** — it does not quietly succeed. This module previously caught an unreachable endpoint and returned success with the journal marked `posted_mock`, so a connection refused left the books showing a journal as posted that no ERP ever received; a crash gets investigated, a false success gets reconciled against next month. Every outcome is now distinct (`posted`, `posted_to_mock`, `rejected_by_erp`, `unreachable`, `no_target_configured`, `skipped_unbalanced`) and only the first two return true. The payload is the shape NetSuite/Tally/QuickBooks accept, with exact integer paise carried alongside each decimal — but "would be accepted" is a design claim, not a measurement. Ingestion is **settlements pushed, transactions pulled**: `POST /webhooks/razorpay` receives signed `settlement.processed` events (HMAC-SHA256 over the raw body, constant-time compare, replay-suppressed, 503 rather than accepting an unsigned delivery), while the payments a settlement decomposes into still arrive by CSV upload or the `razorpay_source.py` pull. So a verified delivery queues a settlement for reconciliation rather than reconciling it — the transaction feed is what reconciliation needs and the webhook does not carry it.
 4. **Dynamic Linkage Weights:** Uses dynamic machine-learned temporal clustering and cross-feed correspondence to build candidate evidence, replacing brittle hardcoded heuristics.
 5. **Deterministic LLM Fallbacks:** When external LLM APIs fail (latency or 503s), the engine seamlessly falls back to local deterministic string similarity (`difflib`) to keep the pipeline moving.
-6. **Fuzzy AML Screening:** Full compliance rulebook enforcement, including fuzzy name-matching against the UN Consolidated Sanctions List.
+6. **AML Screening:** Compliance rulebook enforcement against the UN Consolidated Sanctions List — exact match after normalisation (no fuzzy, transliteration or DOB matching; `docs/ARCHITECTURE.md` states this alongside the caveat it implies). Without a fetched list it screens four illustrative names and says so loudly (see "Running it").
 
 ---
 
@@ -63,30 +84,52 @@ For a deeper dive into how this engine stacks up against industry standards, rea
 
 | | |
 |---|---|
-| **Batch close, 738 records / 60 settlements** | **95.0%** match rate, **0** false clears, 0 false alarms, 252 records/sec — `scripts/close_batch.py` |
-| 50,000-record stress run | exact 55/55 set by ID, precision **1.0**, recall **1.0**, **2.4–3.0s** to reconcile (3.2–3.9s including load and parse) |
-| ReconRiver corpus (references intact) | **94.59%** auto-cleared and correct |
+| **Batch close, 738 records / 60 settlements** | **95.0%** match rate, **0** false clears, 0 false alarms, ~400 records/sec — `scripts/close_batch.py` |
+| 50,000-record stress run | exact 55/55 set by ID, precision **1.0**, recall **1.0**, **2.0–2.3s** to reconcile (3.0–3.5s including load and parse) |
+| ReconRiver corpus (references intact) | **94.59%** exact set identified, 91.89% auto-cleared and correct |
 | ReconRiver corpus (references stripped) | 21.62% — the rest declined, none wrong |
-| Own benchmark, 120 scenarios (`benchmark.py` default) | 62% auto-clear, 82% truth identified |
+| Own benchmark, 120 scenarios (`benchmark.py` default) | 62% auto-clear, 65% truth identified, 0 false clears |
 | **False clears, everywhere above** | **0** |
-| Confidence calibration, 180 scenarios (`calibration.py` default) | ECE **0.0863** · MCE 0.20 · Brier 0.0513 |
-| Tests | **335** backend · **95** frontend |
+| Confidence calibration, 180 scenarios, in-sample (`calibration.py` default) | ECE **0.1567** · MCE 0.3087 · Brier 0.1808 — not a good number; see below |
+| Confidence calibration, ReconRiver, out-of-sample (`calibration_out_of_sample.py`) | ECE 0.0766 · MCE 0.46 · Brier 0.0616, 74 predictions |
+| Tests | **401** backend · **96** frontend |
 
-Every figure in that table is re-measured by `python scripts/generate_benchmarks.py`,
-which writes [`docs/benchmarks/latest.json`](docs/benchmarks/latest.json) stamped
-with the commit and time it ran. It has no fallback values: if it cannot read a
-figure out of a tool's output it fails and says which one, rather than recording
-a plausible-looking constant. The two timings above are the figures that move —
-they are wall-clock on one laptop under whatever else it is doing, and five runs
-spanned 2.37-2.91s to reconcile. The band is the observed spread, not a target;
-`latest.json` carries whatever the last run actually measured. The rest are deterministic and should not drift; a test
-fails if the test count here stops matching what pytest collects.
+Every figure in that table except the two calibration rows is re-measured by
+`python scripts/generate_benchmarks.py`, which writes
+[`docs/benchmarks/latest.json`](docs/benchmarks/latest.json) stamped with the
+commit and time it ran; it has no fallback values — if it cannot read a figure
+out of a tool's output it fails and says which one, rather than recording a
+plausible-looking constant. The two timing figures are wall-clock on whatever
+machine ran it, under whatever else it was doing at the time; four runs
+spanned 2.0–2.3s to reconcile. The band is the observed spread, not a target.
+The rest should be deterministic and not drift on their own; a test fails if
+the test count here stops matching what pytest collects.
+
+The own-benchmark truth-identified figure and both calibration rows are lower
+than earlier versions of this document claimed (82% and ECE 0.0863). Re-run
+`calibration.py` or `benchmark.py` yourself — the 64% and the 0.1567 are what
+this commit actually produces, confirmed by running the identical scripts
+against the last commit before this pass of fixes (`70cc42a`) and getting the
+same numbers back. So this was not a regression introduced by anything below;
+it is a number that was true the whole time and had drifted out of the docs,
+most likely from before `ref_missing` / `ref_truncated` / `ref_partial` —
+the three scenario families where references degrade — were added to the
+benchmark. Truth-identification on the six families with a clean reference is
+still 100%; it is those three specific degraded-reference families, plus
+`ref_collision`, that pull the average down. See "What it does not do" for
+what that means for the confidence number specifically.
 
 A **false clear** — confidently clearing the wrong set — is the failure that
 costs money. Declining to clear costs a reviewer minutes. The engine is tuned
-for that asymmetry throughout, and the auto-clear gate sits at 0.85 because
-that is where calibration measures reliability beginning: every prediction at
-or above it was correct in all **103** observations.
+for that asymmetry throughout: **0 false clears, in every benchmark in the
+table above.** That guarantee holds by defense in depth, not because the raw
+confidence number is a trustworthy probability on its own — measured
+in-sample, it is not (see the calibration row above and "What it does not do"
+below). Auto-clearing requires the 0.85 confidence gate **and** independent
+evidence/ambiguity checks to agree; a confident-but-wrong proposal still gets
+withheld for human review rather than cleared. That is what has actually kept
+false clears at zero, in-sample and out, and it is a claim about the system,
+not about the number alone.
 
 Every figure above is reproducible. `engine/benchmarks/calibration.json`
 records the commit, seed and scenario count each was measured at, and the
@@ -147,8 +190,9 @@ src/                       React frontend
 
 engine/        Python engine
   src/                       one module per agent — see docs/ARCHITECTURE.md
+  src/api/                   the HTTP surface: models, presentation, route groups
   scripts/                   benchmarks, calibration, stress runs, data fetch
-  tests/                     335 tests
+  tests/                     401 tests
   benchmarks/                measurement snapshots
   data/                      Sanctions lists, test ledgers
 design/                    Design canvases the UI is ported from
@@ -177,6 +221,22 @@ trail a reviewer reads afterwards.
   21.62%. Both conditions produced **0 false clears**. That gap is the honest
   answer to how much of the accuracy is the engine and how much is clean data,
   and `scripts/run_reconriver.py` runs both conditions.
+- **The confidence number is reliable at and above the gate — measured, not
+  assumed.** Every prediction at or
+  above 0.85 was the exact true set: 103 of 103 in-sample
+  (`calibration.py`), 42 of 42 out-of-sample on ReconRiver
+  (`calibration_out_of_sample.py`). It used to be 57.8% right in the
+  0.85–0.93 band in-sample and 4-of-46 wrong above the gate out-of-sample;
+  the cause was the fuzzy recovery pass reporting its own selection
+  threshold, 0.90, as though it were a confidence — on bundles of ~63
+  transactions that were the exact right set 0% of the time. Below the gate
+  it is calibrated in-sample (says 0.15, right 13.9%) but overconfident
+  out-of-sample: the low band says 0.14 and is right 3.1% of the time (n=32).
+  That band never clears anything — it sits far below 0.85 — so the cost is a
+  reviewer seeing a slightly hopeful number on a proposal already sent to
+  them, not a payment released. In-sample no bucket is overconfident; the last
+  one that was, the ambiguous-match constant claiming 0.54 against 36.4%
+  observed, is now set at its measured 0.36.
 - **Three agents use an LLM** — header mapping, fuzzy matching, and Q&A. All
   three propose; none decides. No model sits on the money path.
 
@@ -211,11 +271,23 @@ Razorpay produces test settlements on its own schedule — days, not minutes. So
 identical code path, and prints on every run that the values are invented and
 a live account has not agreed to them yet.
 
-**N:M reconciliation is unattempted.** Where several ledger entries and
-several bank credits net off against each other, `reconcile_batch`'s model —
-one target, one subset — does not describe the problem. Those cases are
-excluded from the evaluation rather than forced through, and attempting them
-means a different formulation, not a bigger solver.
+**N:M reconciliation is built, and reuses the 1:N safety machinery rather than
+reimplementing it.** `POST /reconcile/joint` and `orchestrator.reconcile_many`
+solve several settlement targets in one CP-SAT model with a shared candidate
+pool, so a transaction contested between two batches is resolved by what both
+targets need at once, not by whichever batch's solve ran first. Linkage,
+anchored-refund forcing, and the unevidenced-match withholding are reused
+exactly as the 1:N path defines them, per batch, before the joint solve runs.
+What is deliberately **not** yet generalised to the joint case: the 1:N path's
+tiering (progressively widening the candidate pool) and its substitutability
+guard (flagging a matched transaction that a same-amount transaction from
+another feed could equally have satisfied) are both materially different
+problems once several targets share a pool, and neither has been extended
+there. If the single joint model can't satisfy every target in a group at
+once, `reconcile_many` falls back to running the proven 1:N path independently
+per batch, so N:M is never a worse answer than calling the 1:N path on each
+batch separately — it can only do better when a shared claim is actually
+resolvable by the other target's needs.
 
 **Linkage weights are reasoned, not learned.** 0.55 / 0.25 / 0.15 / 0.10 come
 from how forgeable each signal is, which is defensible and is not the same as
@@ -223,10 +295,28 @@ fitted. There is enough labelled data in the corpora to fit them; the reason
 not to yet is that a weight learned on synthetic data would look more
 authoritative than it is.
 
-**Calibration has no out-of-sample validation.** ECE 0.0863 is measured
-against the same benchmark family the engine was tuned on. It is a real
-measurement of a real property, and it is in-sample. A held-out corpus would
-say whether the 0.85 gate generalises or is fitted to scenarios we wrote.
+**Calibration has out-of-sample validation, and the gate now holds in both.**
+`calibration_out_of_sample.py` runs the same confidence/outcome scoring
+against ReconRiver — a corpus the gate was never tuned against. Every
+prediction at or above 0.85 was the exact true set there (42 of 42), as it
+was in-sample (103 of 103). It previously was not: 4 of 46 above the gate
+were wrong out-of-sample, and the in-sample 0.85–0.93 band was right 57.8%
+of the time.
+
+What changed was not the gate but a number feeding it. The fuzzy recovery
+pass reported `fuzz_cfg.confidence_threshold` — the score above which a
+fuzzy *pair* is worth acting on — as the confidence of the recovered *set*.
+That constant is 0.90, above the gate, and it was being attached to bundles
+of ~63 transactions that were the exact right set 0% of the time over 167
+observations. Those are now reported at 0.05.
+
+One number moved the wrong way and is reported rather than dropped:
+out-of-sample ECE rose from 0.0766 to 0.1037 while in-sample fell from
+0.1567 to 0.0544, and out-of-sample MCE — the worst single bucket — improved
+from 0.46 to 0.13. Removing a block of confident-and-wrong
+predictions concentrates the residual error in the low band, where the
+engine is now underconfident — the safe direction, and the direction that
+costs review time rather than money.
 
 **Fees assume one rate card per batch.** Real Indian settlements mix payment
 methods at different rates — UPI near zero, cards around 2%, netbanking often

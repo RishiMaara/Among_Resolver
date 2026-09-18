@@ -27,8 +27,9 @@ that name the settlement identify themselves — and the guess was not free:
   * It halted on the first ambiguous chunk, ending the search before the
     chunk holding the real members was ever examined.
 
-  * It was slow. Measured on the same dataset: 25-72s chunking, versus 5.3s
-    once linkage identifies the 55 members directly out of 50,000.
+  * It was slow. Measured on the same dataset: 25-72s chunking, versus
+    2.4-3.0s once linkage identifies the 55 members directly out of 50,000
+    (the exact figure from the last run is in benchmarks/latest.json).
 
   * Its ranking heuristic — chunk end-time nearest the settlement date — had
     no evidence behind it.

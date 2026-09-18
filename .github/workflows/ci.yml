@@ -28,7 +28,7 @@ jobs:
           # interpreter would test a dependency set nobody actually uses.
           python-version: "3.14"
           cache: pip
-      - run: pip install -r engine/requirements.txt
+      - run: pip install -r engine/requirements-dev.txt
 
       # The sanctions list is gitignored - a committed copy is stale a week
       # later, and stale screening is the failure that matters. So CI fetches

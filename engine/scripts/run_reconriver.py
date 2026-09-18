@@ -122,8 +122,18 @@ DROPPED_ROWS: dict[str, int] = {}
 # Tighter than the default 15s+3x8s so 56 reconciliations stay tractable.
 # Reported alongside the results because a solver budget is part of the
 # measurement, not a detail.
+#
+# num_search_workers=1 for the same reason benchmark.py pins it (see that
+# file's comment on the point): CP-SAT's parallel portfolio is not
+# deterministic, and this harness backs published figures (docs/ARCHITECTURE.md's
+# out-of-sample calibration table, README's ReconRiver row). A figure that
+# cannot be reproduced by re-running the script that generated it is not a
+# figure worth quoting. This file ran without the pin for a while without
+# visibly drifting, which is exactly the dangerous case -- it means the
+# figures were never actually verified reproducible, only lucky so far.
 EVAL_CONFIG = SubsetSumConfig(tolerance_cents=5, solver_time_limit_s=6.0,
-                              ambiguity_probe_limit=2, probe_time_limit_s=3.0)
+                              ambiguity_probe_limit=2, probe_time_limit_s=3.0,
+                              num_search_workers=1)
 
 # failure-recovery and month-end-close carry ~1,300 and ~1,500 settlements
 # respectively — about 2,850 batches across the four scenarios, and 5,700

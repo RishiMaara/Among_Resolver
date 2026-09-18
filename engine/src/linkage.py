@@ -504,7 +504,77 @@ def build_candidate_links(
     )
 
 
-def link_confidence(result: LinkageResult, matched_ids: list[str]) -> float:
+def confidence_band(anchored: set[str], matched_keys: set[str],
+                    mean_link: float) -> str:
+    """
+    WHICH claim the engine is making about a matched set — named, so it can
+    be measured.
+
+    These used to be five inline literals inside link_confidence. A number
+    written beside a comment saying "observed 0.55" cannot be checked by
+    anything, and when the observation moves the literal does not. Naming the
+    band lets scripts/calibration.py bucket outcomes BY BAND and report what
+    each one is actually worth, which is how the values below are now set.
+    """
+    if anchored and matched_keys <= anchored:
+        return "fully_anchored"
+    if anchored and anchored <= matched_keys:
+        # Partially anchored, but the match USED EVERY ANCHOR AVAILABLE.
+        #
+        # "One record names the settlement and the match includes it" is a
+        # different claim from "three records name it and the match includes
+        # one". In the first the unanchored members are the rest of the
+        # settlement; in the second, two pieces of evidence were ignored.
+        return "anchors_all_used"
+    if anchored & matched_keys:
+        return "anchors_ignored"
+    if mean_link >= 0.4:
+        return "clustered"
+    return "arithmetic_only"
+
+
+# Set at or BELOW measured accuracy, because the two directions of error are
+# not symmetric: overconfidence tells a reviewer to skip a batch that was
+# wrong, underconfidence only wastes their time.
+#
+# Measured per band by instrumenting confidence_band across both corpora,
+# counting a band right when the matched set is EXACTLY the true set:
+#
+#   band               benchmark (180)      edge sweep (962)
+#   fully_anchored     n=135  obs 0.719     n=829  obs 0.837
+#   anchors_all_used   n=15   obs 1.000     n=0    no data
+#   anchors_ignored    n=0    no data       n=0    no data
+#   clustered          n=0    no data       n=0    no data
+#   arithmetic_only    n=30   obs 0.200     n=100  obs 0.000
+#
+# READ THAT TABLE CAREFULLY BEFORE CHANGING A VALUE. Two things in it are
+# easy to get wrong, and both were got wrong once already.
+#
+# First: these are NOT the confidence the engine reports. The reported figure
+# is min(arithmetic confidence, this), so a fully-anchored set whose
+# arithmetic is ambiguous is reported at the ambiguity value, not at 0.95.
+# Calibrating this table directly against "was the set right" therefore
+# measures an input, not the output a human reads — which is why
+# fully_anchored can observe 0.719 here while every prediction the engine
+# actually published at or above the 0.85 gate was correct (103 of 103
+# in-sample, 42 of 42 out-of-sample).
+#
+# Second: `anchors_ignored` and `clustered` never fired in either corpus.
+# There is no measurement behind 0.42 and 0.54, and there is no measurement
+# behind any replacement either. They are left at their reasoned values and
+# labelled unmeasured rather than given fabricated ones — a number invented
+# to look calibrated is worse than a number honestly marked as a guess.
+CONFIDENCE_BANDS = {
+    "fully_anchored": 0.95,
+    "anchors_all_used": 0.88,
+    "anchors_ignored": 0.42,      # UNMEASURED — never fired in either corpus
+    "clustered": 0.54,            # UNMEASURED — never fired in either corpus
+    "arithmetic_only": 0.19,      # benchmark 0.200; the edge corpus, which is
+                                  # 26% deliberately unrecoverable, says 0.000
+}
+
+
+def link_confidence(result: LinkageResult, matched_keys: set[str]) -> float:
     """
     Confidence that the matched set is the true set, given how it was found.
 
@@ -514,18 +584,28 @@ def link_confidence(result: LinkageResult, matched_ids: list[str]) -> float:
     over a narrowed pool is strong evidence, never proof, and the calibration
     report in the benchmark is what justifies these numbers rather than the
     numbers being asserted here.
+
+    Takes `txn_key` values, not bare `source_txn_id`s — see the `txn_key`
+    docstring for why. This function used to key on the bare id (`by_id =
+    {c.txn.source_txn_id: c ...}`, `anchored = set(result.anchor_cluster_ids)`,
+    both bare-id collections), which is exactly the confidence number a
+    cross-feed id collision would inflate, and inflating confidence is the
+    direction that costs money. Callers must resolve their matched
+    transactions to keys (`{txn_key(t) for t in ...}`) before calling this.
     """
-    if not matched_ids:
+    if not matched_keys:
         return 0.0
 
-    matched = set(matched_ids)
-    by_id = {c.txn.source_txn_id: c for c in result.scored}
-    scores = [by_id[m].score for m in matched if m in by_id]
+    by_key = {txn_key(c.txn): c for c in result.scored}
+    scores = [by_key[k].score for k in matched_keys if k in by_key]
     if not scores:
         return 0.35
 
     mean_link = sum(scores) / len(scores)
-    anchored = set(result.anchor_cluster_ids)
+    # anchor_keys, not anchor_cluster_ids: the latter is bare ids kept for
+    # human-readable output (audit lines, reports), and comparing bare ids
+    # here is the collision bug this function's docstring now warns about.
+    anchored = result.anchor_keys
 
     # These are CALIBRATED against measured outcomes, not chosen by feel.
     # scripts/calibration.py buckets every prediction by the confidence
@@ -549,28 +629,7 @@ def link_confidence(result: LinkageResult, matched_ids: list[str]) -> float:
     # Values are set at or slightly below observed accuracy, because the two
     # directions of error are not symmetric. Overconfidence tells a reviewer
     # to skip a batch that was wrong; underconfidence wastes their time.
-    if anchored and matched <= anchored:
-        base = 0.95            # every member names the settlement — observed 1.00
-    elif anchored and anchored <= matched:
-        # Partially anchored, but the match USED EVERY ANCHOR AVAILABLE.
-        #
-        # This was folded into the 0.42 band and it does not belong there.
-        # "One record names the settlement and the match includes it" is a
-        # different claim from "three records name it and the match includes
-        # one". In the first, the unanchored members are the rest of the
-        # settlement; in the second, two pieces of evidence were ignored.
-        #
-        # Measured over the benchmark's withheld-but-correct cases: matches
-        # that used all available anchors were right 10 times out of 10, while
-        # matches that left anchors unused were wrong both times. The value
-        # below is set from calibration.py, not from that small sample.
-        base = 0.88
-    elif anchored & matched:
-        base = 0.42            # partial AND anchors ignored — observed 0.43
-    elif mean_link >= 0.4:
-        base = 0.54            # clustered but unanchored — observed 0.55
-    else:
-        base = 0.19            # arithmetic only — observed 0.20
+    base = CONFIDENCE_BANDS[confidence_band(anchored, matched_keys, mean_link)]
 
     # A narrowed pool makes an exact sum far less likely to be coincidence.
     if result.pool_after <= 25:

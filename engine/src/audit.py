@@ -6,16 +6,35 @@ it's explicitly called out in the track's judging bar.
 
 STORAGE TIERS
 -------------
-The audit trail is written to the first available backend:
+The audit trail is written to the first available backend — four tiers, not
+three; this list used to stop at three and go stale the day SQLite was added
+below Redis, which is exactly the kind of drift the rest of this project
+tries not to have:
 
-  1. Redis (primary)
+  1. Redis (first choice, IF configured — see the note below)
      Sub-10ms writes, cross-process, survives restarts if Redis is
-     persistent. This is the production path.
+     persistent. The right choice for a multi-worker deployment because it
+     is shared across processes without a shared filesystem.
 
-  2. JSON Lines files, ONE PER BATCH (secondary)
+     In practice: nothing in this repo starts a Redis server, so unless one
+     is separately run and reachable at localhost:6379, this tier is always
+     skipped and tier 2 is what actually serves every run — including every
+     run a reviewer does from a fresh clone. `storage_status()` reports
+     which backend is actually in use, so this is never a guess.
+
+  2. SQLite, WAL mode (durable, single-host — this is the tier that runs)
+     Transactional, needs no server to install or keep healthy, ships with
+     Python, and survives a process restart or an OS reboot the way tier 3
+     (below) cannot. WAL so a reader (the flow canvas polling /audit) never
+     blocks the writer (the reconciliation still running). Defaults to
+     `data/audit.sqlite3` inside the engine directory rather than the
+     system temp dir, so "where is my audit trail" has an answer that does
+     not depend on the OS's cleanup policy; `AUDIT_DB_PATH` overrides it.
+
+  3. JSON Lines files, ONE PER BATCH (secondary fallback)
      Newline-delimited JSON under a per-user directory in the system temp
-     directory. Survives across gunicorn workers and across process restarts
-     within the same OS session. Each log_decision call appends exactly one
+     directory. Reached only if SQLite could not be opened (e.g. a
+     read-only filesystem). Each log_decision call appends exactly one
      line; `open(..., "a")` appends are atomic at the OS level on both Linux
      (O_APPEND write syscall) and Windows, so concurrent writers do not
      corrupt each other's lines. An RLock protects the in-process handle
@@ -26,27 +45,28 @@ The audit trail is written to the first available backend:
      12 MB / 60,289 lines and 4.59 SECONDS per read after only a few runs,
      paid on EVERY API response because _format_report calls it. Per-batch
      files make a read O(that batch), and clear_trail a delete instead of a
-     read-filter-rewrite of everything.
+     read-filter-rewrite of everything. Its one genuine limitation — it does
+     not survive a host reboot or a /tmp wipe — is why tier 2 exists.
 
-  3. In-memory list (tertiary, last resort)
+  4. In-memory list (last resort)
      Process-local. A reconciliation processed by worker A is invisible to
      worker B. The FIRST write to this backend logs a WARNING so an operator
      knows the trail is incomplete, rather than the old behaviour of silently
-     accumulating entries that silently vanish on the next request.
+     accumulating entries that silently vanish on the next request. Reached
+     only if the engine directory itself is not writable.
 
-WHY A FILE BEATS ANOTHER IN-MEMORY STORE
------------------------------------------
+WHY A FILE (OR SQLITE) BEATS AN IN-MEMORY STORE
+------------------------------------------------
 The original in-memory list failed in any multi-process deployment (gunicorn
 --workers N, uvicorn --workers N). The audit entries existed in one worker's
 heap and were invisible to every other worker and to any process started
 after the first. A `get_audit_trail` call served by the "wrong" worker
 returned an empty list for a batch that had been fully reconciled.
 
-A file in /tmp is shared across all workers on the same host. It adds no
-infrastructure dependency and works in a bare demo environment just as well
-as the old list did, while being visible across processes. Its one genuine
-limitation — it does not survive a host reboot or a /tmp wipe — is clearly
-documented. Redis remains the production path.
+A file, or SQLite, on local disk is shared across all workers on the same
+host. Both add no infrastructure dependency and work in a bare demo
+environment just as well as the old list did, while being visible across
+processes.
 """
 
 from __future__ import annotations
@@ -55,6 +75,7 @@ import json
 import logging
 import os
 import sqlite3
+import time
 import tempfile
 import atexit
 import re
@@ -72,34 +93,80 @@ logger = logging.getLogger(__name__)
 _REDIS_CLIENT = None   # None = not tried; False = tried and unavailable; else = client
 
 
+# Environment variables that can carry a full connection URL. REDIS_URL is
+# the conventional name; KV_URL is what Vercel's Upstash integration injects,
+# so a project that connected the integration works without renaming
+# anything.
+REDIS_URL_ENV_VARS = ("REDIS_URL", "KV_URL")
+
+# How long a remote Redis gets before this process stops asking. Only applies
+# when a URL is configured: that is an explicit statement that shared state is
+# wanted, so one failed ping on a cold start must not silently downgrade a
+# serverless instance to private state for its whole lifetime — which is the
+# exact drift a shared store exists to prevent.
+_REDIS_RETRY_AFTER_S = 30.0
+_REDIS_RETRY_AT = 0.0
+
+
+def redis_url() -> str:
+    for var in REDIS_URL_ENV_VARS:
+        value = os.environ.get(var, "").strip()
+        if value:
+            return value
+    return ""
+
+
 def _get_redis():
-    global _REDIS_CLIENT
+    global _REDIS_CLIENT, _REDIS_RETRY_AT
+    url = redis_url()
+    if _REDIS_CLIENT is False and url and time.monotonic() >= _REDIS_RETRY_AT:
+        _REDIS_CLIENT = None  # a configured store earns another attempt
     if _REDIS_CLIENT is None:
         try:
             import redis
-            # Short timeouts, because this runs on the first audit write of the
-            # process and BLOCKS it. With the library defaults, probing a Redis
-            # that is not running cost 4.089 SECONDS of socket.connect on
-            # Windows (two attempts at ~2s each) — paid by the first
-            # reconciliation of every process start, and easily mistaken for a
-            # slow engine. A local Redis either answers in milliseconds or is
-            # not there.
-            client = redis.Redis(
-                host=os.environ.get("REDIS_HOST", "localhost"),
-                port=int(os.environ.get("REDIS_PORT", "6379")),
-                decode_responses=True,
-                socket_connect_timeout=0.25,
-                socket_timeout=0.25,
-                retry_on_timeout=False,
-            )
+            if url:
+                # Hosted Redis (Upstash over TLS, say): the connect includes a
+                # TLS handshake to another region, which does not fit in the
+                # quarter-second budget below. Three seconds is generous for
+                # that and still short enough to fail visibly.
+                client = redis.Redis.from_url(
+                    url,
+                    decode_responses=True,
+                    socket_connect_timeout=3.0,
+                    socket_timeout=3.0,
+                    retry_on_timeout=True,
+                    health_check_interval=30,
+                )
+                where = "the configured URL"
+            else:
+                # Short timeouts, because this runs on the first audit write
+                # of the process and BLOCKS it. With the library defaults,
+                # probing a Redis that is not running cost 4.089 SECONDS of
+                # socket.connect on Windows (two attempts at ~2s each) — paid
+                # by the first reconciliation of every process start, and
+                # easily mistaken for a slow engine. A local Redis either
+                # answers in milliseconds or is not there.
+                client = redis.Redis(
+                    host=os.environ.get("REDIS_HOST", "localhost"),
+                    port=int(os.environ.get("REDIS_PORT", "6379")),
+                    decode_responses=True,
+                    socket_connect_timeout=0.25,
+                    socket_timeout=0.25,
+                    retry_on_timeout=False,
+                )
+                where = "localhost"
             client.ping()
             _REDIS_CLIENT = client
-            logger.debug("Audit: Redis backend available at localhost:6379.")
+            # Never log the URL itself: it carries the password.
+            logger.info("Audit: Redis backend available at %s.", where)
         except Exception as exc:
             _REDIS_CLIENT = False  # sentinel: tried, unavailable
-            logger.info(
-                "Audit: Redis unavailable (%s: %s). Falling back to file-based trail.",
-                type(exc).__name__, exc,
+            _REDIS_RETRY_AT = time.monotonic() + _REDIS_RETRY_AFTER_S
+            log = logger.warning if url else logger.info
+            log(
+                "Audit: Redis unavailable (%s). Falling back to a local trail%s.",
+                type(exc).__name__,
+                "; will retry in 30s because a URL is configured" if url else "",
             )
     return _REDIS_CLIENT if _REDIS_CLIENT is not False else None
 

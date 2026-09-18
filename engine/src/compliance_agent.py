@@ -110,7 +110,13 @@ _ILLUSTRATIVE_SANCTIONS = {"OFAC SDN 1", "UN TERROR 2", "BIN LADEN", "DAWOOD IBR
 # import - a file picked up implicitly must not be less visible than one
 # named explicitly.
 DEFAULT_SANCTIONS_PATHS = (
+    # A fresh local fetch, at the repo root. First, so it always wins.
     pathlib.Path(__file__).resolve().parents[2] / "data" / "sanctions" / "un_consolidated.txt",
+    # The tracked snapshot inside engine/. A deploy whose root is engine/ (a
+    # Vercel project, say) never sees the repo root, so without this the live
+    # engine would screen four illustrative names while /health said so in a
+    # warning nobody reads. Its retrieval date travels in the file header.
+    pathlib.Path(__file__).resolve().parents[1] / "data" / "sanctions" / "un_consolidated.txt",
 )
 
 # Screening goes stale in a way most rules do not: designations are added

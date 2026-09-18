@@ -31,61 +31,29 @@ from subset_sum import (
     find_exact_subset,
     match_batch,
     filter_candidates_by_settlement_window,
+    _anchored_negatives,
 )
-from subset_sum_nm import exact_subset_sum_nm
+from subset_sum_nm import build_union_pool, exact_subset_sum_nm, probe_for_alternate_nm_assignment
 from fuzzy_match import (
     match_batch_fuzzy, FuzzyMatchConfig,
     score_subset_plausibility, build_similarity_context, bulk_fuzzy_recover,
 )
-import erp_sync
 import compliance_agent
-import cash_position
 from exception_diagnosis import diagnose_batch_exceptions
 from linkage import LinkageResult, build_candidate_links, link_confidence, txn_key
 import audit
 
 
-# Above this candidate count, an exact subset sum with no anchor evidence is
-# not credible as an identification. Derived from the density argument in
-# linkage.py: 2^n subsets compete for a target with ~2e6 distinct paise
-# values, so uniqueness stops being plausible around n=20-25.
-#
-# Set at the BOTTOM of that range, not the top. It was 25 — the generous end —
-# and the realistic benchmark then produced false clears at pools of 22 and 23:
-# with an estimated fee target and a 10-paise tolerance band, C(22,5) is 26,334
-# subsets competing for a 20-paise-wide window, and the arithmetic is simply
-# not determined there. The two errors are not symmetric, so the conservative
-# end of a range this uncertain is the defensible one.
-UNANCHORED_AUTOCLEAR_LIMIT = int(
-    os.environ.get("UNANCHORED_AUTOCLEAR_LIMIT", "20")
-)
 
-# Minimum structural confidence required to auto-clear without review.
-#
-# Set where the measured reliability actually begins, not at a round number.
-# calibration.py buckets every prediction against its outcome:
-#
-#     [0.93, 1.01)   n=62   said 0.955   actual 1.000
-#     [0.85, 0.93)   n=41   said 0.876   actual 1.000
-#     [0.70, 0.85)   n=5    said 0.800   actual 1.000
-#     [0.50, 0.70)   n=11   said 0.540   actual 0.364   <- overconfident
-#     [0.00, 0.50)   n=61   said 0.176   actual 0.098   <- overconfident
-#
-# Everything at or above 0.85 was correct in all 103 observations; below 0.70
-# it is a coin flip or worse. 0.85 is therefore the boundary the data draws.
-#
-# These counts were n=31 and "93 observations" until the benchmark was pinned
-# to a single CP-SAT worker. They were not wrong then, they were one sample of
-# a measurement that moved: the parallel solver picks differently between runs
-# on scenarios where more than one subset is valid. See benchmark.run_scenario.
-#
-# This was 0.90 briefly, which is the kind of round number that looks careful
-# and is not: the 50K stress run scores 0.87 — fully anchored, penalised for a
-# large pool — finds all 55 members with precision and recall of 1.0, and was
-# withheld for being three hundredths under an arbitrary line. Override with
-# AUTOCLEAR_MIN_CONFIDENCE to re-measure the trade-off.
-MIN_AUTOCLEAR_CONFIDENCE = float(
-    os.environ.get("AUTOCLEAR_MIN_CONFIDENCE", "0.85")
+
+
+# The refusal gates moved to recon_gates.py — one concern, and this file
+# was not it. Re-exported because callers and tests reach for them here.
+from recon_gates import (  # noqa: E402,F401
+    MIN_AUTOCLEAR_CONFIDENCE, FUZZY_RECOVERY_CONFIDENCE,
+    UNANCHORED_AUTOCLEAR_LIMIT,
+    _withhold_if_unevidenced, _apply_confidence_gate,
+    _withhold_cross_batch_double_claims,
 )
 
 
@@ -228,8 +196,10 @@ def _compute_false_positive_cost(match_result: MatchResult) -> int:
     Conservative estimate of the financial cost if this match is wrong.
     - High-confidence exact match (confidence=1.0, not ambiguous): cost = 0
       (the math is exact, only way it's wrong is a fee-rate error)
-    - Ambiguous exact match (confidence=0.65): 5% of matched sum
-      (plausible restatement error if wrong subset chosen)
+    - Ambiguous exact match (confidence=0.36, re-measured — see subset_sum.py's
+      match_batch for why: calibration measured the 0.65 band right only
+      54.5% of the time and the value was moved to the observed rate): 5%
+      of matched sum (plausible restatement error if wrong subset chosen)
     - Fuzzy/semantic match: 10% of matched sum
       (semantic reasoning could be wrong even at high confidence)
     - Not cleared: N/A (no auto-clear, human approves)
@@ -249,8 +219,11 @@ def _tiebreak_ambiguous_match(
     candidates: list[NormalizedTxn],
     target_cents: int,
     tolerance_cents: int,
-    primary_ids: set[str],
+    primary_keys: set[str],
     batch_id: str,
+    forced_ids: set[str] | None = None,
+    num_search_workers: int = 1,
+    time_limit_s: float = 5.0,
 ) -> Optional[list[NormalizedTxn]]:
     """
     When CP-SAT is ambiguous (multiple valid subsets), use ref_id/memo
@@ -259,14 +232,32 @@ def _tiebreak_ambiguous_match(
     Strategy: find one alternate subset via CP-SAT with forbidding constraint,
     then score both primary and alternate against the full pool's ref_id/memo
     signal — higher plausibility score wins.
+
+    `forced_ids` must be threaded through to this solve for the same reason
+    `_probe_for_alternate_subset` in subset_sum.py forces them: without it,
+    this probe happily "finds" an alternate that simply drops an anchored
+    refund — a set that is arithmetically valid and factually impossible —
+    and if fuzzy plausibility scores that alternate higher, the tiebreak
+    would CHOOSE it. That comment already existed next to the fix in
+    subset_sum.py; this call site was the twin it wasn't applied to.
+    `num_search_workers`/`time_limit_s` default to the same values as
+    before (1 worker, 5s) when not supplied, so this is not a behavior
+    change for any caller that doesn't pass them.
+
+    `primary_keys` (and `forced_ids`) are txn_key values, not bare
+    source_txn_id — `candidates` here is a settlement's own windowed pool,
+    which routinely merges several feeds, so a bare id is not a safe
+    identity. See subset_sum._solve_cpsat's docstring.
     """
     from subset_sum import _solve_cpsat
 
     # find an alternate subset
-    forbidden = [primary_ids]
+    forbidden = [primary_keys]
     alt_result = _solve_cpsat(
-        candidates, target_cents, tolerance_cents, 5.0,
-        forbidden_solutions=forbidden
+        candidates, target_cents, tolerance_cents, time_limit_s,
+        forbidden_solutions=forbidden,
+        num_search_workers=num_search_workers,
+        forced_ids=forced_ids,
     )
     if alt_result is None:
         # no genuine alternate found (probe budget exhausted), keep primary
@@ -278,9 +269,9 @@ def _tiebreak_ambiguous_match(
         return primary_txns
 
     alt_txns, _ = alt_result
-    alt_ids = {t.source_txn_id for t in alt_txns}
+    alt_keys = {txn_key(t) for t in alt_txns}
 
-    if alt_ids == primary_ids:
+    if alt_keys == primary_keys:
         return primary_txns  # same subset, no tiebreak needed
 
     # Score both subsets via fuzzy plausibility. Build ONE similarity
@@ -509,7 +500,11 @@ def _solve_in_tiers(
         # looked unique because of where the tier boundary fell — refuse to
         # auto-clear and let a human choose the system of record.
         if tier_result.cleared and tier_result.matched_txn_ids:
-            tier_ids = {t.source_txn_id for t in tier_txns}
+            # Keys, not bare ids — a bare-id collision across feeds could
+            # make an `o` that IS in this tier look like it isn't (or vice
+            # versa) below. Same class of bug as link_confidence's, see
+            # linkage.txn_key.
+            tier_ids = {txn_key(t) for t in tier_txns}
             matched_set = set(tier_result.matched_txn_ids)
             matched_txns = [t for t in tier_txns if t.source_txn_id in matched_set]
 
@@ -540,7 +535,7 @@ def _solve_in_tiers(
                 and any(
                     o.amount_cents == t.amount_cents
                     and o.source is not t.source
-                    and o.source_txn_id not in tier_ids
+                    and txn_key(o) not in tier_ids
                     for o in windowed_candidates
                 )
             ]
@@ -679,194 +674,6 @@ def _solve_in_tiers(
     )
 
 
-def _withhold_if_unevidenced(
-    batch: SettlementBatch,
-    result: MatchResult,
-    solver_candidates: list[NormalizedTxn],
-    link_result,
-    anchor_keys: set,
-) -> None:
-    """Refuse to auto-clear a sum that no evidence ties to this settlement.
-
-    Mutates `result` in place, as the inline block it replaces did: this is
-    the point where an arithmetically valid answer is demoted to a withheld
-    one, and every field it sets - cleared, ambiguous, withheld_reason and
-    the appended reasoning - is read by the caller straight afterwards.
-    """
-    # Unanchored auto-clear guard.
-    #
-    # Auto-clearing needs either evidence that these records belong to this
-    # settlement, or a pool small enough that the arithmetic is genuinely
-    # determined. With neither, an exact sum is not a match — it is a
-    # coincidence, and there are astronomically many available: the space
-    # competing for one target is 2^n against ~2e6 distinct paise values, so
-    # uniqueness stops being plausible somewhere around n=20-25 and is gone
-    # entirely beyond that. The solver's ambiguity probe only samples a
-    # couple of alternates, so "not ambiguous" over a large pool is weak
-    # evidence, not proof.
-    #
-    # Measured: with the settlement reference stripped from every true
-    # member, linkage still narrowed 50,000 -> 400 on cluster signal alone
-    # while every anchor was scoped away, and the solver returned a
-    # confident 67-record set that was simply wrong. That is a false clear —
-    # the one outcome this engine is built to never produce.
-    #
-    # Small pools are exempt because there the subset-sum really is
-    # determined, which is why a 5-candidate batch with no references still
-    # clears correctly.
-    # The test is whether the MATCHED SET is anchored, not whether the batch
-    # has anchors anywhere.
-    #
-    # Those are different questions and the difference is a false clear. A
-    # settlement whose members DO name it, but where one leg has not arrived
-    # yet, has anchors in the pool and no reachable correct answer. The old
-    # condition saw the anchors, concluded the batch was well-evidenced, and
-    # stood aside while the solver cleared five unrelated noise records that
-    # happened to sum to the target. Measured on the realistic benchmark:
-    # anchors ['S7_TRUE_0','S7_TRUE_1','S7_TRUE_2'] present, matched set
-    # ['S7_N_20','S7_N_24','S7_N_44','S7_N_51','S7_N_52'], intersection empty,
-    # cleared=True. Pure noise, auto-cleared, confidently.
-    #
-    # Evidence does not transfer between records. An anchor vouches for the
-    # transaction carrying it and for nothing else, so what matters is whether
-    # the records being cleared are themselves evidenced.
-    #
-    # Neither existing corpus could show this. benchmark.py's batch ids share
-    # no canonical form with its references, so anchors were never found and
-    # the guard always fired; ReconRiver's ids do match, but its data is clean
-    # enough that the true set is always reachable. It needs both at once —
-    # anchors present AND the true answer absent from the pool — which is what
-    # a late leg does in production every day.
-    matched_id_set = set(result.matched_txn_ids)
-    matched_keys = {
-        txn_key(t) for t in solver_candidates
-        if t.source_txn_id in matched_id_set
-    }
-    matched_anchored = bool(anchor_keys & matched_keys)
-
-    # Two distinct situations, and the small-pool exemption is only sound in
-    # one of them:
-    #
-    #   no anchors anywhere      the settlement is simply not referenced. Over
-    #                            a small pool the arithmetic really is
-    #                            determined, and this clears correctly.
-    #
-    #   anchors exist, but NONE  the settlement IS referenced, and the solver
-    #   are in the matched set   chose a set containing none of the records
-    #                            that reference it. The evidence points
-    #                            somewhere other than the answer. Pool size
-    #                            does not rescue that, because the problem is
-    #                            not degeneracy — it is that the one signal
-    #                            available was ignored.
-    #
-    # Measured: the second case cleared five unrelated noise records over a
-    # pool of 21 while three anchored members sat outside the matched set,
-    # because 21 was under the small-pool limit. It is the only false clear
-    # the realistic benchmark produced.
-    evidence_ignored = bool(anchor_keys) and not matched_anchored
-    pool_too_large = len(solver_candidates) > UNANCHORED_AUTOCLEAR_LIMIT
-
-    # Linkage saying it found NOTHING is itself a finding, and it must not be
-    # overridden by a small pool.
-    #
-    # `no_linkage_signal` is not "weak evidence" — it is linkage reporting
-    # that no reference, no cluster and no cross-source peer exists anywhere
-    # in the pool. The only thing left is the arithmetic, and the arithmetic
-    # is what this engine exists to say is insufficient. Calibration puts that
-    # band at 27.6% accurate.
-    #
-    # The small-pool exemption assumed a unique sum over few candidates means
-    # the answer is determined. That holds only if the answer is IN the pool.
-    # Give the engine a window of unrelated traffic and a unique sum is a
-    # coincidence, not a determination.
-    #
-    # Found on a real SBI statement: eight genuine UPI debits, no settlement
-    # reference among them because a UPI RRN identifies the payment and not
-    # any settlement. Four of them summed to a Rs 500 credit to the paisa and
-    # the engine cleared it at 0.22 confidence. Those four payments went to
-    # four unrelated people and have nothing to do with that credit. Across
-    # the same statement 69 of 189 credits have such a subset, 57 of them
-    # have more than one, and one debit is claimed by ten different "matches"
-    # — so the coincidence rate is not incidental, it is the norm for retail
-    # payment data where amounts are round and repeat.
-    no_evidence_at_all = link_result.method == "no_linkage_signal"
-
-    # PARTIAL anchoring is its own case, and the measured worst one.
-    #
-    # A matched set where some members name the settlement and others do not
-    # sits in the 0.42 confidence band, which calibration measures at 43%
-    # correct — worse than the unanchored-but-clustered band. The instinct
-    # that "at least one member is anchored, so the set is probably right" is
-    # exactly backwards: an anchor vouches for the record carrying it and for
-    # nothing else, so the unanchored members are unevidenced regardless of
-    # the company they keep.
-    #
-    # Measured: with the fee target perturbed by 1.5bps, a set of five was
-    # cleared on the strength of one anchored member and four that were simply
-    # wrong. Pool size did not save it — 23 candidates, under the small-pool
-    # limit — because the problem is not degeneracy, it is that four of the
-    # five records had no evidence at all.
-    # Partial anchoring only blocks when the match LEFT ANCHORS UNUSED.
-    #
-    # Blocking every partially-anchored match cost ten correct answers to
-    # prevent two wrong ones. The two wrong ones had a property the ten did
-    # not: anchors sat in the pool that the matched set did not include. A
-    # match that uses every available anchor and adds unanchored members is
-    # reading the evidence; one that ignores anchors is contradicting it.
-    anchors_in_pool = anchor_keys & {txn_key(t) for t in solver_candidates}
-    partially_anchored = (
-        bool(anchor_keys)
-        and matched_anchored
-        and not (matched_keys <= anchor_keys)
-        and bool(anchors_in_pool - matched_keys)
-    )
-
-    if result.cleared and (
-        partially_anchored
-        or (not matched_anchored
-            and (evidence_ignored or pool_too_large or no_evidence_at_all))
-    ):
-        result.cleared = False
-        result.ambiguous = True
-        result.withheld_reason = "no_corroborating_evidence"
-        anchor_note = (
-            "linkage found no reference, cluster or cross-source evidence "
-            "anywhere in this pool, so the match rests on the arithmetic alone"
-            if no_evidence_at_all and not anchor_keys else
-            f"only {len(anchor_keys & matched_keys)} of the "
-            f"{len(matched_id_set)} matched record(s) reference this "
-            f"settlement, so the rest are unevidenced"
-            if partially_anchored else
-            "no candidate references this settlement"
-            if not anchor_keys else
-            f"none of the {len(matched_id_set)} matched record(s) references "
-            f"this settlement (the {len(anchor_keys)} record(s) that do were "
-            f"not selected)"
-        )
-        # The second clause only applies when pool size is the reason. Saying
-        # "the pool of 8 is too large" when the actual finding is "no evidence
-        # exists" tells the reviewer the wrong thing to go and fix.
-        size_clause = (
-            f", and the pool of {len(solver_candidates)} is too large for an "
-            f"exact sum to establish uniqueness on its own"
-            if pool_too_large else ""
-        )
-        result.reasoning += (
-            f" Withheld from auto-clear: {anchor_note}{size_clause}. "
-            f"Routed for human review."
-        )
-        audit.log_decision(
-            batch_id=batch.batch_id,
-            agent="linkage",
-            detail=(
-                f"Subset summed to target over {len(solver_candidates)} "
-                f"candidates with no anchored member in the matched set. "
-                f"Arithmetic alone does not identify a settlement at this pool "
-                f"size — refusing to auto-clear."
-            ),
-        )
-
-
 def _collect_unmatched(
     batch: SettlementBatch,
     result: MatchResult,
@@ -975,7 +782,7 @@ def _collect_unmatched(
                 if t.source_txn_id in recovered_set
             )
             result.method = MatchMethod.FUZZY_SEMANTIC
-            result.confidence = fuzz_cfg.confidence_threshold
+            result.confidence = FUZZY_RECOVERY_CONFIDENCE
             # Finish the sentence rather than replace it. reasoning ended at
             # "Routing to fuzzy pass." — written BEFORE this pass ran and never
             # updated once it had, so a reader saw a recovered count and a
@@ -999,7 +806,13 @@ def _collect_unmatched(
                 f"{'over' if shortfall > 0 else 'short'} by {abs(shortfall)}c. "
                 f"Similarity is evidence of association, not of arithmetic, so "
                 f"this set is a starting point for review and is never cleared "
-                f"on its own."
+                f"on its own. Measured over 167 such bundles: the exact set is "
+                f"never right, about 4% of what it contains belongs to the "
+                f"settlement, and the true members are somewhere inside it "
+                f"roughly 40% of the time. Read it as a shortlist to search, "
+                f"not as a proposed answer — which is why it is reported at "
+                f"{FUZZY_RECOVERY_CONFIDENCE:.2f} rather than at the "
+                f"similarity threshold that selected it."
             )
             audit.log_decision(
                 batch_id=batch.batch_id,
@@ -1009,50 +822,6 @@ def _collect_unmatched(
             )
 
     return exceptions, unmatched
-def _apply_confidence_gate(
-    batch: SettlementBatch,
-    result: MatchResult,
-    solver_candidates: list[NormalizedTxn],
-    link_result: LinkageResult
-) -> None:
-    """Report how the match was FOUND, and gate auto-clear on structural confidence."""
-    if not result.matched_txn_ids:
-        return
-
-    structural = link_confidence(link_result, result.matched_txn_ids)
-    result.confidence = min(result.confidence, structural)
-    result.reasoning += (
-        f" Linkage: {link_result.method}, structural confidence "
-        f"{structural:.2f} over {link_result.pool_after} linked candidate(s)."
-    )
-
-    gate_applies = len(solver_candidates) > UNANCHORED_AUTOCLEAR_LIMIT
-    if (
-        result.cleared
-        and gate_applies
-        and result.confidence < MIN_AUTOCLEAR_CONFIDENCE
-    ):
-        result.cleared = False
-        result.ambiguous = True
-        result.withheld_reason = result.withheld_reason or "below_confidence_gate"
-        result.reasoning += (
-            f" Withheld from auto-clear: structural confidence "
-            f"{result.confidence:.2f} is below the {MIN_AUTOCLEAR_CONFIDENCE:.2f} "
-            f"required to release without review. The matched set is "
-            f"reported as a proposal."
-        )
-        audit.log_decision(
-            batch_id=batch.batch_id,
-            agent="orchestrator",
-            detail=(
-                f"Auto-clear withheld: confidence {result.confidence:.2f} < "
-                f"{MIN_AUTOCLEAR_CONFIDENCE:.2f}. Matched set surfaced for "
-                f"human review rather than released."
-            ),
-        )
-
-
-
 def _tiebreak_if_ambiguous(
     batch: SettlementBatch,
     result: MatchResult,
@@ -1065,9 +834,23 @@ def _tiebreak_if_ambiguous(
     if result.ambiguous and enable_tiebreak and result.matched_txn_ids:
         matched_pool = [t for t in windowed_candidates if t.source_txn_id in set(result.matched_txn_ids)]
         primary_ids = set(result.matched_txn_ids)
+        # txn_key, not the bare matched_txn_ids: candidates here is fed by
+        # _solve_cpsat, which now compares by txn_key (see its docstring).
+        # primary_ids stays around too — chosen_ids below is compared against
+        # it in bare-id form, since result.matched_txn_ids is bare-id by
+        # schema (see MatchResult) and that comparison never reaches the solver.
+        primary_keys = {txn_key(t) for t in matched_pool}
+        # Recomputed rather than threaded through MatchResult: it's a cheap,
+        # pure filter over windowed_candidates (same inputs match_batch used
+        # internally), and re-deriving it here is far less invasive than
+        # widening the MatchResult schema to carry it.
+        forced_ids = _anchored_negatives(batch.batch_id, windowed_candidates)
         chosen = _tiebreak_ambiguous_match(
             matched_pool, windowed_candidates, gross_target,
-            cfg.tolerance_cents, primary_ids, batch.batch_id
+            cfg.tolerance_cents, primary_keys, batch.batch_id,
+            forced_ids=forced_ids,
+            num_search_workers=cfg.num_search_workers,
+            time_limit_s=cfg.probe_time_limit_s,
         )
         if chosen is not None:
             chosen_ids = {t.source_txn_id for t in chosen}
@@ -1142,89 +925,273 @@ def _build_report_and_tie_out(
     return report
 
 
+@dataclass
+class _NMBatchPrep:
+    """One batch's own pre-solve state within a joint N:M group — the exact
+    per-batch pipeline reconcile_batch runs before it ever calls the solver,
+    computed once here and reused by both the joint solve and, if needed,
+    the independent per-batch fallback below."""
+    batch: SettlementBatch
+    fee_breakdown: object
+    gross_target: int
+    batch_candidates: list[NormalizedTxn]   # currency/status filtered, NOT windowed
+    windowed: list[NormalizedTxn]
+    link_result: LinkageResult
+    narrowed: list[NormalizedTxn]
+    forced_keys: set[str]
+
+
 def reconcile_many(
     batches: list[SettlementBatch],
     candidates: list[NormalizedTxn],
+    settlement_window_days: int = 5,
     subset_config: SubsetSumConfig | None = None,
     rate_card: FeeRateCard = DEFAULT_RATE_CARD,
 ) -> list[ReconciliationReport]:
     """
-    N:M solver pathway. Matches multiple batches against a shared pool simultaneously.
-    Provides safety by leaving the standard 1:N loop unchanged.
+    N:M pathway — several settlement batches solved SIMULTANEOUSLY against
+    one shared candidate pool, so a transaction that could plausibly belong
+    to more than one settlement is assigned by the solver rather than by
+    whichever batch happens to be processed first.
+
+    This is not reconcile_batch called in a loop, and it is not
+    /reconcile/queue with a different name. The queue's batches are
+    reconciled one after another, and a payment claimed by the first is
+    simply unavailable to the second (settled_ledger records the claim) —
+    correct, and order-dependent: a batch processed later can lose a
+    transaction to an earlier one that could ALSO have been satisfied a
+    different way, and the outcome depends on queue order rather than on
+    the evidence. The joint CP-SAT solve below removes the ordering
+    dependency: every batch's assignment is decided at once, with a
+    transaction eligible for more than one target resolved by the solver
+    rather than by processing order. See subset_sum_nm.py's module
+    docstring for the solver itself.
+
+    WHAT THIS REUSES FROM THE 1:N PATH, AND WHAT IT DOES NOT
+    ----------------------------------------------------------
+    Per batch: linkage narrows its candidates before the joint solver ever
+    runs (build_candidate_links, unchanged, called once per batch against
+    that batch's own window); an anchored refund is forced rather than
+    optional (_anchored_negatives, unchanged); the joint assignment is
+    probed for alternates and a batch whose OWN matched set varies across
+    the probe is marked ambiguous
+    (subset_sum_nm.probe_for_alternate_nm_assignment, the per-target
+    sibling of subset_sum._probe_for_alternate_subset); and
+    _withhold_if_unevidenced / _apply_confidence_gate — the exact functions
+    reconcile_batch calls — decide whether each batch's result is evidenced
+    and confident enough to auto-clear, reused verbatim, per batch.
+
+    What it does NOT reuse: _solve_in_tiers' anchor/strong_link/all_linked
+    tiering, and its cross-feed substitutability guard. Both are real
+    refinements on top of the core safety net above, measured and tuned for
+    one target at a time. Generalising substitutability correctly — is a
+    member substitutable by a twin, now that the twin could belong to a
+    DIFFERENT target instead of simply being excluded — is a materially
+    different analysis that has not been built. Said here rather than
+    shipped silently under the same name as full parity.
+
+    THE JOINT SOLVE, AND ITS FALLBACK
+    ----------------------------------
+    A single infeasible target — one batch's leg genuinely missing, say —
+    makes the joint CP-SAT model infeasible for every target at once; one
+    CP-SAT solve has no notion of partial credit. Rather than fail the
+    whole group for one batch's sake, an infeasible (or empty-pool) joint
+    solve falls back to running every batch through the full, proven
+    reconcile_batch independently against the ORIGINAL shared pool. That
+    can never be worse than calling reconcile_batch on each batch
+    separately in the first place — the same "never worse than the
+    unconstrained pool" principle _solve_in_tiers already applies to one
+    batch's own linkage narrowing, extended here to the whole group.
+
+    Deliberately NOT integrated: settled_ledger's cross-run double-claim
+    ledger. The joint solve already prevents double-claiming BY
+    CONSTRUCTION within this one call (AddAtMostOne per candidate), which
+    is the problem settled_ledger exists to catch across SEPARATE calls —
+    a real gap (this call cannot see a payment /reconcile/queue claimed a
+    moment ago) but a different one, left for the queue's own use of it
+    rather than folded in here without being asked for.
     """
     if not batches:
         return []
 
     cfg = subset_config or SubsetSumConfig()
 
-    # Pre-filter compliance
     safe_candidates, _ = compliance_agent.scan(candidates)
+    audit.log_decision(
+        batch_id="+".join(b.batch_id for b in batches),
+        agent="orchestrator",
+        detail=(
+            f"Joint N:M solve requested for {len(batches)} batch(es) sharing "
+            f"one pool of {len(candidates)} candidate(s) "
+            f"({len(safe_candidates)} after compliance screening)."
+        ),
+    )
 
-    target_cents_list = []
-    fees_list = []
+    prep: list[_NMBatchPrep] = []
     for batch in batches:
         fee_breakdown = compute_fee_breakdown(batch, rate_card, safe_candidates)
         gross_target = fee_breakdown.gross_target_cents(batch.net_amount_cents)
-        target_cents_list.append(gross_target)
-        fees_list.append(fee_breakdown)
 
-    matched_subsets = exact_subset_sum_nm(
-        safe_candidates,
-        target_cents_list,
+        batch_candidates = _filter_to_settlement_currency(batch, safe_candidates)
+        batch_candidates = _filter_out_non_settling(batch, batch_candidates)
+        windowed = filter_candidates_by_settlement_window(
+            batch_candidates, batch.settled_at_utc, settlement_window_days
+        )
+        link_result = build_candidate_links(batch, windowed, settlement_window_days)
+        narrowed = link_result.candidates
+        forced_keys = _anchored_negatives(batch.batch_id, narrowed)
+
+        audit.log_decision(
+            batch_id=batch.batch_id, agent="linkage",
+            detail=f"[joint] [{link_result.method}] {link_result.reasoning}",
+        )
+
+        prep.append(_NMBatchPrep(
+            batch=batch, fee_breakdown=fee_breakdown, gross_target=gross_target,
+            batch_candidates=batch_candidates, windowed=windowed,
+            link_result=link_result, narrowed=narrowed, forced_keys=forced_keys,
+        ))
+
+    # Anchor evidence is passed in so a candidate that NAMES one settlement
+    # cannot be assigned to a different one. Contention between equal-valued
+    # legs is invisible to arithmetic, so without this the solver resolved it
+    # by whichever assignment it reached first. See build_union_pool.
+    union, eligible = build_union_pool(
+        [p.narrowed for p in prep],
+        [p.link_result.anchor_keys for p in prep],
+    )
+    target_cents_list = [p.gross_target for p in prep]
+    forced_per_target = [p.forced_keys for p in prep]
+
+    joint = exact_subset_sum_nm(
+        union, eligible, target_cents_list,
         tolerance_cents=cfg.tolerance_cents,
         time_limit_s=cfg.solver_time_limit_s,
         num_search_workers=cfg.num_search_workers,
-    )
+        forced_per_target=forced_per_target,
+    ) if union else None
 
-    reports = []
-    if matched_subsets:
-        for i, batch in enumerate(batches):
-            matched = matched_subsets[i]
-            matched_ids = [t.source_txn_id for t in matched]
-            
-            res = MatchResult(
-                batch_id=batch.batch_id,
-                matched_txn_ids=matched_ids,
+    reports: list[ReconciliationReport] = []
+
+    if joint is not None:
+        ambiguous_flags = probe_for_alternate_nm_assignment(
+            union, eligible, joint, target_cents_list,
+            cfg.tolerance_cents, cfg.probe_time_limit_s, cfg.ambiguity_probe_limit,
+            num_search_workers=cfg.num_search_workers,
+            forced_per_target=forced_per_target,
+        )
+        for i, p in enumerate(prep):
+            matched_txns = joint.matched[i]
+            achieved_sum = joint.achieved_sums[i]
+            ambiguous = ambiguous_flags[i]
+            diff = abs(achieved_sum - p.gross_target)
+
+            result = MatchResult(
+                batch_id=p.batch.batch_id,
+                matched_txn_ids=[t.source_txn_id for t in matched_txns],
                 method=MatchMethod.EXACT_SUBSET_SUM,
-                confidence=0.85,  # Slightly lower confidence for N:M inference
-                matched_sum_cents=sum(t.amount_cents for t in matched),
-                target_cents=target_cents_list[i],
-                cleared=True,
-                reasoning="Matched via N:M global bin-packing solver.",
+                # Same 0.36/1.0 split as subset_sum.match_batch's arithmetic
+                # confidence, and the same meaning: 1.0 is not a guess, the
+                # probe found no alternate joint assignment where THIS
+                # target's set differed, within the probed budget. It is
+                # not independently calibrated for the joint case — no N:M
+                # benchmark exists yet to measure it against, unlike the
+                # 1:N bands above, so this borrows the 1:N number honestly
+                # rather than inventing an untested one of its own.
+                confidence=0.36 if ambiguous else 1.0,
+                matched_sum_cents=achieved_sum,
+                target_cents=p.gross_target,
+                cleared=not ambiguous,
+                ambiguous=ambiguous,
+                withheld_reason="alternate_assignment" if ambiguous else None,
+                reasoning=(
+                    f"Joint N:M subset-sum match (CP-SAT, {len(batches)} "
+                    f"batch(es) solved together): {len(matched_txns)} "
+                    f"transactions sum to {achieved_sum} cents (target "
+                    f"{p.gross_target} cents, diff {diff} cents)."
+                    + (
+                        " WARNING (bounded probe, not exhaustive): this "
+                        "settlement's own matched set varied across at "
+                        "least one alternate joint assignment found within "
+                        "the probe budget — not uniquely determined by "
+                        "arithmetic alone within the probed alternatives."
+                        if ambiguous else ""
+                    )
+                ),
             )
-            
-            position = cash_position.build_cash_position(
-                batch, candidates, matched_ids, cleared=True, rate_card=rate_card
+
+            _withhold_if_unevidenced(
+                p.batch, result, p.narrowed, p.link_result, p.link_result.anchor_keys
             )
-            erp_sync.push_to_erp(position)
-            
-            rep = ReconciliationReport(
-                batch_id=batch.batch_id,
-                total_candidates=len(safe_candidates),
-                match_result=res,
+            audit.log_decision(
+                batch_id=p.batch.batch_id, agent="subset_sum_nm", detail=result.reasoning
             )
-            reports.append(rep)
-    else:
-        # Fallback to failing them all individually if N:M fails
-        for batch in batches:
-            res = MatchResult(
-                batch_id=batch.batch_id,
-                matched_txn_ids=[],
-                method=MatchMethod.EXACT_SUBSET_SUM,
-                confidence=0.0,
-                matched_sum_cents=0,
-                target_cents=target_cents_list[batches.index(batch)],
-                cleared=False,
-                reasoning="N:M global solver failed to find a valid assignment.",
+            _apply_confidence_gate(p.batch, result, p.narrowed, p.link_result)
+
+            exceptions, unmatched = _collect_unmatched(
+                p.batch, result, p.batch_candidates, p.windowed, p.gross_target,
+                FuzzyMatchConfig(),
             )
-            position = cash_position.build_cash_position(
-                batch, candidates, [], cleared=False, rate_card=rate_card
-            )
-            reports.append(ReconciliationReport(
-                batch_id=batch.batch_id,
-                total_candidates=len(safe_candidates),
-                match_result=res,
+            if unmatched:
+                exceptions = diagnose_batch_exceptions(unmatched, p.windowed, p.batch.batch_id)
+                for exc in exceptions:
+                    audit.log_decision(
+                        batch_id=p.batch.batch_id, agent="exception_diagnosis",
+                        detail=f"{exc.reason.value}: {exc.diagnosis_note}",
+                    )
+
+            reports.append(_build_report_and_tie_out(
+                p.batch, result, p.windowed, exceptions, p.fee_breakdown, p.gross_target
             ))
+    else:
+        audit.log_decision(
+            batch_id="+".join(b.batch_id for b in batches), agent="orchestrator",
+            detail=(
+                "Joint CP-SAT solve found no assignment satisfying every "
+                f"target across this group of {len(batches)} simultaneously "
+                "(or linkage left no candidate eligible for any of them). "
+                "Falling back to reconciling each batch independently "
+                "through the full 1:N pipeline against the shared pool."
+            ),
+        )
+        # Anchor evidence binds in the fallback too, not only in the joint
+        # solve. Each batch is reconciled alone here, so on its own it cannot
+        # know that a candidate names one of its siblings — it sees an
+        # unanchored record of the right size and takes it.
+        #
+        # Measured: a batch whose own leg had not arrived reached for a
+        # sibling's equal-valued leg and reported 0.91, the "partially
+        # anchored, used every anchor available" band. Every anchor available
+        # TO IT was indeed used; the evidence it ignored belonged to the batch
+        # next to it, which a single-batch view has no way to consult. Only
+        # the double-claim guard below caught those, and only because the
+        # sibling happened to claim the same record — take that coincidence
+        # away and it is a false clear at 0.91.
+        for i, p in enumerate(prep):
+            foreign_anchors: set[str] = set()
+            for j, sibling in enumerate(prep):
+                if j != i:
+                    foreign_anchors |= sibling.link_result.anchor_keys
+            foreign_anchors -= p.link_result.anchor_keys
+
+            batch_pool = (
+                [t for t in safe_candidates if txn_key(t) not in foreign_anchors]
+                if foreign_anchors else safe_candidates
+            )
+            if foreign_anchors:
+                audit.log_decision(
+                    batch_id=p.batch.batch_id, agent="linkage",
+                    detail=(
+                        f"[fallback] {len(foreign_anchors)} candidate(s) "
+                        f"reference a different settlement in this group and "
+                        f"were withheld from this batch's pool."
+                    ),
+                )
+            reports.append(reconcile_batch(
+                p.batch, batch_pool, subset_config=cfg,
+                settlement_window_days=settlement_window_days, rate_card=rate_card,
+            ))
+        _withhold_cross_batch_double_claims(reports)
 
     return reports
 

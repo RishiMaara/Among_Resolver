@@ -44,6 +44,21 @@ logger = logging.getLogger(__name__)
 # one, and a locked-out operator still needs to see why.
 PUBLIC_PATHS = {"/health", "/docs", "/openapi.json", "/redoc"}
 
+# Exempt from the API-key check because it authenticates STRONGER, not
+# weaker: every delivery must carry a valid HMAC-SHA256 over the raw body
+# (see webhook.py), and one without it is refused with 401 there instead.
+#
+# This is not a hole, it is a different door. Razorpay signs with the webhook
+# secret from the dashboard and has no way to send this deployment's API key,
+# so leaving the path behind the key check would 401 every genuine delivery
+# before verification ever ran — a webhook that looks configured and silently
+# receives nothing.
+#
+# Only the receiving path. /webhooks/pending stays behind the API key: it is
+# an internal read of what has arrived, it carries no signature of its own,
+# and it has no reason to be reachable without a key.
+HMAC_AUTHENTICATED_PATHS = {"/webhooks/razorpay"}
+
 
 def configured_key() -> str | None:
     key = os.environ.get("API_KEY", "").strip()

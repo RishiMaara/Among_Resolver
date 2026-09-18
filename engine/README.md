@@ -1,5 +1,15 @@
 # AI Finance Controller — Multi-Source Reconciliation Engine
 
+> **This is an early design-phase note, not the current architecture doc.**
+> It describes the engine as a 6-module subset-sum matcher, before linkage,
+> compliance, cash position, N:M reconciliation and the rest of what is
+> described in the top-level [`README.md`](../README.md) and
+> [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) existed. It is kept
+> because the DP-vs-CP-SAT finding below is real, still true, and a genuinely
+> useful engineering story — not because the "6 agents" / "Redis audit log"
+> description that follows is current. For the current design, agent count,
+> and measured numbers, read the top-level docs instead.
+
 Built for Razorpay Buildathon Track 04. Direction: multi-source
 reconciliation (bank settlement <-> gateway transaction subset-sum).
 

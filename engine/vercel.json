@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/index.py": {
+      "maxDuration": 60,
+      "excludeFiles": "{tests/**,scripts/**,benchmarks/**,data/50k_stress/**,data/reconriver/**,data/real/**,data/demo_merchant/**,data/demo_pitch/**,data/demo_week/**,data/batch_close/**,data/history/**,data/_archive/**,data/external_test/**,data/razorpay_fixture.json,data/*.sqlite3*,**/__pycache__/**,**/*.pyc,**/pandas/tests/**,**/numpy/**/tests/**}"
+    }
+  },
+  "rewrites": [{ "source": "/(.*)", "destination": "/api/index" }]
+}

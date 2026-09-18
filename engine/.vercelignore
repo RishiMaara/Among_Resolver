@@ -1,0 +1,17 @@
+# What the engine does not need at runtime. The function bundle is close to
+# Vercel's Python size limit (ortools, pandas and numpy are most of it), so
+# nothing ships that no request can reach.
+tests/
+scripts/
+benchmarks/
+.pytest_cache/
+**/__pycache__/
+*.pyc
+.env
+
+# Benchmark corpora and local run output. The engine reads none of these when
+# serving a request; they exist for the measurement scripts above.
+data/*
+!data/sanctions/
+data/sanctions/*
+!data/sanctions/un_consolidated.txt

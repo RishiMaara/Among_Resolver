@@ -37,6 +37,7 @@ import os
 from dataclasses import dataclass, field
 
 from schema import NormalizedTxn, MatchResult, MatchMethod
+from linkage import txn_key, canonical_key, _contains_identifier, MIN_CANONICAL_ANCHOR_LEN
 
 
 def _default_workers() -> int:
@@ -110,6 +111,19 @@ def _solve_cpsat(
     ambiguity check ask "find a DIFFERENT valid subset than these" by
     adding a constraint that at least one included/excluded flag must
     differ from each forbidden solution.
+
+    `forced_ids` and `forbidden_solutions` are both sets of txn_key values
+    (linkage.txn_key: "{source}:{source_txn_id}"), NOT bare source_txn_id.
+    `source_txn_id` is unique per FEED, not globally — a settlement's
+    candidate pool routinely merges gateway, bank and ERP records, and their
+    id sequences overlap. Matching by bare id here used to mean a forced
+    refund's id could ALSO match an unrelated record from a different feed
+    that happened to reuse it, silently forcing that unrelated record into
+    the matched set alongside the real one (or worse, in a pool that never
+    contains the real anchored refund by coincidence of collision, forcing
+    the wrong one in its place). A false forced-negative is a confident
+    wrong answer on someone else's money, same as a false anchor — see
+    _anchored_negatives.
     """
     from ortools.sat.python import cp_model
 
@@ -119,6 +133,7 @@ def _solve_cpsat(
     model = cp_model.CpModel()
     n = len(candidates)
     include = [model.NewBoolVar(f"include_{i}") for i in range(n)]
+    keys = [txn_key(c) for c in candidates]
 
     total = sum(candidates[i].amount_cents * include[i] for i in range(n))
     model.Add(total >= target_cents - tolerance_cents)
@@ -137,17 +152,16 @@ def _solve_cpsat(
     # among the payments where a choice actually exists.
     if forced_ids:
         for i in range(n):
-            if candidates[i].source_txn_id in forced_ids:
+            if keys[i] in forced_ids:
                 model.Add(include[i] == 1)
 
     if forbidden_solutions:
-        for forbidden_ids in forbidden_solutions:
+        for forbidden_keys in forbidden_solutions:
             # forbid the exact same set: at least one variable must flip
             # relative to this forbidden solution (in or out)
             diff_terms = []
             for i in range(n):
-                txn_id = candidates[i].source_txn_id
-                was_included = txn_id in forbidden_ids
+                was_included = keys[i] in forbidden_keys
                 if was_included:
                     diff_terms.append(include[i].Not())
                 else:
@@ -194,18 +208,31 @@ def _probe_for_alternate_subset(
     forced_ids: set[str] | None = None,
 ) -> str | None:
     """
-    Bounded ambiguity check: ask CP-SAT to find a DIFFERENT valid subset
-    than the one already found, using a forbidding constraint. Cheap now
-    that solves are ~0.1-2s instead of 100+s, but still bounded
-    (probe_limit) and still NOT an exhaustive uniqueness proof — exact
-    subset-sum counting is #P-complete and intractable at real scale
-    regardless of solver choice. This proves "at least one alternate
-    exists" or "none found within the probe budget," never "provably
-    unique."
+    Bounded ambiguity check: ask CP-SAT for up to `probe_limit` DIFFERENT
+    valid subsets than the one already found, using a forbidding constraint
+    that grows with each one found. Cheap now that solves are ~0.1-2s
+    instead of 100+s, but still bounded and still NOT an exhaustive
+    uniqueness proof — exact subset-sum counting is #P-complete and
+    intractable at real scale regardless of solver choice. This proves "N
+    alternates exist within the probe budget" or "none found," never
+    "provably unique."
+
+    Runs the full probe_limit rather than stopping at the first alternate.
+    An earlier version returned as soon as `alt_ids != matched_ids` — but
+    `forbidden` already contains `matched_ids` and the solver is constrained
+    to differ from every entry in it, so any solution found is ALREADY
+    guaranteed to differ from `matched_ids`; that comparison was always
+    true and the function always returned on iteration one. `probe_limit`
+    and the `forbidden.append(...)` below it were dead code, while the docs
+    (README, TEST_REPORT) kept claiming "3 extra solves" — a documentation
+    accuracy bug, not a correctness one, but the wrong kind to have in the
+    one place the project is being humble about its own thoroughness.
     """
-    matched_ids = {t.source_txn_id for t in matched_txns}
-    forbidden = [matched_ids]
-    _num_search_workers = num_search_workers
+    # txn_key, not the bare source_txn_id: see _solve_cpsat's docstring for
+    # why a bare id is not a safe identity across a merged multi-feed pool.
+    matched_keys = {txn_key(t) for t in matched_txns}
+    forbidden = [matched_keys]
+    found: list[tuple[set[str], int]] = []
 
     for _ in range(probe_limit):
         # The probe has to solve under the SAME constraints as the real
@@ -216,21 +243,26 @@ def _probe_for_alternate_subset(
         alt = _solve_cpsat(
             candidates, target_cents, tolerance_cents, time_limit_s,
             forbidden_solutions=forbidden,
-            num_search_workers=_num_search_workers,
+            num_search_workers=num_search_workers,
             forced_ids=forced_ids,
         )
         if alt is None:
-            return None  # no further alternates found within budget
+            break  # no further alternates found within budget
         alt_txns, alt_sum = alt
-        alt_ids = {t.source_txn_id for t in alt_txns}
-        if alt_ids != matched_ids:
-            return (
-                f"found an alternate {len(alt_txns)}-transaction subset "
-                f"also summing to {alt_sum} cents (target {target_cents})"
-            )
-        forbidden.append(alt_ids)
+        alt_keys = {txn_key(t) for t in alt_txns}
+        found.append((alt_keys, alt_sum))
+        forbidden.append(alt_keys)
 
-    return None
+    if not found:
+        return None
+
+    _, first_sum = found[0]
+    return (
+        f"found {len(found)} of up to {probe_limit} probed alternate "
+        f"subset(s), each also summing to within tolerance of "
+        f"{target_cents} cents (first alternate: {len(found[0][0])} "
+        f"transactions, {first_sum} cents)"
+    )
 
 
 
@@ -254,23 +286,44 @@ def _anchored_negatives(batch_id: str, candidates: list[NormalizedTxn]) -> set[s
     referencing a different settlement, stays optional: forcing it would be
     asserting membership the evidence does not support, which is the exact
     error this engine exists to avoid. The anchor has to be there.
+
+    Returns txn_key values (linkage.txn_key), not bare source_txn_id. A bare
+    id is not unique across a merged multi-feed pool — the candidates this
+    is called with routinely mix gateway, bank and ERP records, and their id
+    sequences overlap. A caller that matched candidates back to this set by
+    bare id would force-include EVERY candidate sharing that id, anchored or
+    not: force the gateway refund that names this settlement, and an
+    unrelated ERP line that happens to reuse the same id number comes along
+    with it, "included" by nothing but a coincidence in two feeds' counters.
     """
     if not batch_id:
         return set()
-    # Compare in the SAME canonical form ingestion stored. ref_id_canonical
-    # has punctuation stripped, so a raw "REFUND-DAY" never matches the
-    # "REFUNDDAY" on the row and every refund silently stayed optional.
-    from linkage import canonical_key
+    # Compare in the SAME canonical form ingestion stored, and with the SAME
+    # false-anchor guards linkage.py uses for the identical containment
+    # problem — see linkage._contains_identifier for the full reasoning.
+    #
+    # This used to be plain substring containment (`anchor in ref or ref in
+    # anchor`), which is wrong for unpadded sequential settlement ids:
+    # "SETTLE1" is a substring of both "SETTLE10" and "SETTLE100", so batch
+    # SETTLE-1 was force-including refunds that belong to SETTLE-10 and
+    # SETTLE-100. That is worse than a false anchor: a false anchor only adds
+    # a candidate the solver may reject, but a false FORCED member is
+    # `model.Add(include[i] == 1)` — the solver must include a refund
+    # belonging to a different settlement, then finds other payments to
+    # cover the difference, and the set can tie out to zero and clear. Both
+    # reference corpora hide this because they use fixed-width zero-padded
+    # ids where no id is a prefix of another; unpadded sequential ids are
+    # normal in production.
     anchor = canonical_key(batch_id)
-    if not anchor:
+    if len(anchor) < MIN_CANONICAL_ANCHOR_LEN:
         return set()
     forced = set()
     for t in candidates:
         if t.amount_cents >= 0:
             continue
         ref = canonical_key(t.ref_id_canonical or "")
-        if ref and (ref == anchor or anchor in ref or ref in anchor):
-            forced.add(t.source_txn_id)
+        if ref and _contains_identifier(ref, anchor):
+            forced.add(txn_key(t))
     return forced
 
 
@@ -342,19 +395,24 @@ def match_batch(
             f"via ref_id/memo evidence before auto-clearing."
         )
 
-    # 0.54, not 0.65. Calibration bucketed every prediction the engine made
-    # against whether the set was actually correct: the 0.65 band was right
-    # 54.5% of the time (n=11). Small sample, but the error is in the
-    # dangerous direction — an overstated confidence tells a reviewer to skip
-    # a batch that was wrong — so it is set at the observed rate rather than
-    # left flattering. See scripts/calibration.py.
+    # 0.36, not 0.54, and 0.54 not 0.65 before it. Calibration buckets every
+    # prediction against whether the set was actually correct, and this band
+    # has now been re-measured twice and come back lower both times: the 0.65
+    # band was right 54.5%, and the 0.54 band that replaced it is right 36.4%
+    # (n=11 each). Small sample, and the same small sample — but the error is
+    # in the dangerous direction every time, and an overstated confidence
+    # tells a reviewer to skip a batch that was wrong. Set at the observed
+    # rate rather than left flattering. See scripts/calibration.py.
+    #
+    # This is below the auto-clear gate either way, so the change costs no
+    # coverage: it only stops the number lying to whoever reads it.
     #
     # 1.0 for the unambiguous case is not a guess: the probe found no
     # alternative subset within tolerance, so the arithmetic really is
     # determined. What that does NOT establish is that the arithmetic
     # identifies the right transactions, which is why linkage confidence is
     # applied on top of this downstream rather than instead of it.
-    confidence = 0.54 if ambiguous else 1.0
+    confidence = 0.36 if ambiguous else 1.0
 
     return MatchResult(
         batch_id=batch_id,

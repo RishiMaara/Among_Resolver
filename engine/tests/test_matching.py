@@ -82,16 +82,22 @@ def test_ambiguous_match_does_not_auto_clear():
 
 # ── the three states a payment can be in that are not "money moved" ───────
 
-def _txn(tid, cents, ref="SETTLE-X", status=""):
+def _txn(tid, cents, ref="SETTLE-X", status="", source=None):
     from schema import NormalizedTxn, SourceType
     from datetime import datetime, timezone
     return NormalizedTxn(
-        source=SourceType.GATEWAY, source_txn_id=tid, ref_id_canonical=ref,
+        source=source or SourceType.GATEWAY, source_txn_id=tid, ref_id_canonical=ref,
         amount_cents=cents, currency="INR",
         timestamp_utc=datetime(2026, 8, 17, 10, 0, tzinfo=timezone.utc),
         tz_confidence="HIGH",
         extra={"status": status} if status else {},
     )
+
+
+def _key(tid, source="gateway"):
+    """txn_key for a _txn() built with the matching `source`. _anchored_negatives
+    returns txn_key values, not bare ids — see its docstring."""
+    return f"{source}:{tid}"
 
 
 def test_an_anchored_refund_is_a_forced_member():
@@ -105,7 +111,7 @@ def test_an_anchored_refund_is_a_forced_member():
     pool = ([_txn(f"p{i}", 100_000) for i in range(20)]
             + [_txn(f"r{i}", -100_000) for i in range(3)])
     forced = subset_sum._anchored_negatives("SETTLE-X", pool)
-    assert forced == {"r0", "r1", "r2"}
+    assert forced == {_key("r0"), _key("r1"), _key("r2")}
 
 
 def test_a_refund_for_another_settlement_is_not_forced():
@@ -123,7 +129,54 @@ def test_the_anchor_is_matched_in_canonical_form():
     """
     import subset_sum
     pool = [_txn("r0", -100_000, ref="SETTLEX")]
-    assert subset_sum._anchored_negatives("SETTLE-X", pool) == {"r0"}
+    assert subset_sum._anchored_negatives("SETTLE-X", pool) == {_key("r0")}
+
+
+def test_settle_1_does_not_force_a_settle_10_refund():
+    """
+    Regression for the numeric-suffix collision: settlement ids in the wild
+    are sequential and unpadded, so "SETTLE1" (SETTLE-1, canonicalised) is a
+    substring of "SETTLE10" and "SETTLE100". linkage.build_candidate_links
+    already guards this at the candidate-narrowing stage (see
+    test_real_data_hazards.py::TestSequentialSettlementIds), but
+    _anchored_negatives used to run its own raw `in` check instead of
+    linkage._contains_identifier, so the same bug was independently live in
+    the forced-refund path: a refund naming SETTLE-10 would be forced into
+    SETTLE-1's matched set as a negative member, on someone else's money.
+    A digit immediately after the shared prefix means the number keeps
+    going, so this must not force-anchor.
+    """
+    import subset_sum
+    pool = [_txn("r0", -100_000, ref="SETTLE10")]
+    assert subset_sum._anchored_negatives("SETTLE-1", pool) == set()
+    pool_hundred = [_txn("r0", -100_000, ref="SETTLE100")]
+    assert subset_sum._anchored_negatives("SETTLE-1", pool_hundred) == set()
+
+
+def test_settle_10_refund_still_forces_its_own_settlement():
+    """The boundary rule must not cost a legitimate anchor in this path either."""
+    import subset_sum
+    pool = [_txn("r0", -100_000, ref="SETTLE10")]
+    assert subset_sum._anchored_negatives("SETTLE-10", pool) == {_key("r0")}
+
+
+def test_anchored_negatives_does_not_leak_across_a_cross_feed_id_collision():
+    """
+    Regression for a sibling of the same bug: source_txn_id is unique per
+    FEED, not globally (see linkage.txn_key). A settlement's candidate pool
+    routinely merges gateway, bank and ERP records, and their id sequences
+    overlap — so a gateway refund "r0" that anchors to this settlement must
+    NOT force-include an unrelated ERP "r0" that merely reuses the id.
+    """
+    import subset_sum
+    from schema import SourceType
+    pool = [
+        _txn("r0", -100_000, ref="SETTLEX", source=SourceType.GATEWAY),
+        _txn("r0", -999_00, ref="UNRELATED", source=SourceType.ERP),
+    ]
+    forced = subset_sum._anchored_negatives("SETTLE-X", pool)
+    assert forced == {_key("r0", "gateway")}
+    assert _key("r0", "erp") not in forced
 
 
 def test_non_settling_statuses_are_named_and_closed():
@@ -182,3 +235,27 @@ def test_agent_0_maps_a_status_column():
     rep = file_agent.map_headers_with_report(
         ["txn_id", "amount", "currency", "timestamp", "payment_status"])
     assert rep.mapping.get("payment_status") == "status"
+
+
+# ── the fuzzy recovery bundle is a shortlist, not a proposal ──────────────
+
+def test_a_fuzzy_recovery_bundle_is_never_reported_as_clearable():
+    """
+    The reported confidence used to be `fuzz_cfg.confidence_threshold` -- the
+    value deciding whether a fuzzy PAIR is worth acting on, which is not a
+    statement about the recovered SET. It came out at 0.90, above the 0.85
+    auto-clear gate, on bundles measured at 0% exact accuracy over 167
+    observations (scripts/edge_case_suite_1000.py). Nothing cleared on it only
+    because `cleared` was already False by then -- an accident of ordering,
+    not a safety property.
+    """
+    from orchestrator import FUZZY_RECOVERY_CONFIDENCE, MIN_AUTOCLEAR_CONFIDENCE
+    from fuzzy_match import CONFIDENCE_CLEAR_THRESHOLD
+
+    assert FUZZY_RECOVERY_CONFIDENCE < MIN_AUTOCLEAR_CONFIDENCE, (
+        "A similarity bundle must never be reportable as clearable."
+    )
+    assert FUZZY_RECOVERY_CONFIDENCE != CONFIDENCE_CLEAR_THRESHOLD, (
+        "The reported confidence must not be the pair-selection threshold "
+        "again -- that is the category error this test exists to prevent."
+    )

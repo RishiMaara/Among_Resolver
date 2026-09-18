@@ -17,8 +17,9 @@ ortools==9.15.6755     # 9.11.4210 has no Python 3.14 wheel; CP-SAT solver
 # Caching / audit
 redis==5.1.1
 
-# Testing
-pytest==8.3.3
+# Testing lives in requirements-dev.txt. This file is what a deployment
+# installs, and the serverless bundle sits close to its size limit — a test
+# runner no request can reach does not belong in it.
 
 # Optional: LLM features (Agent 0b header mapping, Agent 9 settlement Q&A).
 # Off unless GEMINI_API_KEY is set; disable individually with

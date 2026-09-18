@@ -68,7 +68,7 @@ export const SAMPLE_PRESETS: SamplePreset[] = [
     // clicked in a browser rather than reasoned about.
     memberSource: "",
     declaredDeductions: "2055.66",
-    expected: "withheld · confidence 0.54 · 13 matched · needs review",
+    expected: "withheld · confidence 0.36 · 13 matched · needs review",
   },
 ];
 

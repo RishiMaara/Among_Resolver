@@ -193,14 +193,25 @@ def test_a_full_settlement_reconciles_against_decoys():
     from fee_decomposition import FeeRateCard
     from pipeline import reconcile_settlement
 
-    members = [payment(f"pay_M{i}", gross=50_000 + i * 37_000) for i in range(10)]
-    members.append(refund("rfnd_M0", amount=41_000))
+    # "setl_A" (this file's default settlement_id) canonicalises to "SETLA"
+    # -- 5 characters, one short of linkage.MIN_CANONICAL_ANCHOR_LEN (6) --
+    # so it can never anchor no matter how much real evidence surrounds it.
+    # That default is shared by TestTieOut's tests above, which check
+    # verify_tie_out()'s own settlement_id filtering and would break if the
+    # shared default changed, so this test sets its own longer id locally
+    # instead. "setl_A01" (canonical "SETLA01", 7 chars) does not collide
+    # with the "setl_OTHER{0-4}" decoy ids below.
+    settlement_id = "setl_A01"
+
+    members = [payment(f"pay_M{i}", gross=50_000 + i * 37_000, settlement_id=settlement_id)
+               for i in range(10)]
+    members.append(refund("rfnd_M0", amount=41_000, settlement_id=settlement_id))
     others = [payment(f"pay_O{i}", gross=60_000 + i * 11_000,
                       settlement_id=f"setl_OTHER{i % 5}", when=1_757_000_500 + i)
               for i in range(120)]
 
     net = sum(i["credit"] - i["debit"] for i in members)
-    settlement = {"id": "setl_A", "amount": net, "currency": "INR",
+    settlement = {"id": settlement_id, "amount": net, "currency": "INR",
                   "created_at": 1_757_001_000, "fees": 0, "tax": 0}
     assert rz.verify_tie_out(settlement, members)["ties_out"]
 

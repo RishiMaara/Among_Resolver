@@ -63,6 +63,75 @@ def test_audit_trail_404s_for_a_batch_that_never_ran(client):
     assert r.status_code == 404
 
 
+# ── the joint N:M endpoint ────────────────────────────────────────────────
+#
+# A wiring smoke test, not a reconciliation-logic test — orchestrator.
+# reconcile_many itself is covered end to end in test_reconcile_many.py by
+# calling it directly. What that coverage cannot see is the HTTP layer
+# itself: Pydantic request parsing, _build_settlement_batch, and
+# _format_report per result. A route handler is exactly the kind of thing
+# this file's own docstring warns about — it works today and nothing
+# notices when it stops — so it gets a minimal test of its own.
+
+def test_reconcile_joint_returns_one_result_per_batch_in_request_order(client):
+    payload = {
+        "gateway_txns": [
+            {"txn_id": "JA1", "ref_id": "BATCH-JOINT-EP-A-JA1", "amount": 100.0,
+             "timestamp": "2026-08-21T10:00:00Z"},
+            {"txn_id": "JA2", "ref_id": "BATCH-JOINT-EP-A-JA2", "amount": 200.0,
+             "timestamp": "2026-08-21T10:00:00Z"},
+            {"txn_id": "JB1", "ref_id": "BATCH-JOINT-EP-B-JB1", "amount": 150.0,
+             "timestamp": "2026-08-21T10:00:00Z"},
+        ],
+        "settlement_batches": [
+            {"batch_id": "BATCH-JOINT-EP-A", "net_amount": 300.0,
+             "settled_at": "2026-08-22T10:00:00Z"},
+            {"batch_id": "BATCH-JOINT-EP-B", "net_amount": 150.0,
+             "settled_at": "2026-08-22T10:00:00Z"},
+        ],
+        "settlement_window_days": 5,
+    }
+    r = client.post("/reconcile/joint", json=payload)
+    assert r.status_code == 200, r.text
+    results = r.json()["results"]
+    assert len(results) == 2
+    # Order preserved rather than however the solver happened to iterate —
+    # a caller matches results back to its own request by position.
+    assert results[0]["summary"]["batch_id"] == "BATCH-JOINT-EP-A"
+    assert results[1]["summary"]["batch_id"] == "BATCH-JOINT-EP-B"
+    for result in results:
+        assert "cash_position" in result
+        assert "audit_trail" in result
+
+
+def test_reconcile_joint_requires_at_least_two_batches(client):
+    """One batch is /reconcile or /reconcile/multi's job, not this one's —
+    reject it at the request-validation layer rather than silently running
+    a "joint" solve of size one."""
+    payload = {
+        "gateway_txns": [
+            {"txn_id": "X1", "ref_id": "ONLY-ONE-X1", "amount": 10.0,
+             "timestamp": "2026-08-21T10:00:00Z"},
+        ],
+        "settlement_batches": [
+            {"batch_id": "ONLY-ONE", "net_amount": 10.0, "settled_at": "2026-08-22T10:00:00Z"},
+        ],
+    }
+    r = client.post("/reconcile/joint", json=payload)
+    assert r.status_code == 422
+
+
+def test_reconcile_joint_rejects_an_empty_pool(client):
+    payload = {
+        "settlement_batches": [
+            {"batch_id": "EMPTY-A", "net_amount": 10.0, "settled_at": "2026-08-22T10:00:00Z"},
+            {"batch_id": "EMPTY-B", "net_amount": 10.0, "settled_at": "2026-08-22T10:00:00Z"},
+        ],
+    }
+    r = client.post("/reconcile/joint", json=payload)
+    assert r.status_code == 400
+
+
 # ── the batch decision ────────────────────────────────────────────────────
 
 def test_decision_is_recorded_and_readable_back(client, batch):

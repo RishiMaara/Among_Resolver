@@ -57,6 +57,20 @@ def test_production_still_gets_every_core(bench):
     from subset_sum import SubsetSumConfig
 
     assert SubsetSumConfig().num_search_workers >= 1
-    assert "num_search_workers=1" not in (
-        Path(__file__).resolve().parents[1] / "src" / "orchestrator.py"
-    ).read_text(encoding="utf-8")
+
+    # Scans every engine module, not just orchestrator.py. It read that one
+    # file while the whole pipeline lived there, and would have gone quietly
+    # vacuous the moment any of it moved -- passing because it was looking at
+    # the wrong file rather than because the pin was absent. Splitting the
+    # refusal gates into recon_gates.py was exactly that moment.
+    src = Path(__file__).resolve().parents[1] / "src"
+    pinned = [
+        f"{path.relative_to(src)}:{n}"
+        for path in sorted(src.rglob("*.py"))
+        for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1)
+        if "num_search_workers=1" in line and not line.strip().startswith("#")
+    ]
+    assert not pinned, (
+        "production code pins CP-SAT to a single worker, which belongs to the "
+        "measurement harness and not the engine: " + str(pinned)
+    )

@@ -72,7 +72,9 @@ export function Wordmark({ pill }: { pill?: string }) {
         <>
           <div className="hidden h-4 w-px bg-border md:block" />
           <div className="hidden md:flex items-center gap-1.5 font-semibold text-[17px] text-foreground tracking-tight">
-            {pill === "History" && <History className="size-4 text-muted-foreground animate-[spin_4s_linear_infinite_reverse]" />}
+            {pill === "History" && (
+              <History className="size-4 text-muted-foreground animate-[spin_4s_linear_infinite_reverse]" />
+            )}
             {pill === "Escalations" && <Flag className="size-4 text-muted-foreground" />}
             {pill === "Rulebook" && <ScrollText className="size-4 text-muted-foreground" />}
             {pill === "Agent Flow" && <Network className="size-4 text-muted-foreground" />}

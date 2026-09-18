@@ -120,9 +120,12 @@ the tier is not, and the batch is withheld.
 
 **Unanchored auto-clear limit.** With no anchor evidence and more than 20
 candidates, an exact sum is a coincidence rather than an identification, and
-the batch is withheld. Small pools are exempt because there the arithmetic
-really is determined. (This was 25 in an earlier revision of this file; the
-"judgement call" paragraph below explains why it moved.)
+the batch is withheld. (This was 25 in an earlier revision of this file; the
+"judgement call" paragraph below explains why it moved.) Small pools are not,
+however, exempt from every guard: the 0.85 confidence gate now applies
+regardless of pool size, closing a residual case where a small pool with weak
+(not zero) linkage signal could previously clear at a structural confidence
+around 0.22 with nothing withholding it.
 
 ---
 
@@ -133,9 +136,9 @@ by construction, ground truth compared by transaction **ID**:
 
 | | false clears | auto-clear correct | truth identified | correct abstentions |
 |---|---|---|---|---|
-| Subset-sum only *(baseline)* | 0 | **0.0%** | 1.1% | 100% |
-| Linkage, member feed undeclared | **0** | **62.0%** | 66.0% | 100% |
-| Linkage, member feed declared | **0** | **75.3%** | 81.3% | 100% |
+| Subset-sum only *(baseline)* | 0 | **0.0%** | 0.0% | 100% |
+| Linkage, member feed undeclared | **0** | **62.0%** | 65.3% | 100% |
+| Linkage, member feed declared | **0** | **68.7%** | 78.7% | 100% |
 
 Per family, with the member feed declared:
 
@@ -143,11 +146,20 @@ Per family, with the member feed declared:
 clean, near_collision, exact_collision,
 duplicate_amounts, wide_spread, large_subset   100%
 ref_partial                                    100%
-ref_collision                                   60%
-ref_missing                                     40%
-ref_truncated                                 13.3%
+ref_collision                                46.67%
+ref_missing                                  26.67%
+ref_truncated                                13.33%
 missing_leg, out_of_window          100% correct abstention
 ```
+
+The six clean-reference families are unaffected by declaring the member feed
+— they were already at 100%. Declaring the feed instead moves the four
+reference-degraded families and the overall average; it does not paper over
+the gap between them and the clean families, which stays large. `ref_partial`
+recovering to 100% once the member feed is declared, while `ref_missing` and
+`ref_truncated` stay low, is itself informative: partial reference coverage
+plus source scoping is enough signal, missing or truncated references are
+not.
 
 **50K reference dataset** — 50,000 records across bank/gateway/ERP, target
 contested by 49,999 of them:
@@ -157,7 +169,7 @@ contested by 49,999 of them:
 | Exact set match | **True** (by ID) |
 | Precision / recall | **1.0000 / 1.0000** |
 | Matched | 55 of 55, ₹8,16,863.41 |
-| Reconciliation | **2.4–3.0s** (was 25–49s with sharding) |
+| Reconciliation | **2.0–2.3s** (was 25–49s with sharding) |
 | Pool narrowing | 50,000 → 55 |
 
 **Batch close** — 738 records, 60 settlements, every one attempted:
@@ -167,7 +179,7 @@ contested by 49,999 of them:
 | Match rate | **95.0%** (57 of 60) |
 | False clears | **0** |
 | Declined without a planted problem | **0** |
-| Throughput | 252 records/sec |
+| Throughput | ~400 records/sec |
 
 Run it with `scripts/close_batch.py --generate`. The fixture seeds problems on
 purpose — a batch that reconciles completely measures the happy path, which was
@@ -187,8 +199,8 @@ In a system that books money against invoices this is the metric that matters:
 an unresolved batch is an inconvenience, a confidently wrong one is a loss
 nobody notices until a customer calls.
 
-**8–30× faster.** The solver works over tens of candidates, not tens of
-thousands. 2.4–3.0s versus 25–72s.
+**~11–36× faster.** The solver works over tens of candidates, not tens of
+thousands. 2.0–2.3s versus 25–72s.
 
 **It explains itself.** Every match reports *how* it was found — anchored,
 clustered, or arithmetic-only — and confidence is graded accordingly (0.95
@@ -212,7 +224,7 @@ feed, and the engine declines. That is the correct behaviour, but declining
 does not clear settlements.
 
 **Part of the gain is configuration, not intelligence.** Declaring the member
-feed buys +13.3pp (62.0% → 75.3%). It is fair to configure — you always know
+feed buys +6.7pp (62.0% → 68.7%). It is fair to configure — you always know
 which ledger you are reconciling — but it is not inference, and should not be
 quoted as if it were.
 
@@ -248,30 +260,47 @@ here to have missed. **Measured on corpora where anchors are
 plentiful**, though — it does not follow that the weighting is irrelevant where
 they are absent, and that case is not measured here.
 
-**Confidence is calibrated, and it holds out-of-sample.** ECE 0.0863 is
-measured on 180 scenarios we wrote, using the buckets the 0.85 gate was picked
-from — real, and in-sample, and those are not the same claim.
-`scripts/calibration_out_of_sample.py` measures it on a corpus the gate was
-never tuned against:
+**Confidence has been checked out-of-sample now, and the gate does not fully
+hold up.** ECE 0.1567 in-sample is measured on 180 scenarios we wrote, using
+the buckets the 0.85 gate was picked from — real, and in-sample, and those
+are not the same claim. `scripts/calibration_out_of_sample.py` measures it on
+a corpus the gate was never tuned against:
 
 | corpus | predictions | ECE | at/above 0.85 | wrong above the gate |
 |---|---:|---:|---:|---:|
-| own benchmark *(in-sample)* | 180 | 0.0863 | 103 | **0** |
-| ReconRiver *(out-of-sample)* | 48 | 0.0906 | 27 | **0** |
+| own benchmark *(in-sample)* | 180 | 0.1567 | 133 | 30 |
+| ReconRiver *(out-of-sample)* | 74 | 0.0766 | 46 | 4 |
 
-ReconRiver reproduces the in-sample figure almost exactly — 0.0906 against
-0.0863 — and every one of the 27 predictions above the gate was correct.
+Out-of-sample ECE is actually a little better than in-sample, but "wrong above
+the gate" is the number that matters and it is not zero in either corpus. None
+of those wrong-but-confident predictions were actually auto-cleared in any
+benchmark run — the substitutability and evidence guards independently
+withheld them — so the false-clear rate has stayed at 0 regardless. But the
+specific claim that every prediction at or above 0.85 is correct is false, and
+was already false in-sample before this was ever checked out-of-sample; see
+the next paragraph.
 
-Two corpora is validation, not proof, and both carry usable references.
+Two corpora is validation, not proof, and both carry usable references — what
+the gate does where references are absent entirely is not measured by either.
 
-**Confidence is calibrated in-sample, and it is worse at the bottom than the top.**
-`scripts/calibration.py` buckets 180 predictions against outcomes: ECE 0.0863,
-MCE 0.20, Brier 0.0513. Above the 0.85 auto-clear gate the engine was right in
-103 of 103. Below 0.70 it is *overconfident* — the [0.50, 0.70) bucket says
-0.54 and is right 0.36 of the time — which is the dangerous direction, and the
-reason nothing below the gate clears itself. This paragraph used to say
-confidence was "asserted rather than measured"; it was measured, and the doc
-was not updated.
+**Confidence is trustworthy where it is used to clear, and not everywhere
+below that.** `scripts/calibration.py` buckets 180 predictions against
+outcomes: ECE 0.0544, MCE 0.20, Brier 0.0443. Every prediction at or above
+the 0.85 auto-clear gate was the exact true set — 41 of 41 in [0.85, 0.93),
+62 of 62 in [0.93, 1.01) — and no in-sample bucket is overconfident.
+Out-of-sample on ReconRiver: ECE 0.1037, 42 of 42 correct above the gate, and
+one overconfident band, the lowest — says 0.14, right 3.1% (n=32) — which
+never clears anything.
+
+It got there in two measured steps, both worth knowing because each was a
+number that told a reviewer to trust something wrong. ECE was 0.1567, with
+the [0.85, 0.93) band saying 88.6% and being right 57.8% (41 of 71). The
+cause was fuzzy recovery bundles reporting their own selection threshold,
+0.90, as a confidence; that constant is now a measured 0.05.
+And the ambiguous-match constant said 0.54 against 36.4% observed; it is now
+its measured 0.36. Even so, what keeps the false-clear rate at 0 is that
+clearing needs this number **and** the other three independent guards in
+"Governance" to agree — the number is one of four, not the decision.
 
 **The 20-candidate unanchored limit is a judgement call.** It follows from the
 density argument but the exact number is chosen, not derived. It was 25 until
@@ -301,7 +330,7 @@ time. Linkage removes the need for the guess, and the guess was not free:
   target.
 - It halted on the first ambiguous chunk, ending the search before the chunk
   holding the real members was examined.
-- 25–72s versus 2.4–3.0s.
+- 25–72s versus 2.0–2.3s.
 - Its ranking heuristic had no evidence behind it.
 
 The implementation is preserved on the **`archive/time-based-sharding`**

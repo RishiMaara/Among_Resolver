@@ -108,7 +108,16 @@ engine/data/history/
 # Fetched sanctions lists. Derived data and a point-in-time snapshot: a copy
 # committed here is stale a week later, and stale screening is the failure
 # that matters. Run engine/scripts/fetch_sanctions_list.py.
-engine/data/sanctions/
+#
+# ONE exception, and it is the deployed copy. A serverless deploy builds from
+# git, so an untracked list does not exist there and screening silently falls
+# back to four illustrative names. engine/data/sanctions/un_consolidated.txt is
+# tracked so the live engine screens a real list; its retrieval date is in its
+# header, the loader warns once it is past STALE_AFTER_DAYS, and /health
+# reports it. Refresh it by re-running the fetch script and committing.
+# A fresh fetch into data/sanctions/ (repo root) still takes priority locally.
+engine/data/sanctions/*
+!engine/data/sanctions/un_consolidated.txt
 data/sanctions/
 
 # Build and tooling caches that were reaching git only because nothing
@@ -150,3 +159,6 @@ engine/data/_archive/
 .tmp-*/
 
 engine/data/batch_close/
+
+# Vercel: build output and project link metadata. Never source.
+.vercel

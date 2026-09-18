@@ -12,6 +12,13 @@ the rest, and honesty stops being an asset the moment it is only claimed.
 
 So the number is no longer maintained by hand. If it drifts, this fails, and
 the failing message says which files to correct.
+
+This file only checks the backend count. The frontend half of the same
+README line ("**335** backend · **95** frontend") is checked the same way,
+against what vitest itself collects, by src/lib/documented-figures.test.ts —
+not here, because that check has to run where Node is actually installed
+(the `web` CI job), and the backend job that runs this file never installs
+it.
 """
 
 import functools
@@ -30,7 +37,7 @@ DOCUMENTED = [
     (ROOT / "README.md", r"\*\*(\d+)\*\* backend"),
     (ROOT / "README.md", r"tests/\s+(\d+) tests"),
     (ROOT / "docs" / "ARCHITECTURE.md", r"pytest tests/ -q\s+# (\d+) tests"),
-    (ROOT / "docs" / "TEST_REPORT.md", r"Backend\s+(\d+) passed"),
+    (ROOT / "docs" / "FINAL_TEST_REPORT.md", r"covered by (\d+) rigorous backend tests"),
 ]
 
 
@@ -62,6 +69,6 @@ def test_the_documented_test_count_is_the_real_one(path, pattern):
     assert documented == actual, (
         f"{path.name} says {documented} backend tests; pytest collects {actual}. "
         f"Update every place the count appears - README.md (twice), "
-        f"docs/ARCHITECTURE.md and docs/TEST_REPORT.md - or the four will "
+        f"docs/ARCHITECTURE.md and docs/FINAL_TEST_REPORT.md - or the four will "
         f"disagree again, which is exactly how they got to 179/157/246/275."
     )

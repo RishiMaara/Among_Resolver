@@ -15,7 +15,7 @@ export default tseslint.config(
   // CI failure, tooling temp dirs). They are gitignored, so CI never saw them,
   // but locally they put 247 prettier errors from vendored code in front of a
   // clean lint and made it look like the app was broken.
-  { ignores: ["dist", ".output", ".vinxi", "design", ".tmp-*/**"] },
+  { ignores: ["dist", ".output", ".vercel", ".vinxi", "design", ".tmp-*/**"] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],
