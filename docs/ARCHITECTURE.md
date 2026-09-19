@@ -89,8 +89,12 @@ the URL assert that a settlement of any amount has processed. Every delivery
 must carry a valid HMAC-SHA256 over the raw body, compared with
 `hmac.compare_digest`; an unset secret returns 503 rather than accepting
 unauthenticated instructions about money, and replays are acknowledged
-without being processed twice. Ten of the fourteen tests in
-`test_webhook.py` are refusals.*
+without being processed twice — on every instance, not just the one that saw
+the first delivery: with `REDIS_URL` / `KV_URL` set, replay memory and the
+pending queue live in the same shared store as the audit trail, and Redis's
+atomic `SET NX` means two instances handed the same retry at once cannot both
+treat it as new. Of the nineteen tests in `test_webhook.py`, ten are refusals
+and five cover state shared across instances.*
 ```
 
 `pipeline.py` is the single entry point. `audit.py` records every decision.
@@ -510,7 +514,7 @@ python scripts/run_reconriver.py          # accuracy, third-party data
 python scripts/pull_razorpay.py --month YYYY-MM   # live Razorpay settlements
 python scripts/close_batch.py --generate  # batch close: match rate + exceptions
 python scripts/calibration.py             # is the confidence real
-python -m pytest tests/ -q                # 401 tests
+python -m pytest tests/ -q                # 406 tests
 ```
 
 Frontend: `npm run dev` (port 8080).
@@ -572,7 +576,7 @@ The suite is honest about which of the two it ran against. A fresh clone
 now carries a real list — `engine/data/sanctions/un_consolidated.txt` is
 tracked so a deployed engine, which is built from git, screens against the UN
 Consolidated List instead of silently dropping to four demo names — so the
-run is **401 passed** with or without a fetch. If neither list is present,
+run is **406 passed** with or without a fetch. If neither list is present,
 `test_compliance.py` skips its real-list assertion and names itself, rather
 than passing quietly against the demo set. A fresh fetch into `data/sanctions/`
 at the repo root takes priority over the tracked snapshot, and CI does one.

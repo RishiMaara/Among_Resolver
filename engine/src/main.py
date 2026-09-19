@@ -68,6 +68,7 @@ from cash_position import build_cash_position
 import erp_sync
 import settlement_qa
 import history
+import webhook
 from plain_summary import plain_summary
 import re
 import auto_disposition
@@ -1022,6 +1023,7 @@ def health():
     """
     storage = audit.storage_status()
     history_storage = history.storage_status()
+    webhook_storage = webhook.storage_status()
     sanctions = compliance_agent.sanctions_provenance()
     warnings = []
     # Serverless is where private state stops being a durability footnote and
@@ -1061,6 +1063,7 @@ def health():
         "auth": auth.status_label(),
         "audit_storage": storage,
         "history_storage": history_storage,
+        "webhook_storage": webhook_storage,
         "sanctions_list": sanctions,
         "cors_origins": CORS_ORIGINS,
         "cors_origin_regex": CORS_ORIGIN_REGEX,

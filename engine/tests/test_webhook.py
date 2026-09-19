@@ -10,7 +10,10 @@ a replay, a body too large to buffer, and an event this engine does not act
 on.
 
 Two tests cover the happy path. Ten cover the refusals, including three for
-the interaction that nearly made the whole endpoint unreachable.
+the interaction that nearly made the whole endpoint unreachable. Five cover
+state shared across serverless instances, including a Razorpay retry that
+reaches a second instance — the one situation per-process replay memory could
+not see.
 """
 
 import hashlib
@@ -261,3 +264,111 @@ class TestApiKeyInteraction:
             assert ok.status_code == 200
         finally:
             webhook._reset_for_tests()
+
+
+# ── state shared across instances ─────────────────────────────────────────
+
+class _SharedRedis:
+    """Only the commands the webhook uses, with SET NX / EX semantics intact."""
+
+    def __init__(self):
+        self.keys: dict = {}
+        self.ttl: dict = {}
+        self.hashes: dict = {}
+
+    def set(self, key, value, nx=False, ex=None):
+        if nx and key in self.keys:
+            return None
+        self.keys[key] = value
+        self.ttl[key] = ex
+        return True
+
+    def hset(self, key, field, value):
+        self.hashes.setdefault(key, {})[field] = value
+
+    def hget(self, key, field):
+        return self.hashes.get(key, {}).get(field)
+
+    def hgetall(self, key):
+        return dict(self.hashes.get(key, {}))
+
+    def hlen(self, key):
+        return len(self.hashes.get(key, {}))
+
+    def hdel(self, key, *fields):
+        for f in fields:
+            self.hashes.get(key, {}).pop(f, None)
+
+    # The audit trail shares this store too, and writes through it.
+    def rpush(self, key, value):
+        self.keys.setdefault(key, [])
+        self.keys[key].append(value)
+
+    def lrange(self, key, start, end):
+        items = self.keys.get(key, [])
+        return items[start:] if end == -1 else items[start:end + 1]
+
+
+class TestAcrossInstances:
+    """
+    On a serverless host consecutive requests land on different instances.
+    `_reset_for_tests()` wipes this process's memory, which is exactly what a
+    second instance looks like: it never saw the first delivery. Only the
+    shared store remembers.
+    """
+
+    @pytest.fixture
+    def shared(self, client, monkeypatch):
+        import audit
+        store = _SharedRedis()
+        monkeypatch.setattr(audit, "redis_url", lambda: "rediss://example")
+        monkeypatch.setattr(audit, "_get_redis", lambda: store)
+        return store
+
+    def test_a_retry_reaching_another_instance_is_still_a_duplicate(self, client, shared):
+        body = event(event_id="evt_cross")
+        assert post(client, body, sign(body)).json()["status"] == "accepted"
+        webhook._reset_for_tests()                      # now "another instance"
+        second = post(client, body, sign(body)).json()
+        assert second["status"] == "duplicate", (
+            "a Razorpay retry routed to a second instance was processed again"
+        )
+
+    def test_seen_ids_expire_after_the_retry_window_rather_than_piling_up(self, client, shared):
+        body = event(event_id="evt_ttl")
+        post(client, body, sign(body))
+        key = f"{webhook._REDIS_SEEN_PREFIX}evt_ttl"
+        assert shared.ttl[key] == webhook.REPLAY_TTL_S
+        assert webhook.REPLAY_TTL_S > 24 * 3600, "must outlive Razorpay's 24h retries"
+
+    def test_the_pending_queue_is_the_same_from_every_instance(self, client, shared):
+        body = event(settlement_id="setl_CROSS", event_id="evt_q")
+        post(client, body, sign(body))
+        webhook._reset_for_tests()                      # another instance
+        assert [d.settlement_id for d in webhook.pending()] == ["setl_CROSS"]
+        assert webhook.mark_reconciled("setl_CROSS") is True
+        webhook._reset_for_tests()                      # and a third
+        assert webhook.pending() == []
+        assert webhook.storage_status() == {"backend": "redis", "shared": True}
+
+    def test_a_failing_shared_store_degrades_to_memory_instead_of_failing(self, client, monkeypatch):
+        import audit
+
+        class _Broken:
+            def __getattr__(self, name):
+                def boom(*a, **k):
+                    raise ConnectionError("store down")
+                return boom
+
+        monkeypatch.setattr(audit, "redis_url", lambda: "rediss://example")
+        monkeypatch.setattr(audit, "_get_redis", lambda: _Broken())
+        body = event(event_id="evt_down", settlement_id="setl_DOWN")
+        assert post(client, body, sign(body)).json()["status"] == "accepted"
+        assert post(client, body, sign(body)).json()["status"] == "duplicate"
+        assert [d.settlement_id for d in webhook.pending()] == ["setl_DOWN"]
+
+    def test_a_local_redis_is_not_used_unless_a_url_asks_for_it(self, client, monkeypatch):
+        import audit
+        monkeypatch.setattr(audit, "redis_url", lambda: "")
+        monkeypatch.setattr(audit, "_get_redis", lambda: _SharedRedis())
+        assert webhook.storage_status() == {"backend": "memory", "shared": False}
