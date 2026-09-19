@@ -188,6 +188,12 @@ class ExceptionReason(str, Enum):
     UNRESOLVED = "unresolved"            # no diagnosis found
 
 
+class ExceptionStatus(str, Enum):
+    OPEN = "open"
+    PENDING_APPROVAL = "pending_approval"
+    RESOLVED = "resolved"
+
+
 @dataclass
 class MatchResult:
     batch_id: str
@@ -221,6 +227,13 @@ class ExceptionRecord:
     reason: ExceptionReason
     diagnosis_note: str
     requires_human_approval: bool = True
+    
+    # Maker-Checker Workflow Fields
+    status: ExceptionStatus = ExceptionStatus.OPEN
+    maker_id: str | None = None
+    checker_id: str | None = None
+    resolution_note: str | None = None
+
     # Populated for COMPLIANCE_BLOCK exceptions so the UI and the audit
     # trail can state WHY a transaction was stopped and point the
     # reviewer at the authority behind it, rather than just asserting
