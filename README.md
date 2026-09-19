@@ -78,7 +78,7 @@ For a deeper dive into how this engine stacks up against industry standards, rea
 | **False clears, everywhere above** | **0** |
 | Confidence calibration, 180 scenarios, in-sample (`calibration.py` default) | ECE **0.1567** · MCE 0.3087 · Brier 0.1808 — not a good number; see below |
 | Confidence calibration, ReconRiver, out-of-sample (`calibration_out_of_sample.py`) | ECE 0.0766 · MCE 0.46 · Brier 0.0616, 74 predictions |
-| Tests | **406** backend · **96** frontend |
+| Tests | **431** backend · **97** frontend |
 
 Every figure in that table except the two calibration rows is re-measured by
 `python scripts/generate_benchmarks.py`, which writes
@@ -178,7 +178,7 @@ engine/        Python engine
   src/                       one module per agent — see docs/ARCHITECTURE.md
   src/api/                   the HTTP surface: models, presentation, route groups
   scripts/                   benchmarks, calibration, stress runs, data fetch
-  tests/                     406 tests
+  tests/                     431 tests
   benchmarks/                measurement snapshots
   data/                      Sanctions lists, test ledgers
 design/                    Design canvases the UI is ported from
@@ -223,8 +223,22 @@ trail a reviewer reads afterwards.
   them, not a payment released. In-sample no bucket is overconfident; the last
   one that was, the ambiguous-match constant claiming 0.54 against 36.4%
   observed, is now set at its measured 0.36.
-- **Three agents use an LLM** — header mapping, fuzzy matching, and Q&A. All
-  three propose; none decides. No model sits on the money path.
+- **Two agents call an LLM (Gemini)** — header mapping, when rules cannot find
+  a required column, and settlement Q&A. Both are off unless `GEMINI_API_KEY`
+  is set. Fuzzy matching *can* use a small embedding model (`all-MiniLM-L6-v2`)
+  when `sentence-transformers` is installed; the shipped build does not install
+  it, so in practice that path is lexical. All of them propose; none decides,
+  and no model sits on the money path.
+- **The AI's answers are checked, not just instructed.** Every figure,
+  transaction id and date in a Q&A answer is traced back to the settlement's
+  recorded results before it is shown (`grounding_check.py`). One that does
+  not trace means the answer is withheld, logged, and replaced with the
+  engine's own summary. It matches by value, not meaning — a real number on
+  the wrong noun passes — and the tests pin that edge.
+- **Exceptions are ranked by the money waiting on them.** Each carries its
+  rupees at stake, the list is sorted largest first, and the results screen
+  states the total value waiting on review and its share of the settlement —
+  a payment named by two exceptions is counted once in that total.
 
 ## Where it goes next
 

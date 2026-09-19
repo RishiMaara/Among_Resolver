@@ -199,3 +199,44 @@ describe("the matched payments", () => {
     expect(screen.getByText(/^CLEARED$/)).toBeInTheDocument();
   });
 });
+
+describe("the exception queue", () => {
+  it("says how much money is waiting and prices each exception", () => {
+    render(
+      <ResultsPanel
+        results={base({
+          exceptions: [
+            {
+              reason: "unmatched_in_pool",
+              candidate_txn_ids: ["A"],
+              diagnosis_note: "largest first",
+              amount_at_stake_cents: 40000000,
+              amount_known: true,
+              rank: 1,
+            },
+            {
+              reason: "unmatched_in_pool",
+              candidate_txn_ids: ["GHOST"],
+              diagnosis_note: "not in the feeds",
+              amount_at_stake_cents: 0,
+              amount_known: false,
+              rank: 2,
+            },
+          ],
+          exceptions_summary: {
+            count: 2,
+            total_at_stake_cents: 40000000,
+            unpriced_count: 1,
+            share_of_target: 0.25,
+            ordering: "amount at stake, largest first",
+          },
+        })}
+      />,
+    );
+    expect(screen.getByText(/waiting on review/)).toHaveTextContent("25.0% of the settlement");
+    expect(screen.getAllByText(/at stake/).length).toBeGreaterThanOrEqual(2);
+    // An exception whose transactions are not in the feeds must not read as
+    // "nothing at stake" — the figure is a floor, and says so.
+    expect(screen.getByText(/\+ at stake/)).toBeInTheDocument();
+  });
+});

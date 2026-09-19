@@ -759,6 +759,16 @@ export function ResultsPanel({ results }: { results: ReconcileResult }) {
           <FileWarning className="size-5 text-muted-foreground" />
           Exceptions ({results.exceptions.length})
         </h3>
+        {results.exceptions_summary && results.exceptions_summary.total_at_stake_cents > 0 && (
+          // The number a controller asks first — how much is stuck — which a
+          // bare count hides. The list below is ordered by it.
+          <p className="-mt-2 mb-4 text-sm text-muted-foreground">
+            {inr(results.exceptions_summary.total_at_stake_cents)} waiting on review
+            {results.exceptions_summary.share_of_target != null &&
+              ` (${(results.exceptions_summary.share_of_target * 100).toFixed(1)}% of the settlement)`}
+            , largest first.
+          </p>
+        )}
         {results.exceptions.length === 0 ? (
           <p className="text-sm text-muted-foreground">No exceptions found. Perfect match.</p>
         ) : (
@@ -775,8 +785,17 @@ export function ResultsPanel({ results }: { results: ReconcileResult }) {
                   background: "color-mix(in oklab, var(--s-withheld) 6%, transparent)",
                 }}
               >
-                <span className="font-semibold capitalize" style={{ color: "var(--s-withheld)" }}>
-                  {ex.reason.replace(/_/g, " ")}
+                <span className="flex items-baseline justify-between gap-3">
+                  <span className="font-semibold capitalize" style={{ color: "var(--s-withheld)" }}>
+                    {ex.reason.replace(/_/g, " ")}
+                  </span>
+                  {typeof ex.amount_at_stake_cents === "number" && (
+                    <span className="shrink-0 tabular-nums text-xs text-muted-foreground">
+                      {ex.amount_known === false
+                        ? `${inr(ex.amount_at_stake_cents)}+ at stake`
+                        : `${inr(ex.amount_at_stake_cents)} at stake`}
+                    </span>
+                  )}
                 </span>
                 <span className="text-muted-foreground">{ex.diagnosis_note}</span>
                 {(ex.findings ?? []).map((f: ComplianceFindingDetailData, j: number) => (

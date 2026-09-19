@@ -17,7 +17,7 @@ and the matching path is not. Explaining a reconciliation is a language task.
 Performing one is a money task. A hallucinated sentence is embarrassing; a
 hallucinated amount is a loss.
 
-So the answer is constrained in three ways:
+So the answer is constrained in four ways:
 
   * The grounding is assembled by `build_grounding` from stored results only.
     There is no path by which the model can reach the ledger or re-run a match.
@@ -25,6 +25,11 @@ So the answer is constrained in three ways:
     it does not know rather than fill a gap.
   * Whether a batch cleared is a structured boolean in the grounding. The model
     is told explicitly never to contradict it.
+  * The answer is CHECKED after it is written, not just requested in advance.
+    grounding_check.verify traces every figure, transaction id and date back
+    to the grounding; one that does not trace means the answer is withheld,
+    logged, and replaced with the engine's own deterministic summary. The
+    first three are instructions a model can ignore. This one is not.
 
 PROMPT INJECTION
 ----------------
@@ -50,7 +55,9 @@ import re
 
 
 import audit
+import grounding_check
 import llm_provider
+from plain_summary import plain_summary
 
 logger = logging.getLogger(__name__)
 
@@ -251,10 +258,53 @@ def answer_question(batch_id: str, question: str, report: dict | None = None) ->
             ),
         }
 
+    verdict = grounding_check.verify(text, grounding, question)
+    if not verdict.ok:
+        audit.log_decision(
+            batch_id=batch_id,
+            agent="settlement_qa",
+            detail=(
+                f"Answer WITHHELD — not traceable to this settlement's recorded "
+                f"results: {verdict.describe()}. Q: {question[:200]}"
+            ),
+        )
+        return {
+            "available": True,
+            "grounded": False,
+            "withheld": True,
+            "ungrounded": verdict.items,
+            "answer": _withheld_answer(grounding, verdict),
+        }
+
     audit.log_decision(
         batch_id=batch_id,
         agent="settlement_qa",
-        detail=f"Q: {question[:200]} | A: {text[:400]}",
+        detail=(
+            f"Q: {question[:200]} | A: {text[:400]} "
+            f"[{verdict.checked} figure(s)/id(s) traced to the grounding]"
+        ),
     )
 
-    return {"available": True, "grounded": True, "answer": text}
+    return {"available": True, "grounded": True,
+            "checked_figures": verdict.checked, "answer": text}
+
+
+def _withheld_answer(grounding: dict, verdict) -> str:
+    """
+    What the reviewer sees instead of an answer that failed the check.
+
+    Says what was wrong and hands over the deterministic account, so a
+    withheld answer still leaves the reviewer with something true to act on.
+    """
+    try:
+        recorded = plain_summary(grounding.get("summary") or {})
+    except Exception:  # the fallback must not be the thing that breaks
+        recorded = ""
+    lead = (
+        f"The drafted answer cited {', '.join(verdict.items[:6])}, which "
+        f"do not appear in this settlement's recorded results, so it is not "
+        f"shown. "
+    )
+    return lead + (f"What the engine recorded: {recorded}" if recorded else
+                   "The recorded results, cash position and audit trail above "
+                   "are unaffected.")

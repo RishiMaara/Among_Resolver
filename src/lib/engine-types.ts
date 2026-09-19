@@ -78,6 +78,20 @@ export interface ExceptionRecord {
   // not one. Writing this as `finding` was the first thing the new types
   // caught — a singular name that would have read as undefined forever.
   findings?: ComplianceFindingDetailData[];
+  // Rupees waiting on this exception; the list arrives sorted by it.
+  amount_at_stake_cents?: number;
+  // False when a named transaction is not in the uploaded feeds, so the
+  // figure above is a floor rather than the whole amount.
+  amount_known?: boolean;
+  rank?: number;
+}
+
+export interface ExceptionsSummary {
+  count: number;
+  total_at_stake_cents: number;
+  unpriced_count: number;
+  share_of_target: number | null;
+  ordering: string;
 }
 
 export interface SettlementAnswer {
@@ -119,6 +133,7 @@ export interface ReconcileResult {
   already_settled_elsewhere?: { count: number; summary: string } | null;
   cash_position?: CashPositionData | null;
   exceptions: ExceptionRecord[];
+  exceptions_summary?: ExceptionsSummary;
   audit_trail?: AuditEntry[];
   reviewer?: string;
 }

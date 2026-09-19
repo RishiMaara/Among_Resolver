@@ -27,6 +27,7 @@ import compliance_agent
 import auto_disposition
 import settled_ledger
 import audit
+import exception_ranking
 import erp_sync
 import settlement_qa
 
@@ -113,6 +114,12 @@ def _format_report(report, audit_trail=None, batch=None, candidates=None) -> dic
         ],
         "audit_trail": audit_trail or audit.get_audit_trail(report.batch_id),
     }
+    # Ranked by the money waiting on each one, largest first — the screen
+    # shows ten, history keeps five hundred, Q&A grounds on a few, so the top
+    # of this list is what actually gets reviewed. See exception_ranking.
+    formatted["exceptions"], formatted["exceptions_summary"] = exception_ranking.rank(
+        formatted["exceptions"], candidates, report.match_result.target_cents,
+    )
     # Kept so a question can be answered from what the engine actually
     # recorded, rather than by re-running the match at question time.
     settlement_qa.store_result(report.batch_id, formatted)
