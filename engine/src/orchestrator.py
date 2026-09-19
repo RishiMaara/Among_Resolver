@@ -42,6 +42,7 @@ import compliance_agent
 from exception_diagnosis import diagnose_batch_exceptions
 from linkage import LinkageResult, build_candidate_links, link_confidence, txn_key
 import audit
+from fee_audit import run_fee_audit, MethodRateCard, FeeAuditFinding
 
 
 
@@ -63,6 +64,8 @@ class ReconciliationReport:
     total_candidates: int
     match_result: MatchResult
     exceptions: list[ExceptionRecord] = field(default_factory=list)
+    fee_audit_findings: list[FeeAuditFinding] = field(default_factory=list)
+    fee_audit_summary: dict | None = None
 
     false_positive_cost_estimate_cents: int = 0
     """
@@ -874,6 +877,18 @@ def _build_report_and_tie_out(
 ) -> ReconciliationReport:
     """Construct the report and check the tie-out arithmetic."""
     fp_cost = _compute_false_positive_cost(result)
+    exceptions = exceptions or []
+    fee_findings = []
+    fee_summary = None
+
+    if result and result.matched_txn_ids:
+        # Resolve matched IDs back to objects for the audit
+        matched_txns = [t for t in windowed_candidates if t.source_txn_id in set(result.matched_txn_ids)]
+        fee_findings, fee_summary = run_fee_audit(
+            matched_txns,
+            batch_deduction_cents=batch.declared_deductions_cents,
+            rate_card=MethodRateCard()
+        )
 
     matched_gross = sum(
         t.amount_cents for t in windowed_candidates
@@ -884,6 +899,8 @@ def _build_report_and_tie_out(
         total_candidates=len(windowed_candidates),
         match_result=result,
         exceptions=exceptions,
+        fee_audit_findings=fee_findings,
+        fee_audit_summary=fee_summary,
         false_positive_cost_estimate_cents=fp_cost,
         fee_basis=fee_breakdown.basis,
         target_cents=gross_target,

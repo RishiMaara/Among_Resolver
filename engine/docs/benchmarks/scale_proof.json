@@ -1,0 +1,17 @@
+{
+  "total_records": 200000,
+  "actual_candidates": 200000,
+  "true_subset_size": 55,
+  "generation_time_s": 1.32,
+  "parse_normalize_time_s": 3.24,
+  "reconciliation_time_s": 7.42,
+  "total_wall_clock_s": 10.66,
+  "records_per_second": 26936,
+  "peak_memory_mb": null,
+  "cleared": true,
+  "exact_set_match": true,
+  "precision": 1.0,
+  "recall": 1.0,
+  "matched_count": 55,
+  "exceptions": 0
+}

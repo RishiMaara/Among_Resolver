@@ -78,7 +78,7 @@ For a deeper dive into how this engine stacks up against industry standards, rea
 | **False clears, everywhere above** | **0** |
 | Confidence calibration, 180 scenarios, in-sample (`calibration.py` default) | ECE **0.1567** · MCE 0.3087 · Brier 0.1808 — not a good number; see below |
 | Confidence calibration, ReconRiver, out-of-sample (`calibration_out_of_sample.py`) | ECE 0.0766 · MCE 0.46 · Brier 0.0616, 74 predictions |
-| Tests | **431** backend · **97** frontend |
+| Tests | **455** backend · **97** frontend |
 
 Every figure in that table except the two calibration rows is re-measured by
 `python scripts/generate_benchmarks.py`, which writes
@@ -178,7 +178,7 @@ engine/        Python engine
   src/                       one module per agent — see docs/ARCHITECTURE.md
   src/api/                   the HTTP surface: models, presentation, route groups
   scripts/                   benchmarks, calibration, stress runs, data fetch
-  tests/                     431 tests
+  tests/                     455 tests
   benchmarks/                measurement snapshots
   data/                      Sanctions lists, test ledgers
 design/                    Design canvases the UI is ported from
