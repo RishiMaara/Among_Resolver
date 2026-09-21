@@ -216,3 +216,62 @@ class TestInTheApp:
         import audit
         assert any(e["agent"] == "investigator"
                    for e in audit.get_audit_trail("INVESTIGATE-ME")), "the proposal is on the record"
+
+
+@pytest.fixture(scope="module")
+def undeclared():
+    """The demo's withheld preset: the sample, with no member feed declared."""
+    captured = {}
+    real = inv.investigate
+
+    def spy(batch, candidates, report, use_model=False):
+        captured.update(batch=batch, candidates=candidates, report=report)
+        return real(batch, candidates, report, use_model=False)
+
+    mp = pytest.MonkeyPatch()
+    mp.setattr(inv, "investigate", spy)
+    try:
+        files = {
+            "gateway_file": ("g.csv", (SAMPLES / "gateway_report.csv").read_bytes(), "text/csv"),
+            "bank_file": ("b.csv", (SAMPLES / "bank_statement.csv").read_bytes(), "text/csv"),
+            "erp_file": ("e.json", (SAMPLES / "erp_ledger.json").read_bytes(), "application/json"),
+        }
+        body = TestClient(main.app).post("/reconcile/upload", data={
+            "batch_id": "SETTLE-001", "net_amount": "66466.36",
+            "settled_at": "2026-09-02T00:00:00Z", "settlement_window_days": "5",
+            "currency": "INR", "declared_deductions": "2055.66",
+            "investigate": "true"}, files=files).json()
+    finally:
+        mp.undo()
+    case = inv.build_case(captured["batch"], captured["candidates"], captured["report"],
+                          workers=1)
+    return body, case
+
+
+class TestAnUndeclaredMemberFeed:
+    """FAILURE_LOG 30: the engine's proposal reached the case with records missing."""
+
+    def test_the_case_shows_every_record_the_engine_proposed(self, undeclared):
+        body, case = undeclared
+        assert not body["summary"]["cleared"]
+        shown = [r["id"] for r in case["engine_proposal"]]
+        assert sorted(shown) == sorted(body["matched_txn_ids"])
+        assert {r["feed"] for r in case["engine_proposal"]} == {"gateway", "erp"}
+        assert case["member_feed"] == "gateway" and not case["member_feed_declared"]
+
+    def test_a_payment_counted_in_both_feeds_is_rejected(self, undeclared):
+        body, case = undeclared
+        verdict = inv.verify(match(body["matched_txn_ids"]), case)
+        assert not verdict["valid"]
+        failed = " ".join(verdict["failed"])
+        assert "counted twice" in failed and "JV00000 and pay_0000" in failed
+        assert "declare it and re-run" in failed
+
+    def test_the_payout_that_every_record_names_still_passes(self, undeclared, monkeypatch):
+        _, case = undeclared
+        # Other tests clear this sample under other batch ids; whether these
+        # payments were paid out elsewhere is not what this checks.
+        monkeypatch.setattr(settled_ledger, "owners", lambda ids: {})
+        truth = [f"pay_{i:04d}" for i in range(14)]
+        verdict = inv.verify(match(truth), case)
+        assert verdict["valid"], verdict["failed"]

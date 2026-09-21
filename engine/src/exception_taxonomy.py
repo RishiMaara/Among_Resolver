@@ -55,6 +55,20 @@ CATEGORIES = {
         "next_action": ("The same payment appears twice. Remove the duplicate at the "
                         "source; do not reverse it here."),
     },
+    # A gateway payment and its own ledger entry share a reference and an
+    # amount, so the matcher calls the pair a duplicate. It is the payment
+    # recorded where it should be, twice over — filing it as a duplicate told
+    # a reviewer to delete a correct ledger entry. One record per feed is this.
+    # FAILURE_LOG 32.
+    "awaiting_payout": {
+        "label": "Booked, not in this payout",
+        "owner": "nobody yet — wait",
+        "next_action": ("The gateway record and its ledger entry agree; the payment is "
+                        "just not part of this payout as matched. It is carried as an "
+                        "open item and should arrive in a later settlement — act only "
+                        "if it goes overdue, or if this settlement was withheld and it "
+                        "may belong here."),
+    },
     "split_or_partial": {
         "label": "Split or partial payment",
         "owner": "accounts receivable",
@@ -99,7 +113,12 @@ def categorise(exc: dict, sources: dict[str, set[str]]) -> str:
     if reason == "timing_lag":
         return "in_transit"
     if reason == "duplicate":
-        return "duplicate"
+        # Same feed twice is a duplicate; one record in each of two feeds is
+        # the same payment as its processor and its books recorded it.
+        per_id = [sources.get(i, set()) for i in exc.get("candidate_txn_ids") or []]
+        one_each = (len(per_id) > 1 and all(len(f) == 1 for f in per_id)
+                    and len({next(iter(f)) for f in per_id}) == len(per_id))
+        return "awaiting_payout" if one_each else "duplicate"
     if reason == "partial_payment":
         return "split_or_partial"
     if reason == "low_confidence":

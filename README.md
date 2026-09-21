@@ -18,7 +18,7 @@ It never writes to a ledger. It proposes; a person approves.
 |---|---|
 | Wrong sets cleared, every measured corpus | **0** |
 | Third-party corpus (ReconRiver), references present | 94.6% of settlements identified exactly |
-| Same corpus, every settlement reference stripped | 21.6% → **56.8%** with learned linkage |
+| Same corpus, every settlement reference stripped | 24.3% → **56.8%** with learned linkage |
 | Bank narrations read right, bank formats the rules never saw | 82.7% rules → **97.5%** grounded model |
 | One settlement found inside 200,000 records | exact 55 members, precision and recall 1.0 |
 
@@ -122,12 +122,12 @@ do that they do: **[Industry Comparison](docs/INDUSTRY_COMPARISON.md)**.
 | **Batch close, 738 records / 60 settlements** | **95.0%** match rate, **0** false clears, 0 false alarms, ~400 records/sec — `scripts/close_batch.py` |
 | 50,000-record stress run | exact 55/55 set by ID, precision **1.0**, recall **1.0**, **2.0–2.3s** to reconcile (3.0–3.5s including load and parse) |
 | ReconRiver corpus (references intact) | **94.59%** exact set identified, 91.89% auto-cleared and correct |
-| ReconRiver corpus (references stripped) | 21.62% — the rest declined, none wrong |
+| ReconRiver corpus (references stripped) | 24.32% exact, **56.76%** once the payout cycle is learned from earlier payouts; 21.62% auto-cleared, the rest withheld, none wrong |
 | Own benchmark, 120 scenarios (`benchmark.py` default) | 62% auto-clear, 65% truth identified, 0 false clears |
 | **False clears, everywhere above** | **0** |
 | Confidence calibration, 180 scenarios, in-sample (`calibration.py` default) | ECE 0.0544 · MCE 0.20 · Brier 0.0443 — 103 of 103 correct at or above the 0.85 gate |
 | Confidence calibration, ReconRiver, out-of-sample (`calibration_out_of_sample.py`) | ECE 0.1037 raw, **0.040** calibrated (`fit_calibration.py`) · 42 of 42 correct above the gate, 74 predictions |
-| Tests | **691** backend · **110** frontend |
+| Tests | **695** backend · **125** frontend |
 
 Every figure in that table except the two calibration rows is re-measured by
 `python scripts/generate_benchmarks.py`, which writes
@@ -227,7 +227,7 @@ engine/        Python engine
   src/                       one module per agent — see docs/ARCHITECTURE.md
   src/api/                   the HTTP surface: models, presentation, route groups
   scripts/                   benchmarks, calibration, stress runs, data fetch
-  tests/                     691 tests
+  tests/                     695 tests
   benchmarks/                measurement snapshots
   data/                      Sanctions lists, test ledgers
 design/                    Design canvases the UI is ported from
@@ -253,7 +253,8 @@ trail a reviewer reads afterwards.
 - **Accuracy depends on reference quality, and the dependence is measured.**
   With settlement references intact the engine identifies the correct set
   94.59% of the time; strip those references out and the same corpus drops to
-  21.62%. Both conditions produced **0 false clears**. That gap is the honest
+  24.32% — 56.76% once the processor's payout cycle is learned from earlier
+  payouts. Every condition produced **0 false clears**. That gap is the honest
   answer to how much of the accuracy is the engine and how much is clean data,
   and `scripts/run_reconriver.py` runs both conditions.
 - **The confidence number is reliable at and above the gate — measured, not
@@ -333,7 +334,7 @@ trail a reviewer reads afterwards.
   with m-probabilities learned by EM from anchored records, or from the
   processor's settlement cycle as read off earlier verified clears (T+1, T+2:
   the engine learns which). On ReconRiver with every settlement id stripped,
-  exact sets identified rise from **21.6% to 56.8%**, zero false clears, with
+  exact sets identified rise from **24.3% to 56.8%**, zero false clears, with
   the cycle learned only from other scenarios. They arrive as proposals, not
   auto-clears: seven measured cases do not justify releasing money. Every
   response carries what the model learned (`summary.learned_linkage`).

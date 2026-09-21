@@ -15,6 +15,7 @@ import { Flag, ScrollText } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SessionMenu } from "@/components/session-menu";
 import { Wordmark } from "@/components/wordmark";
+import { PayoutsLink } from "@/components/payouts-link";
 import { LoadingMark } from "@/components/loading-mark";
 import { engineFetch, ENGINE_HOST } from "@/lib/api";
 
@@ -106,6 +107,7 @@ function HistoryScreen() {
               <ScrollText className="size-4" />
               <span className="hidden sm:inline">Rulebook</span>
             </Link>
+            <PayoutsLink />
             <SessionMenu />
             <ThemeToggle />
           </div>

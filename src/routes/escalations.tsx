@@ -21,6 +21,7 @@ import { Flag, ScrollText } from "lucide-react";
 import { HistoryLink } from "@/components/history-link";
 import { engineFetch } from "@/lib/api";
 import { Wordmark } from "@/components/wordmark";
+import { PayoutsLink } from "@/components/payouts-link";
 import { SessionMenu } from "@/components/session-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -79,6 +80,7 @@ function Escalations() {
               <ScrollText className="size-4" />
               <span className="hidden sm:inline">Rulebook</span>
             </Link>
+            <PayoutsLink />
             <SessionMenu />
             <ThemeToggle />
           </div>

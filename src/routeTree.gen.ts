@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as EscalationsRouteImport } from './routes/escalations'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as JudgeRouteImport } from './routes/judge'
+import { Route as PayoutsRouteImport } from './routes/payouts'
 import { Route as RulebookRouteImport } from './routes/rulebook'
 
 const IndexRoute = IndexRouteImport.update({
@@ -35,6 +36,11 @@ const JudgeRoute = JudgeRouteImport.update({
   path: '/judge',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PayoutsRoute = PayoutsRouteImport.update({
+  id: '/payouts',
+  path: '/payouts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RulebookRoute = RulebookRouteImport.update({
   id: '/rulebook',
   path: '/rulebook',
@@ -46,6 +52,7 @@ export interface FileRoutesByFullPath {
   '/escalations': typeof EscalationsRoute
   '/history': typeof HistoryRoute
   '/judge': typeof JudgeRoute
+  '/payouts': typeof PayoutsRoute
   '/rulebook': typeof RulebookRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +60,7 @@ export interface FileRoutesByTo {
   '/escalations': typeof EscalationsRoute
   '/history': typeof HistoryRoute
   '/judge': typeof JudgeRoute
+  '/payouts': typeof PayoutsRoute
   '/rulebook': typeof RulebookRoute
 }
 export interface FileRoutesById {
@@ -61,14 +69,23 @@ export interface FileRoutesById {
   '/escalations': typeof EscalationsRoute
   '/history': typeof HistoryRoute
   '/judge': typeof JudgeRoute
+  '/payouts': typeof PayoutsRoute
   '/rulebook': typeof RulebookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/escalations' | '/history' | '/judge' | '/rulebook'
+  fullPaths:
+    '/' | '/escalations' | '/history' | '/judge' | '/payouts' | '/rulebook'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/escalations' | '/history' | '/judge' | '/rulebook'
-  id: '__root__' | '/' | '/escalations' | '/history' | '/judge' | '/rulebook'
+  to: '/' | '/escalations' | '/history' | '/judge' | '/payouts' | '/rulebook'
+  id:
+    | '__root__'
+    | '/'
+    | '/escalations'
+    | '/history'
+    | '/judge'
+    | '/payouts'
+    | '/rulebook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -76,6 +93,7 @@ export interface RootRouteChildren {
   EscalationsRoute: typeof EscalationsRoute
   HistoryRoute: typeof HistoryRoute
   JudgeRoute: typeof JudgeRoute
+  PayoutsRoute: typeof PayoutsRoute
   RulebookRoute: typeof RulebookRoute
 }
 
@@ -109,6 +127,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JudgeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/payouts': {
+      id: '/payouts'
+      path: '/payouts'
+      fullPath: '/payouts'
+      preLoaderRoute: typeof PayoutsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/rulebook': {
       id: '/rulebook'
       path: '/rulebook'
@@ -124,6 +149,7 @@ const rootRouteChildren: RootRouteChildren = {
   EscalationsRoute: EscalationsRoute,
   HistoryRoute: HistoryRoute,
   JudgeRoute: JudgeRoute,
+  PayoutsRoute: PayoutsRoute,
   RulebookRoute: RulebookRoute,
 }
 export const routeTree = rootRouteImport

@@ -32,7 +32,7 @@ export const MEASURED: Measured[] = [
   },
   {
     label: "Learned linkage, references stripped (ReconRiver, third-party)",
-    before: "21.62%",
+    before: "24.32%",
     after: "56.76%",
     note: "exact sets found; cycle learned only from other scenarios; 0 false clears.",
     source: {

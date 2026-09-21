@@ -20,15 +20,20 @@ import {
   MessageSquare,
   Download,
 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { LoadingMark } from "@/components/loading-mark";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { cn, inr } from "@/lib/utils";
 import { engineFetch } from "@/lib/api";
 import { MatchedPayments } from "@/components/matched-payments";
 import { ComplianceReview } from "@/components/compliance-review";
 import { ReviewDecision } from "@/components/review-decision";
 import { JournalApproval } from "@/components/journal-approval";
+import { InvestigationCard } from "@/components/investigation-card";
+import { FeeAudit } from "@/components/fee-audit";
+import { AuditReceipt } from "@/components/audit-receipt";
+import { TallyExport } from "@/components/tally-export";
 import { fetchDecisions, latestFor } from "@/lib/decisions";
 import { toast } from "sonner";
 
@@ -133,17 +138,6 @@ function ComplianceFindingDetail({ finding }: { finding: ComplianceFindingDetail
       </div>
     </div>
   );
-}
-
-// Indian digit grouping (lakh/crore). A controller reading against crore
-// thresholds should not have to count digits, and Intl's en-IN locale does
-// this correctly where a plain toLocaleString does not.
-function inr(cents: number): string {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 2,
-  }).format(cents / 100);
 }
 
 // Closing the finance-ops loop. A matched set is not what a finance function
@@ -357,6 +351,7 @@ function CashPosition({ cash, batchId }: { cash: CashPositionData; batchId: stri
               balanced={!!j.balanced}
             />
           )}
+          {journalDecision === "approved" && j.balanced && <TallyExport batchId={batchId} />}
         </div>
       )}
 
@@ -490,7 +485,15 @@ function SettlementQA({ batchId }: { batchId: string }) {
 // already returned by the API and rendered nowhere, so the one artifact that
 // makes the pipeline explainable was effectively invisible. Collapsed by
 // default because it runs to tens of thousands of entries at scale.
-function AuditTrail({ trail, batchId }: { trail: AuditEntry[]; batchId: string }) {
+function AuditTrail({
+  trail,
+  batchId,
+  head,
+}: {
+  trail: AuditEntry[];
+  batchId: string;
+  head?: string | null | undefined;
+}) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 
@@ -577,6 +580,7 @@ function AuditTrail({ trail, batchId }: { trail: AuditEntry[]; batchId: string }
         <span className="font-mono text-foreground">{batchId}</span> — which agent acted, what it
         decided, and why.
       </p>
+      {head && <AuditReceipt batchId={batchId} head={head} />}
 
       <div className="flex flex-wrap gap-2 mt-3">
         {agents.map(([agent, count]) => (
@@ -724,6 +728,20 @@ export function ResultsPanel({ results }: { results: ReconcileResult }) {
         </div>
       </div>
 
+      {typeof s.confidence === "number" && (
+        // Both figures, and which one decides. The calibrated one is what the
+        // score has meant in measured outcomes; the gate reads the raw score,
+        // so a change to the calibration can never change what clears.
+        <p className="-mt-2 text-xs text-muted-foreground">
+          Confidence {s.confidence.toFixed(2)} as the engine scored it
+          {typeof s.calibrated_confidence === "number" &&
+            `; in measured outcomes, results at this score were right about ${Math.round(
+              s.calibrated_confidence * 100,
+            )}% of the time`}
+          . The clearing gate reads the engine's score, never the calibrated one.
+        </p>
+      )}
+
       {/* Which payments, not just how many. This was the number "6 / 45" and
           nothing else — a reviewer asked to confirm a set they could not see. */}
       {(results.matched_transactions?.length ?? 0) > 0 && (
@@ -744,15 +762,25 @@ export function ResultsPanel({ results }: { results: ReconcileResult }) {
         cleared={!!s.cleared}
       />
 
+      {results.investigation && <InvestigationCard found={results.investigation} />}
+
       {/* Compliance sits above the cash position: what a reviewer may not
           touch has to be settled before where the money is means anything. */}
       <ComplianceReview review={results.compliance_review} batchId={s.batch_id} />
 
       {results.cash_position && <CashPosition cash={results.cash_position} batchId={s.batch_id} />}
 
+      {/* A fee audit of a withheld proposal would be a verdict on payments
+          that may not be members, so it is shown on a clear only. */}
+      {s.cleared && results.fee_audit && <FeeAudit audit={results.fee_audit} />}
+
       <SettlementQA batchId={s.batch_id} />
 
-      <AuditTrail trail={results.audit_trail ?? []} batchId={s.batch_id} />
+      <AuditTrail
+        trail={results.audit_trail ?? []}
+        batchId={s.batch_id}
+        head={results.audit_head}
+      />
 
       <div className="surface-card p-6">
         <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
@@ -767,6 +795,29 @@ export function ResultsPanel({ results }: { results: ReconcileResult }) {
             {results.exceptions_summary.share_of_target != null &&
               ` (${(results.exceptions_summary.share_of_target * 100).toFixed(1)}% of the settlement)`}
             , largest first.
+          </p>
+        )}
+        {(results.exceptions_summary?.by_category?.length ?? 0) > 0 && (
+          <div className="-mt-2 mb-4 flex flex-wrap gap-2">
+            {results.exceptions_summary?.by_category?.map((c) => (
+              <span
+                key={c.category}
+                className="rounded-full border border-border bg-muted/50 px-2 py-0.5 text-[11px]"
+                title={`Goes to ${c.owner}`}
+              >
+                {c.label} · {c.count} · {inr(c.value_cents)}
+              </span>
+            ))}
+          </div>
+        )}
+        {results.open_items && results.open_items.opened + results.open_items.closed > 0 && (
+          <p className="-mt-2 mb-4 text-xs text-muted-foreground">
+            This run opened {results.open_items.opened} and closed {results.open_items.closed} open
+            item(s) — money still waiting, carried across runs and aged in working days.{" "}
+            <Link to="/payouts" className="underline">
+              See what is waiting
+            </Link>
+            .
           </p>
         )}
         {results.exceptions.length === 0 ? (
@@ -786,8 +837,9 @@ export function ResultsPanel({ results }: { results: ReconcileResult }) {
                 }}
               >
                 <span className="flex items-baseline justify-between gap-3">
-                  <span className="font-semibold capitalize" style={{ color: "var(--s-withheld)" }}>
-                    {ex.reason.replace(/_/g, " ")}
+                  <span className="font-semibold" style={{ color: "var(--s-withheld)" }}>
+                    {ex.category_label ??
+                      ex.reason.replace(/_/g, " ").replace(/^./, (ch) => ch.toUpperCase())}
                   </span>
                   {typeof ex.amount_at_stake_cents === "number" && (
                     <span className="shrink-0 tabular-nums text-xs text-muted-foreground">
@@ -798,6 +850,12 @@ export function ResultsPanel({ results }: { results: ReconcileResult }) {
                   )}
                 </span>
                 <span className="text-muted-foreground">{ex.diagnosis_note}</span>
+                {ex.next_action && (
+                  <span className="text-[12.5px]">
+                    {ex.owner && <span className="font-medium">For {ex.owner}: </span>}
+                    {ex.next_action}
+                  </span>
+                )}
                 {(ex.findings ?? []).map((f: ComplianceFindingDetailData, j: number) => (
                   <ComplianceFindingDetail key={j} finding={f} />
                 ))}

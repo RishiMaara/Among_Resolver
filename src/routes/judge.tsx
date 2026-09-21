@@ -13,7 +13,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Play, CheckCircle2, AlertTriangle, ExternalLink } from "lucide-react";
 import { engineFetch, ENGINE_HOST } from "@/lib/api";
 import { MEASURED } from "@/lib/measured";
+import { inr } from "@/lib/utils";
 import { Wordmark } from "@/components/wordmark";
+import { PayoutsLink } from "@/components/payouts-link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { HistoryLink } from "@/components/history-link";
 
@@ -40,55 +42,74 @@ async function json(path: string, init?: RequestInit) {
   return body;
 }
 
-const inr = (paise: number) =>
-  `₹${(paise / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
 // ── the live checks ──────────────────────────────────────────────────────
 
-async function reconcileAndInvestigate(): Promise<Line[]> {
-  const batch = `JUDGE-${Date.now().toString(36).toUpperCase()}`;
+async function reconcileSample(memberSource: string | null) {
   const fd = new FormData();
   fd.append("gateway_file", await sample("/sample-data/gateway_report.csv"), "gateway_report.csv");
   fd.append("bank_file", await sample("/sample-data/bank_statement.csv"), "bank_statement.csv");
   fd.append("erp_file", await sample("/sample-data/erp_ledger.json"), "erp_ledger.json");
   for (const [k, v] of Object.entries({
-    batch_id: batch,
+    // The id the sample's references carry, so the members name it.
+    batch_id: "SETTLE-001",
     net_amount: "66466.36",
     settled_at: "2026-09-02T00:00:00Z",
     settlement_window_days: "5",
     currency: "INR",
     declared_deductions: "2055.66",
-    member_source: "gateway",
     investigate: "true",
   }))
     fd.append(k, v);
-  const res = await json("reconcile/upload", { method: "POST", body: fd });
-  const s = res.summary ?? {};
-  const out: Line[] = [
-    {
-      tone: s.cleared ? "good" : "muted",
-      text: `${s.cleared ? "Cleared" : "Withheld"}: ${s.matched_count} payment(s) proposed, confidence ${s.confidence}${
-        s.calibrated_confidence != null ? ` (calibrated ${s.calibrated_confidence})` : ""
-      }.`,
-    },
-  ];
-  if (res.plain_summary) out.push({ text: String(res.plain_summary) });
-  const inv = res.investigation;
-  if (inv) {
-    out.push({
-      tone: inv.verification.valid ? "good" : "bad",
-      text: `Investigator (${inv.proposal.proposer}) proposes ${inv.proposal.action}: ${inv.proposal.reason}`,
-    });
-    out.push({ tone: "muted", text: inv.verification.plain });
-  }
+  if (memberSource) fd.append("member_source", memberSource);
+  return json("reconcile/upload", { method: "POST", body: fd });
+}
+
+interface Verdict {
+  cleared?: boolean;
+  matched_count?: number;
+  confidence?: number;
+  calibrated_confidence?: number | null;
+}
+
+function verdictLine(s: Verdict): Line {
+  const cal = s.calibrated_confidence;
+  return {
+    tone: s.cleared ? "good" : "muted",
+    text: `${s.cleared ? "Cleared" : "Withheld"}: ${s.matched_count} payment(s), confidence ${s.confidence}${
+      typeof cal === "number"
+        ? ` (right ${Math.round(cal * 100)}% of the time at this score, measured)`
+        : ""
+    }.`,
+  };
+}
+
+async function reconcileAndInvestigate(): Promise<Line[]> {
+  // 1. The payout, with its member feed declared: it clears, and its audit
+  //    receipt is checked against the trail.
+  const res = await reconcileSample("gateway");
+  const out: Line[] = [verdictLine(res.summary ?? {})];
+  if (res.plain_summary) out.push({ tone: "muted", text: String(res.plain_summary) });
   if (res.audit_head) {
-    const v = await json(
-      `audit/${encodeURIComponent(batch)}/verify?receipt=${encodeURIComponent(res.audit_head)}`,
-    );
+    const v = await json(`audit/SETTLE-001/verify?receipt=${encodeURIComponent(res.audit_head)}`);
     out.push({
       tone: v.intact ? "good" : "bad",
       text: `Audit receipt ${String(res.audit_head).slice(0, 12)}…: ${v.plain}`,
     });
+  }
+  // 2. The same payout with the member feed left undeclared. Every gateway
+  //    payment has a ledger twin at the same amount, so the engine withholds —
+  //    and the investigator's proposal meets the verifier.
+  const res2 = await reconcileSample(null);
+  out.push({
+    ...verdictLine(res2.summary ?? {}),
+    text: `Member feed undeclared — ${verdictLine(res2.summary ?? {}).text}`,
+  });
+  const inv = res2.investigation;
+  if (inv) {
+    out.push({
+      text: `Investigator (${inv.proposal.proposer}) proposes ${inv.proposal.action}: ${inv.proposal.reason}`,
+    });
+    out.push({ tone: inv.verification.valid ? "good" : "bad", text: inv.verification.plain });
   }
   return out;
 }
@@ -189,9 +210,9 @@ async function openItems(): Promise<Line[]> {
 
 const CHECKS: { title: string; proves: string; endpoint: string; run: () => Promise<Line[]> }[] = [
   {
-    title: "Reconcile a payout; investigate what is left",
+    title: "Reconcile a payout; investigate one it will not clear",
     proves:
-      "The sample settlement, reconciled. Whatever it will not clear goes to the investigator, whose proposal is verified in code — then the audit receipt is checked against the trail.",
+      "The sample payout reconciled, and its audit receipt checked against the trail. Then the same payout with its member feed undeclared, which the engine withholds: the investigator proposes a next step, and code checks the proposal before a reviewer would see it.",
     endpoint: "POST /reconcile/upload · GET /audit/{batch}/verify",
     run: reconcileAndInvestigate,
   },
@@ -494,6 +515,7 @@ function Judge() {
             >
               Rulebook
             </Link>
+            <PayoutsLink />
             <ThemeToggle />
           </div>
         </div>

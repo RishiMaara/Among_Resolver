@@ -21,6 +21,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { SessionMenu } from "@/components/session-menu";
 import { engineFetch } from "@/lib/api";
 import { Wordmark } from "@/components/wordmark";
+import { PayoutsLink } from "@/components/payouts-link";
 
 export const Route = createFileRoute("/rulebook")({
   component: Rulebook,
@@ -134,6 +135,7 @@ function Rulebook() {
             <Flag className="size-4" />
             <span className="hidden sm:inline">Escalations</span>
           </Link>
+          <PayoutsLink />
           <ThemeToggle />
           <SessionMenu />
         </div>

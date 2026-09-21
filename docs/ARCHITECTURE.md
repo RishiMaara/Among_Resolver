@@ -550,7 +550,7 @@ python scripts/run_reconriver.py          # accuracy, third-party data
 python scripts/pull_razorpay.py --month YYYY-MM   # live Razorpay settlements
 python scripts/close_batch.py --generate  # batch close: match rate + exceptions
 python scripts/calibration.py             # is the confidence real
-python -m pytest tests/ -q                # 691 tests
+python -m pytest tests/ -q                # 695 tests
 ```
 
 Frontend: `npm run dev` (port 8080).
@@ -612,7 +612,7 @@ The suite is honest about which of the two it ran against. A fresh clone
 now carries a real list — `engine/data/sanctions/un_consolidated.txt` is
 tracked so a deployed engine, which is built from git, screens against the UN
 Consolidated List instead of silently dropping to four demo names — so the
-run is **691 passed** with or without a fetch. If neither list is present,
+run is **695 passed** with or without a fetch. If neither list is present,
 `test_compliance.py` skips its real-list assertion and names itself, rather
 than passing quietly against the demo set. A fresh fetch into `data/sanctions/`
 at the repo root takes priority over the tracked snapshot, and CI does one.

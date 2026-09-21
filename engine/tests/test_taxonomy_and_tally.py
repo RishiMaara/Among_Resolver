@@ -43,6 +43,16 @@ class TestTheTaxonomy:
         sources = {"T1": feeds}
         assert tax.categorise({"reason": reason, "candidate_txn_ids": ["T1"]}, sources) == expected
 
+    def test_a_payment_and_its_own_ledger_entry_are_not_a_duplicate(self):
+        # The matcher calls any same-reference, same-amount pair a duplicate.
+        # One in each feed is the payment booked where it belongs; filing it
+        # as a duplicate told a reviewer to delete a correct ledger entry.
+        sources = {"pay_1": {"gateway"}, "JV1": {"erp"}, "pay_1b": {"gateway"}}
+        both_feeds = {"reason": "duplicate", "candidate_txn_ids": ["pay_1", "JV1"]}
+        same_feed = {"reason": "duplicate", "candidate_txn_ids": ["pay_1", "pay_1b"]}
+        assert tax.categorise(both_feeds, sources) == "awaiting_payout"
+        assert tax.categorise(same_feed, sources) == "duplicate"
+
     def test_every_category_has_an_owner_and_a_first_step(self):
         for meta in tax.CATEGORIES.values():
             assert meta["owner"] and meta["next_action"] and meta["label"]

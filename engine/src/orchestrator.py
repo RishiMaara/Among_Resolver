@@ -877,8 +877,16 @@ def _tiebreak_if_ambiguous(
         # internally), and re-deriving it here is far less invasive than
         # widening the MatchResult schema to carry it.
         forced_ids = _anchored_negatives(batch.batch_id, windowed_candidates)
+        # A declared member feed holds for the tiebreak too. Linkage scoped the
+        # solve to it; this probe searched every feed and so could "prefer" a
+        # set of ledger copies — on the demo sample, 11 ERP records of which 7
+        # doubled a gateway payment already in the set. Withheld either way,
+        # but a reviewer was shown a set that could never be right.
+        # FAILURE_LOG 31.
+        pool = ([t for t in windowed_candidates if t.source is batch.member_source]
+                if batch.member_source is not None else windowed_candidates)
         chosen = _tiebreak_ambiguous_match(
-            matched_pool, windowed_candidates, gross_target,
+            matched_pool, pool, gross_target,
             cfg.tolerance_cents, primary_keys, batch.batch_id,
             forced_ids=forced_ids,
             num_search_workers=cfg.num_search_workers,

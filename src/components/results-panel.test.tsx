@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { ResultsPanel } from "@/components/results-panel";
 import type { ReconcileResult } from "@/lib/engine-types";
 
@@ -27,6 +27,14 @@ vi.mock("@/components/journal-approval", () => ({
 }));
 vi.mock("@/components/compliance-decision", () => ({
   ComplianceDecision: () => <div data-testid="compliance-decision" />,
+}));
+vi.mock("@tanstack/react-router", async (orig) => ({
+  ...(await orig<typeof import("@tanstack/react-router")>()),
+  Link: ({ to, children, ...p }: { to: string; children: React.ReactNode }) => (
+    <a href={to} {...p}>
+      {children}
+    </a>
+  ),
 }));
 
 const base = (over: Partial<ReconcileResult> = {}): ReconcileResult =>
@@ -238,5 +246,236 @@ describe("the exception queue", () => {
     // An exception whose transactions are not in the feeds must not read as
     // "nothing at stake" — the figure is a floor, and says so.
     expect(screen.getByText(/\+ at stake/)).toBeInTheDocument();
+  });
+});
+
+describe("the calibrated confidence", () => {
+  it("shows both figures and says which one decides", () => {
+    render(
+      <ResultsPanel
+        results={base({ summary: { ...base().summary, calibrated_confidence: 0.9848 } })}
+      />,
+    );
+    expect(screen.getByText(/right about 98% of the time/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/gate reads the engine's score, never the calibrated one/),
+    ).toBeTruthy();
+  });
+});
+
+describe("the investigation", () => {
+  const investigated = (valid: boolean) =>
+    base({
+      summary: { ...base().summary, cleared: false, ambiguous: true },
+      investigation: {
+        case: {
+          target_cents: 6852202,
+          tolerance_cents: 5,
+          residual_cents: -3,
+          withheld_reason: "alternate_subset",
+          member_feed: "gateway",
+          member_feed_declared: false,
+          engine_proposal: [
+            {
+              id: "pay_0000",
+              amount_cents: 451665,
+              date: "2026-08-31",
+              feed: "gateway",
+              names_settlement: true,
+            },
+            {
+              id: "JV00000",
+              amount_cents: 451665,
+              date: "2026-08-31",
+              feed: "erp",
+              names_settlement: true,
+            },
+          ],
+          engine_proposal_sum_cents: 903330,
+          alternatives: [[], []],
+          alternative_sums_cents: [6852202, 6852205],
+          pool_size: 45,
+          next_working_day: "2026-09-03",
+        },
+        proposal: {
+          action: "MATCH_PROPOSAL",
+          txn_ids: ["pay_0000", "JV00000"],
+          reason: "The engine's own set sums to the target.",
+          proposer: "rules",
+        },
+        verification: valid
+          ? {
+              valid: true,
+              failed: [],
+              plain: "Checked: this proposal is consistent with the data.",
+            }
+          : {
+              valid: false,
+              failed: ["1 payment(s) counted twice"],
+              plain: "REJECTED before reaching a reviewer: 1 payment(s) counted twice.",
+            },
+      },
+    });
+
+  it("shows a rejected proposal as rejected, with the reason", () => {
+    render(<ResultsPanel results={investigated(false)} />);
+    expect(screen.getByText(/REJECTED before reaching a reviewer/)).toBeInTheDocument();
+    expect(screen.getByText("Propose a set of payments")).toHaveClass("line-through");
+    // The case says the feed was assumed, not declared.
+    expect(screen.getByText(/assumed — not declared/)).toBeInTheDocument();
+  });
+
+  it("shows a verified proposal as a proposal still", () => {
+    render(<ResultsPanel results={investigated(true)} />);
+    expect(screen.getByText("Propose a set of payments")).not.toHaveClass("line-through");
+    expect(screen.getByText(/proposed by fixed rules/)).toBeInTheDocument();
+  });
+});
+
+describe("exceptions filed by category", () => {
+  it("names the category, whose desk it goes to and the first step", () => {
+    render(
+      <ResultsPanel
+        results={base({
+          exceptions: [
+            {
+              reason: "missing_entry",
+              candidate_txn_ids: ["BNK1"],
+              diagnosis_note: "no counterpart",
+              amount_at_stake_cents: 6646636,
+              category: "unidentified_receipt",
+              category_label: "Unidentified receipt",
+              owner: "treasury",
+              next_action: "Identify the payer from the narration or UTR.",
+            },
+          ],
+          exceptions_summary: {
+            count: 1,
+            total_at_stake_cents: 6646636,
+            unpriced_count: 0,
+            share_of_target: 0.97,
+            ordering: "amount at stake, largest first",
+            by_category: [
+              {
+                category: "unidentified_receipt",
+                label: "Unidentified receipt",
+                owner: "treasury",
+                count: 1,
+                value_cents: 6646636,
+              },
+            ],
+          },
+        })}
+      />,
+    );
+    expect(screen.getByText(/Unidentified receipt · 1 ·/)).toBeInTheDocument();
+    expect(screen.getByText(/For treasury:/)).toBeInTheDocument();
+    expect(screen.getByText(/Identify the payer from the narration/)).toBeInTheDocument();
+  });
+
+  it("points at what is still waiting when a run opened items", () => {
+    render(
+      <ResultsPanel results={base({ open_items: { opened: 31, closed: 0, not_tracked: 0 } })} />,
+    );
+    expect(screen.getByRole("link", { name: /See what is waiting/ })).toHaveAttribute(
+      "href",
+      "/payouts",
+    );
+  });
+});
+
+describe("the fee audit", () => {
+  const audit = {
+    summary: {
+      total_findings: 0,
+      high_severity: 0,
+      total_overcharge_cents: 0,
+      gst_issues: 0,
+      tds_compliance: "ok",
+      tcs_compliance: "ok",
+      settlement_integrity: "ok",
+    },
+    findings: [],
+  };
+
+  it("states a clean result as clean on a clear", () => {
+    render(<ResultsPanel results={base({ fee_audit: audit })} />);
+    expect(screen.getByText("Fees and tax")).toBeInTheDocument();
+    expect(screen.getByText("TDS: ok")).toBeInTheDocument();
+  });
+
+  it("is not shown for a withheld proposal", () => {
+    render(
+      <ResultsPanel
+        results={base({ summary: { ...base().summary, cleared: false }, fee_audit: audit })}
+      />,
+    );
+    expect(screen.queryByText("Fees and tax")).not.toBeInTheDocument();
+  });
+});
+
+describe("the audit receipt", () => {
+  it("verifies the trail against the receipt and shows the engine's verdict", async () => {
+    const head = "b3edf42203be6ff36e21462d942e5fc926fcf4961d924218285f60ab30cdcffe";
+    const fetchMock = vi.fn(async (url: string) => {
+      const body = String(url).includes("/verify?receipt=")
+        ? { intact: true, plain: "All 40 chained entries check out." }
+        : { trail: [] };
+      return { ok: true, status: 200, json: async () => body } as Response;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    render(<ResultsPanel results={base({ audit_head: head })} />);
+    fireEvent.click(screen.getByRole("button", { name: /Verify the trail/ }));
+    await waitFor(() =>
+      expect(screen.getByText("All 40 chained entries check out.")).toBeInTheDocument(),
+    );
+    expect(fetchMock.mock.calls.some(([u]) => String(u).includes(`receipt=${head}`))).toBe(true);
+  });
+});
+
+describe("the Tally export", () => {
+  const journal = base({
+    cash_position: {
+      buckets: [],
+      notes: [],
+      journal: {
+        entry_id: "JE-1",
+        status: "proposed",
+        balanced: true,
+        lines: [],
+        total_debits_inr: 0,
+        total_credits_inr: 0,
+      },
+    },
+  });
+
+  it("is not offered before the posting is approved", async () => {
+    render(<ResultsPanel results={journal} />);
+    await waitFor(() => expect(screen.getByTestId("journal-approval")).toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: /Export for Tally/ })).not.toBeInTheDocument();
+  });
+
+  it("is offered once someone approved it", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          ({
+            ok: true,
+            status: 200,
+            // The decisions endpoint, as the approval control reads it.
+            json: async () => ({
+              decisions: [
+                {
+                  ts: "2026-09-21T10:00:00Z",
+                  detail: "bob@x APPROVED the posting proposal JE-1.",
+                },
+              ],
+            }),
+          }) as Response,
+      ),
+    );
+    render(<ResultsPanel results={journal} />);
+    expect(await screen.findByRole("button", { name: /Export for Tally/ })).toBeInTheDocument();
   });
 });

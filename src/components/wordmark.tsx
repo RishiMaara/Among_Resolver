@@ -18,7 +18,7 @@
  */
 
 import { Link } from "@tanstack/react-router";
-import { History, Flag, ScrollText, Network } from "lucide-react";
+import { History, Flag, ScrollText, Network, Landmark } from "lucide-react";
 
 export function Wordmark({ pill }: { pill?: string }) {
   return (
@@ -78,6 +78,7 @@ export function Wordmark({ pill }: { pill?: string }) {
             {pill === "Escalations" && <Flag className="size-4 text-muted-foreground" />}
             {pill === "Rulebook" && <ScrollText className="size-4 text-muted-foreground" />}
             {pill === "Agent Flow" && <Network className="size-4 text-muted-foreground" />}
+            {pill === "Payouts" && <Landmark className="size-4 text-muted-foreground" />}
             <span>{pill}</span>
           </div>
         </>

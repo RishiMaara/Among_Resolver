@@ -43,6 +43,7 @@ From engine/:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import logging
 import os
@@ -137,7 +138,12 @@ def main():
                "alternatives": len(case["alternatives"]),
                "rules": {"action": rp.action, **rule_rows[-1]}}
         if args.llm:
-            key = sc.scenario_id
+            # Keyed by what the model is shown, not only the scenario: when the
+            # case changes (FAILURE_LOG 30 widened the pool), an answer to the
+            # old case must not be scored against the new one.
+            shown = json.dumps(inv._aliased(case, True)[0], sort_keys=True, default=str)
+            key = f"{sc.scenario_id}:" + hashlib.sha256(
+                (shown + inv._SYSTEM).encode("utf-8")).hexdigest()[:16]
             if cache.get(key):
                 mp = inv.Proposal(**cache[key])
             else:

@@ -260,9 +260,13 @@ three scenarios' anchored clears — nothing from the scenario being measured
 
 | stripped condition, 37 settlements | exact set identified | auto-cleared | false clears |
 |---|---:|---:|---:|
-| before (hand weights only) | 8 (21.6%) | 8 | 0 |
-| learned linkage, no history | 8 (21.6%) | 8 | 0 |
+| before (hand weights only) | 9 (24.3%) | 8 | 0 |
+| learned linkage, no history | 9 (24.3%) | 8 | 0 |
 | learned linkage, cycle learned from other scenarios | **21 (56.8%)** | 8 | 0 |
+
+The first two rows read 8 (21.6%) until the tiebreak was confined to the
+declared member feed (FAILURE_LOG 31), which made one more settlement's
+proposal the exact set. Auto-clears and false clears did not move.
 
 The anchored condition is unchanged (94.6% identified, 34 auto-cleared, 0
 false clears), and so are this project's own benchmark and the 1,050-case edge

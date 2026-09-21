@@ -84,6 +84,20 @@ export interface ExceptionRecord {
   // figure above is a floor rather than the whole amount.
   amount_known?: boolean;
   rank?: number;
+  // The finance category it is filed under, whose desk it goes to, and the
+  // first step — exception_taxonomy on the engine side.
+  category?: string;
+  category_label?: string;
+  owner?: string;
+  next_action?: string;
+}
+
+export interface CategoryCount {
+  category: string;
+  label: string;
+  owner: string;
+  count: number;
+  value_cents: number;
 }
 
 export interface ExceptionsSummary {
@@ -92,6 +106,72 @@ export interface ExceptionsSummary {
   unpriced_count: number;
   share_of_target: number | null;
   ordering: string;
+  by_category?: CategoryCount[];
+}
+
+export interface FeeFinding {
+  category: string;
+  severity: string;
+  txn_id: string;
+  expected_cents: number;
+  actual_cents: number;
+  difference_cents: number;
+  payment_method?: string;
+  rule_basis?: string;
+  citation?: string;
+  description: string;
+}
+
+export interface FeeAudit {
+  summary: {
+    total_findings: number;
+    high_severity: number;
+    total_overcharge_cents: number;
+    gst_issues: number;
+    tds_compliance: string;
+    tcs_compliance: string;
+    settlement_integrity: string;
+  };
+  findings: FeeFinding[];
+}
+
+export interface CaseRecord {
+  id: string;
+  amount_cents: number;
+  date: string;
+  feed?: string;
+  names_settlement: boolean;
+  ref?: string;
+  memo?: string;
+}
+
+/** A withheld settlement's investigation: what was proposed, and the check on it. */
+export interface Investigation {
+  case: {
+    target_cents: number;
+    tolerance_cents: number;
+    residual_cents: number;
+    withheld_reason: string;
+    member_feed?: string;
+    member_feed_declared?: boolean;
+    engine_proposal: CaseRecord[];
+    engine_proposal_sum_cents: number;
+    alternatives: CaseRecord[][];
+    alternative_sums_cents: number[];
+    pool_size: number;
+    next_working_day: string;
+  };
+  proposal: {
+    action: string;
+    txn_ids: string[];
+    until_date?: string;
+    request?: string;
+    party?: string;
+    amount_cents?: number;
+    reason: string;
+    proposer: string;
+  };
+  verification: { valid: boolean; failed: string[]; plain: string };
 }
 
 export interface SettlementAnswer {
@@ -123,6 +203,9 @@ export interface ReconcileResult {
     matched_gross_cents?: number;
     deductions_cents?: number;
     exceptions_by_reason?: Record<string, number>;
+    // The raw score mapped through the isotonic fit to measured outcomes.
+    // Shown beside the score; the clearing gate never reads it.
+    calibrated_confidence?: number | null;
   };
   plain_summary?: string;
   reasoning?: string;
@@ -136,4 +219,10 @@ export interface ReconcileResult {
   exceptions_summary?: ExceptionsSummary;
   audit_trail?: AuditEntry[];
   reviewer?: string;
+  fee_audit?: FeeAudit | null;
+  // The hash at the head of this batch's audit chain when the result was
+  // produced — a receipt that later proves nothing before it was altered.
+  audit_head?: string | null;
+  investigation?: Investigation;
+  open_items?: { opened: number; closed: number; not_tracked: number; error?: string };
 }

@@ -15,6 +15,7 @@ import { AgentFlow } from "@/components/agent-flow";
 import { FlowNarrative } from "@/components/flow-narrative";
 import type { AuditEntry } from "@/lib/agent-flow";
 import { HistoryLink } from "@/components/history-link";
+import { PayoutsLink } from "@/components/payouts-link";
 import { engineFetch, engineErrorMessage } from "@/lib/api";
 import { exportQueueCsv, type QueueRow } from "@/lib/queue-export";
 import { Wordmark } from "@/components/wordmark";
@@ -500,6 +501,10 @@ function Index() {
       if (taxWithholdingBps.trim())
         formData.append("tax_withholding_bps", taxWithholdingBps.trim());
       if (flatFeeCents.trim()) formData.append("flat_fee_cents", flatFeeCents.trim());
+      // A settlement the engine withholds gets a proposed next step, checked in
+      // code before it is shown. Fixed rules propose it here; the model
+      // proposer is a separate opt-in (investigate_with_model) and spends quota.
+      formData.append("investigate", "true");
 
       if (gatewayFile) formData.append("gateway_file", gatewayFile);
       if (bankFile) formData.append("bank_file", bankFile);
@@ -667,6 +672,7 @@ function Index() {
               <ScrollText className="size-4" />
               <span className="hidden sm:inline">Compliance Rulebook</span>
             </Link>
+            <PayoutsLink />
             <SessionMenu />
             <ThemeToggle />
           </div>

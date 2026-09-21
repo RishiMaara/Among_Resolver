@@ -100,20 +100,38 @@ def build_case(batch, candidates: list, report, window_days: int = 5,
     tol = SubsetSumConfig().tolerance_cents if tolerance_cents is None else tolerance_cents
     # Every core in production; a measurement pins one for reproducibility.
     workers = SubsetSumConfig().num_search_workers if workers is None else workers
-    feed = batch.member_source or SourceType.GATEWAY
+    # A settlement's members are the processor's records, so the member feed
+    # is the declared one or, undeclared, the gateway — stated in the case as
+    # an assumption. The engine's own search spans every feed when none is
+    # declared, and its proposal used to reach this case with its other-feed
+    # records silently dropped: the demo's withheld preset showed 4 of 13
+    # records, and the verifier rejected it for a sum those missing records
+    # explained. Those records are now shown, with their feed, and the
+    # verifier names them. See FAILURE_LOG 30.
+    member_feed = batch.member_source or SourceType.GATEWAY
     window = timedelta(days=window_days)
-    pool = [t for t in candidates if t.source == feed
-            and abs(t.timestamp_utc - batch.settled_at_utc) <= window]
-    by_id = {t.source_txn_id: t for t in pool}
+    in_window = [t for t in candidates if abs(t.timestamp_utc - batch.settled_at_utc) <= window]
+    pool = [t for t in in_window if t.source == member_feed]
+    by_id: dict = {}
+    for t in pool:
+        by_id.setdefault(t.source_txn_id, t)
     m = report.match_result
     target = m.target_cents
-    engine_ids = [i for i in m.matched_txn_ids if i in by_id]
+    # What the engine proposed, from whichever feed; a member-feed record
+    # wins an id collision.
+    elsewhere = {t.source_txn_id: t for t in in_window
+                 if t.source != member_feed and t.source_txn_id in set(m.matched_txn_ids)}
+    known = {**elsewhere, **by_id}
+    engine_ids = [i for i in m.matched_txn_ids if i in known]
 
     # Sets that also reach the target. Computed even when the engine proposed
     # nothing: an empty proposal is where a choice most needs options.
     alternatives: list[list[str]] = []
     if len(pool) <= 800:
-        forbidden = [{txn_key(by_id[i]) for i in engine_ids}] if engine_ids else []
+        # The engine's set is excluded only if it lies in this pool; one that
+        # reached into another feed is not a solution here to begin with.
+        in_pool = engine_ids and all(i in by_id for i in engine_ids)
+        forbidden = [{txn_key(by_id[i]) for i in engine_ids}] if in_pool else []
         for _ in range(MAX_ALTERNATIVES):
             alt = _solve_cpsat(pool, target, tol, alt_time_limit_s,
                                forbidden_solutions=forbidden or None, num_search_workers=workers)
@@ -126,16 +144,17 @@ def build_case(batch, candidates: list, report, window_days: int = 5,
     # Whether each record's reference names this settlement, as the engine's
     # linkage judged it — the evidence in the reference, without its text.
     try:
-        named = build_candidate_links(batch, pool, window_days).anchor_keys
+        named = build_candidate_links(batch, list(known.values()), window_days).anchor_keys
     except Exception:  # pragma: no cover - a case must build even if linkage fails
         named = set()
 
     def describe(ids):
-        return [{"id": i, "amount_cents": by_id[i].amount_cents,
-                 "date": by_id[i].timestamp_utc.date().isoformat(),
-                 "names_settlement": txn_key(by_id[i]) in named,
-                 "ref": by_id[i].ref_id_canonical, "memo": by_id[i].memo_raw[:60]}
-                for i in ids if i in by_id]
+        return [{"id": i, "amount_cents": known[i].amount_cents,
+                 "date": known[i].timestamp_utc.date().isoformat(),
+                 "feed": known[i].source.value,
+                 "names_settlement": txn_key(known[i]) in named,
+                 "ref": known[i].ref_id_canonical, "memo": known[i].memo_raw[:60]}
+                for i in ids if i in known]
 
     settled_on = batch.settled_at_utc.date()
     return {
@@ -145,6 +164,8 @@ def build_case(batch, candidates: list, report, window_days: int = 5,
         "tolerance_cents": tol,
         "settled_on": settled_on.isoformat(),
         "withheld_reason": m.withheld_reason or ("unmatched" if not m.matched_txn_ids else "ambiguous"),
+        "member_feed": member_feed.value,
+        "member_feed_declared": batch.member_source is not None,
         "confidence": m.confidence,
         "residual_cents": target - m.matched_sum_cents if m.matched_txn_ids else target,
         "engine_proposal": describe(sorted(engine_ids)),
@@ -152,7 +173,7 @@ def build_case(batch, candidates: list, report, window_days: int = 5,
         # model; left out, a reason citing a set's correct total failed the
         # grounding check as if the figure were invented — 18 sound proposals
         # were rejected that way on the first measured run.
-        "engine_proposal_sum_cents": sum(by_id[i].amount_cents for i in engine_ids),
+        "engine_proposal_sum_cents": sum(known[i].amount_cents for i in engine_ids),
         "alternatives": [describe(a) for a in alternatives],
         "alternative_sums_cents": [sum(by_id[i].amount_cents for i in a) for a in alternatives],
         "pool_size": len(pool),
@@ -160,8 +181,9 @@ def build_case(batch, candidates: list, report, window_days: int = 5,
                         "note": e.diagnosis_note[:160]} for e in report.exceptions[:12]],
         "next_working_day": india_calendar.add_working_days(settled_on, 1).isoformat(),
         "_pool": {i: {"amount_cents": t.amount_cents, "currency": t.currency,
-                      "named": txn_key(t) in named}
-                  for i, t in by_id.items()},
+                      "named": txn_key(t) in named, "feed": t.source.value,
+                      "ref": t.ref_id_canonical or ""}
+                  for i, t in known.items()},
         "_sets": [sorted(engine_ids)] + [list(a) for a in alternatives],
     }
 
@@ -202,7 +224,9 @@ _SYSTEM = (
     "ledger owner or customer; and what to request), WRITE_OFF_ROUNDING (amount_cents, "
     "only for a residual of at most 100 paise) or ESCALATE. The engine's own set and "
     "alternative sets all sum to the target; prefer the set whose references, memos "
-    "and dates cohere as one payout. If none is clearly better, ESCALATE. Give a "
+    "and dates cohere as one payout. Each record names its feed, and one payment can "
+    "appear once in each feed: a set must not count the same payment twice. If none "
+    "is clearly better, ESCALATE. Give a "
     "one-sentence reason. Cite ids and amounts exactly as the case lists them; do not "
     "state totals or differences you computed yourself — every figure in the reason "
     "is checked against the case, and a reason with a figure not in it is rejected."
@@ -306,6 +330,33 @@ def verify(p: Proposal, case: dict) -> dict:
         known = [i for i in set(ids) if i in pool]
         if any(pool[i]["currency"] != case["currency"] for i in known):
             failed.append("a transaction is in another currency")
+        # One payment, two feeds. A gateway capture and its ledger booking
+        # carry the same reference and amount, and a set holding both counts
+        # that payment twice yet can still reach the target: the demo's
+        # withheld preset does exactly that, with four orders doubled, and
+        # this verifier passed it as consistent until FAILURE_LOG 30.
+        first: dict = {}
+        doubled: list[tuple[str, str]] = []
+        for i in sorted(known):
+            rec = pool[i]
+            if not rec.get("ref"):
+                continue
+            k = (rec["ref"], rec["amount_cents"])
+            if k in first and pool[first[k]].get("feed") != rec.get("feed"):
+                doubled.append((first[k], i))
+            first.setdefault(k, i)
+        if doubled:
+            failed.append(f"{len(doubled)} payment(s) counted twice, once in each feed: "
+                          + ", ".join(f"{a} and {b}" for a, b in doubled[:3]))
+        feed = case.get("member_feed")
+        outside = sorted(i for i in known if feed and pool[i].get("feed") != feed)
+        if outside:
+            failed.append(
+                f"{len(outside)} record(s) are not from the {feed} feed, where this "
+                f"settlement's payments are"
+                + ("" if case.get("member_feed_declared") else
+                   " (assumed: no member feed was declared — declare it and re-run)")
+                + f": {outside[:3]}")
         total = sum(pool[i]["amount_cents"] for i in known)
         if not unknown and abs(total - case["target_cents"]) > case["tolerance_cents"]:
             failed.append(f"the set sums to {total} paise, {total - case['target_cents']:+d} "
