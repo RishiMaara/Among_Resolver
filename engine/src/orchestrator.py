@@ -67,6 +67,8 @@ class ReconciliationReport:
     exceptions: list[ExceptionRecord] = field(default_factory=list)
     fee_audit_findings: list[FeeAuditFinding] = field(default_factory=list)
     fee_audit_summary: dict | None = None
+    # What the Fellegi-Sunter model learned for this settlement, if it fitted.
+    learned_linkage: dict | None = None
 
     false_positive_cost_estimate_cents: int = 0
     """
@@ -139,6 +141,7 @@ class ReconciliationReport:
             "deductions_cents": self.deductions_cents,
             "tie_out_residual_cents": self.tie_out_residual_cents,
             "ties_out": self.ties_out,
+            "learned_linkage": self.learned_linkage,
         }
 
 
@@ -468,9 +471,19 @@ def _solve_in_tiers(
         or txn_key(t) in anchor_keys
     ]
 
+    # Records the Fellegi-Sunter model rates likely members (linkage_em.py),
+    # with the anchors. Where references are gone this is the capture-day
+    # cohort the learned settlement cycle points at; where some survive it
+    # is the anchors plus records that look like them but lost their id.
+    learned_keys = getattr(link_result, "learned_keys", None) or set()
+    learned_txns = [t for t in solver_candidates
+                    if txn_key(t) in learned_keys or txn_key(t) in anchor_keys]
+
     tiers: list[tuple[str, list[NormalizedTxn]]] = []
     if anchor_txns:
         tiers.append(("anchor", anchor_txns))
+    if len(anchor_txns) < len(learned_txns) < len(solver_candidates):
+        tiers.append(("learned", learned_txns))
     if len(strong_txns) > len(anchor_txns):
         tiers.append(("strong_link", strong_txns))
     tiers.append(("all_linked", solver_candidates))
@@ -832,11 +845,21 @@ def _tiebreak_if_ambiguous(
     windowed_candidates: list[NormalizedTxn],
     gross_target: int,
     cfg: SubsetSumConfig,
-    enable_tiebreak: bool
+    enable_tiebreak: bool,
+    learned_keys: set | None = None,
 ) -> None:
     """Agent 3b: tiebreak ambiguous matches via fuzzy plausibility scoring."""
     if result.ambiguous and enable_tiebreak and result.matched_txn_ids:
         matched_pool = [t for t in windowed_candidates if t.source_txn_id in set(result.matched_txn_ids)]
+        # A proposal drawn entirely from the learned cohort is withheld because
+        # its confidence is below the gate — "a person should confirm this" —
+        # not because a better set exists. The tiebreak scores reference and
+        # memo similarity, which is noise in a pool whose references are gone,
+        # and it once swapped an exact, cohort-backed 15-payment set for a
+        # wrong 20-payment one on exactly such a pool. Evidence beats a
+        # preference between equal sums, so the evidenced proposal stands.
+        if learned_keys and {txn_key(t) for t in matched_pool} <= learned_keys:
+            return
         primary_ids = set(result.matched_txn_ids)
         # txn_key, not the bare matched_txn_ids: candidates here is fed by
         # _solve_cpsat, which now compares by txn_key (see its docstring).
@@ -1339,6 +1362,20 @@ def reconcile_batch(
         agent="linkage",
         detail=f"[{link_result.method}] {link_result.reasoning}",
     )
+    if link_result.em:
+        em = link_result.em
+        top = (em.get("strongest_evidence") or [{}])[0]
+        audit.log_decision(
+            batch_id=batch.batch_id,
+            agent="linkage",
+            detail=(
+                f"Learned linkage (Fellegi-Sunter, {'; '.join(em.get('notes') or [])}): "
+                f"cohort of {em.get('cohort_size', 0)} candidate(s) for about "
+                f"{em.get('expected_members')} expected member(s). Strongest evidence: "
+                f"{top.get('comparison')}={top.get('level')} at "
+                f"{top.get('weight_bits')} bits (m {top.get('m')}, u {top.get('u')})."
+            ),
+        )
 
     _solved = _solve_in_tiers(
         batch, solver_candidates, windowed_candidates, link_result, gross_target, cfg
@@ -1362,7 +1399,8 @@ def reconcile_batch(
     _apply_confidence_gate(batch, result, solver_candidates, link_result)
 
     # Agent 3b: tiebreak ambiguous matches via fuzzy plausibility scoring
-    _tiebreak_if_ambiguous(batch, result, windowed_candidates, gross_target, cfg, enable_tiebreak)
+    _tiebreak_if_ambiguous(batch, result, windowed_candidates, gross_target, cfg,
+                           enable_tiebreak, learned_keys=link_result.learned_keys)
 
     exceptions, unmatched = _collect_unmatched(
         batch, result, candidates, windowed_candidates, gross_target, fuzz_cfg
@@ -1378,6 +1416,8 @@ def reconcile_batch(
                 detail=f"{exc.reason.value}: {exc.diagnosis_note}",
             )
 
-    return _build_report_and_tie_out(
+    report = _build_report_and_tie_out(
         batch, result, windowed_candidates, exceptions, fee_breakdown, gross_target
     )
+    report.learned_linkage = link_result.em
+    return report

@@ -53,9 +53,13 @@ string, so exact-string matching misses legitimate links. References are split
 on letter/digit boundaries and tokens shorter than 4 characters are dropped —
 `AB`, `1` match everything and would be worse than no signal.
 
-### 2. Four signals, dynamically weighted via ML
+### 2. Four signals, hand-weighted — and a learned model beside them
 
-Rather than brittle hardcoded weights, the linkage engine now uses dynamic, machine-learned weights that adapt to the density of the candidate pool (`dynamic_weights.py`). It scales the following four signals:
+The four signals below carry reasoned weights (0.55 / 0.25 / 0.15 / 0.10),
+not fitted ones. This section once said they were "dynamic, machine-learned
+weights"; that described an opt-in branch of `dynamic_weights.py` that counted
+words in the audit log, and it was not true (FAILURE_LOG entry 21). The
+learned model is described under **Learned linkage** below.
 
 | signal | meaning |
 |---|---|
@@ -232,6 +236,42 @@ quoted as if it were.
 never be put back by the solver. Block keys are therefore deliberately
 generous, which costs solver time; the risk is real if a future key is made
 too aggressive.
+
+### Learned linkage: Fellegi-Sunter, and the settlement cycle
+
+`linkage_em.py` is a Fellegi-Sunter model, the one Splink and the US Census
+use: six comparisons per candidate (anchor, reference cluster, cluster naming
+the batch, cross-feed amount peer, currency, and the lag in days from capture
+to payout), an m- and u-probability per level, and a match weight in bits.
+u comes from the pool. m comes from what identifies members — EM over the
+anchored records when some name the settlement, or, where nothing does, the
+**settlement cycle learned from earlier verified clears** (`settlement_cycle.py`).
+Whole comparison patterns are taken highest weight first until they cover the
+members the target implies, and that cohort is solved as its own tier. The
+arithmetic still decides.
+
+It declines to fit when nothing identifies members. A mixture over a single
+informative comparison is not identifiable, and unsupervised EM on
+ReconRiver's stripped pools collapsed to "no members" on every one.
+
+Measured on ReconRiver, references stripped, the cycle learned from the other
+three scenarios' anchored clears — nothing from the scenario being measured
+(`scripts/learned_linkage_benchmark.py`, `docs/benchmarks/learned_linkage.json`):
+
+| stripped condition, 37 settlements | exact set identified | auto-cleared | false clears |
+|---|---:|---:|---:|
+| before (hand weights only) | 8 (21.6%) | 8 | 0 |
+| learned linkage, no history | 8 (21.6%) | 8 | 0 |
+| learned linkage, cycle learned from other scenarios | **21 (56.8%)** | 8 | 0 |
+
+The anchored condition is unchanged (94.6% identified, 34 auto-cleared, 0
+false clears), and so are this project's own benchmark and the 1,050-case edge
+suite (0 false clears in both). Auto-clears do not rise, deliberately: the new
+matches come from a band whose own proposals were right 7 of 7 times, and seven
+cases do not justify releasing money (Wilson 95% lower bound 0.65). They
+arrive as exact proposals for one-click confirmation. What the lag feature is
+worth was found by looking at ReconRiver, so the other corpora are the held-out
+check, and on them it changed nothing — they carry no settlement cycle.
 
 **The weights are hand-set, not learned — and measurably, it does not matter
 which values they take.** 0.55/0.25/0.15/0.10 are reasoned from forgeability,

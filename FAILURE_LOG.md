@@ -47,6 +47,15 @@ measurement on the training set, not a generalisation claim.
 Reproduce:
     python scripts/sweep_linkage_weights.py
 
+Update (2026-09-21): the gap is now narrower where it mattered. The hand
+weights still rank candidates, but a Fellegi-Sunter model (`linkage_em.py`)
+learns m- and u-probabilities per pool — from anchored records by EM, or from
+the settlement cycle of earlier verified clears — and its best-supported
+cohort is solved as its own tier. On ReconRiver with references stripped,
+exact sets identified went from 21.6% to 56.8% with zero false clears
+(`scripts/learned_linkage_benchmark.py`). The hand weights themselves remain
+unfitted, for the reason above.
+
 ---
 
 ## 3. Accuracy depends on reference quality, and the dependence is large
@@ -321,4 +330,56 @@ the UI could see none of it.
 Mitigation: every reconciliation now returns `fee_audit` — summary and
 findings, each statutory one with its citation — with a test on the upload
 endpoint that fails if it disappears again.
+
+---
+
+## 19. EM that learned nothing, measured before it shipped
+
+Severity: Low (caught in development)
+Fails safe: Yes — it declined rather than guessed
+
+The first learned-linkage model ran Fellegi-Sunter EM unsupervised on each
+pool. On ReconRiver with references stripped it collapsed to "no members" on
+every settlement: with only one comparison left that differs between records
+(capture lag), a two-component mixture is not identifiable, and smoothing on
+the comparisons every record shared pushed lambda to its floor.
+
+Mitigation: the model fits only when something identifies members — anchors
+in the pool, or the settlement cycle learned from verified clears — and
+otherwise declines, which a test pins. Constant comparisons are dropped, and
+without anchors lambda stays at the arithmetic's estimate.
+
+---
+
+## 20. A tiebreak that overruled the evidence
+
+Severity: Medium (a right proposal replaced by a wrong one)
+Fails safe: Yes — the batch was withheld either way; the proposal was wrong
+
+A settlement found exactly by the learned cohort — 15 payments, to the paisa
+— was withheld at the confidence gate, which is correct. The ambiguity
+tiebreak then ran, scored reference and memo similarity across the whole
+window, and swapped in a 20-payment set. In a pool whose references are gone
+that similarity is noise, and it replaced evidence with a preference.
+
+Mitigation: the tiebreak leaves a proposal alone when every member is in the
+learned cohort. Exact sets identified on the stripped benchmark rose from 15
+to 21 of 37 with the fix.
+
+---
+
+## 21. "Machine-learned weights" that counted words
+
+Severity: Medium (to credibility)
+Fails safe: Yes — off by default
+
+LINKAGE.md said the linkage engine "now uses dynamic, machine-learned weights
+that adapt to the density of the candidate pool". The code behind it, off
+unless ENABLE_DYNAMIC_WEIGHTS=1, counted how often two method names appeared
+in the audit log and nudged two weights by a fixed step. Nothing measured it
+and it was not learning.
+
+Mitigation: removed; `dynamic_weights.py` now holds only the environment
+overrides the weight sweep uses. The learned model that exists is
+`linkage_em.py`, with its benchmark and its limits written next to it.
 

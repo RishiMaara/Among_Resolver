@@ -1,0 +1,574 @@
+{
+ "dataset": "ReconRiver (third-party synthetic), settlements sampled evenly per scenario",
+ "settlements_per_scenario": 10,
+ "stripped": {
+  "before": {
+   "batches": 37,
+   "exact_set_identified": 8,
+   "exact_set_identified_pct": 21.62,
+   "auto_cleared_correct": 8,
+   "false_clears": 0,
+   "mean_latency_s": 0.925,
+   "by_band": {
+    "arithmetic_only": {
+     "n": 27,
+     "exact": 0
+    },
+    "fully_anchored": {
+     "n": 8,
+     "exact": 8
+    },
+    "anchors_all_used": {
+     "n": 2,
+     "exact": 0
+    }
+   }
+  },
+  "no_history": {
+   "batches": 37,
+   "exact_set_identified": 8,
+   "exact_set_identified_pct": 21.62,
+   "auto_cleared_correct": 8,
+   "false_clears": 0,
+   "mean_latency_s": 0.848,
+   "by_band": {
+    "arithmetic_only": {
+     "n": 27,
+     "exact": 0
+    },
+    "fully_anchored": {
+     "n": 8,
+     "exact": 8
+    },
+    "anchors_all_used": {
+     "n": 2,
+     "exact": 0
+    }
+   }
+  },
+  "with_history": {
+   "batches": 37,
+   "exact_set_identified": 21,
+   "exact_set_identified_pct": 56.76,
+   "auto_cleared_correct": 8,
+   "false_clears": 0,
+   "mean_latency_s": 0.758,
+   "by_band": {
+    "learned_cycle": {
+     "n": 25,
+     "exact": 13
+    },
+    "fully_anchored": {
+     "n": 8,
+     "exact": 8
+    },
+    "arithmetic_only": {
+     "n": 2,
+     "exact": 0
+    },
+    "anchors_all_used": {
+     "n": 2,
+     "exact": 0
+    }
+   }
+  }
+ },
+ "anchored": {
+  "before": {
+   "batches": 37,
+   "exact_set_identified": 35,
+   "exact_set_identified_pct": 94.59,
+   "auto_cleared_correct": 34,
+   "false_clears": 0,
+   "mean_latency_s": 0.31,
+   "by_band": {
+    "fully_anchored": {
+     "n": 35,
+     "exact": 35
+    },
+    "anchors_all_used": {
+     "n": 1,
+     "exact": 0
+    },
+    "arithmetic_only": {
+     "n": 1,
+     "exact": 0
+    }
+   }
+  },
+  "after": {
+   "batches": 37,
+   "exact_set_identified": 35,
+   "exact_set_identified_pct": 94.59,
+   "auto_cleared_correct": 34,
+   "false_clears": 0,
+   "mean_latency_s": 0.367,
+   "by_band": {
+    "fully_anchored": {
+     "n": 35,
+     "exact": 35
+    },
+    "anchors_all_used": {
+     "n": 1,
+     "exact": 0
+    },
+    "arithmetic_only": {
+     "n": 1,
+     "exact": 0
+    }
+   }
+  }
+ },
+ "learned_cycle_band": {
+  "n": 25,
+  "exact": 13
+ },
+ "rows": {
+  "stripped_with_history": [
+   {
+    "scenario": "clean-settlement",
+    "batch": "SYNTH-BATCH-USD-2026-01-03-0000",
+    "truth": 15,
+    "matched": 15,
+    "exact": true,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.8,
+    "band": "learned_cycle",
+    "latency_s": 0.015
+   },
+   {
+    "scenario": "clean-settlement",
+    "batch": "SYNTH-BATCH-USD-2026-01-04-0000",
+    "truth": 15,
+    "matched": 15,
+    "exact": true,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.8,
+    "band": "learned_cycle",
+    "latency_s": 0.013
+   },
+   {
+    "scenario": "clean-settlement",
+    "batch": "SYNTH-BATCH-USD-2026-01-05-0000",
+    "truth": 14,
+    "matched": 14,
+    "exact": true,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.8,
+    "band": "learned_cycle",
+    "latency_s": 0.011
+   },
+   {
+    "scenario": "clean-settlement",
+    "batch": "SYNTH-BATCH-USD-2026-01-06-0000",
+    "truth": 14,
+    "matched": 14,
+    "exact": true,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.8,
+    "band": "learned_cycle",
+    "latency_s": 0.022
+   },
+   {
+    "scenario": "clean-settlement",
+    "batch": "SYNTH-BATCH-USD-2026-01-07-0000",
+    "truth": 14,
+    "matched": 14,
+    "exact": true,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.8,
+    "band": "learned_cycle",
+    "latency_s": 0.015
+   },
+   {
+    "scenario": "clean-settlement",
+    "batch": "SYNTH-BATCH-USD-2026-01-08-0000",
+    "truth": 14,
+    "matched": 12,
+    "exact": false,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.36,
+    "band": "learned_cycle",
+    "latency_s": 0.179
+   },
+   {
+    "scenario": "clean-settlement",
+    "batch": "SYNTH-BATCH-USD-2026-01-09-0000",
+    "truth": 14,
+    "matched": 14,
+    "exact": true,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.8,
+    "band": "learned_cycle",
+    "latency_s": 0.024
+   },
+   {
+    "scenario": "failure-recovery",
+    "batch": "SYNTH-BATCH-DUPLICATE-000938",
+    "truth": 1,
+    "matched": 1,
+    "exact": true,
+    "cleared": true,
+    "false_clear": false,
+    "confidence": 0.87,
+    "band": "fully_anchored",
+    "latency_s": 0.363
+   },
+   {
+    "scenario": "failure-recovery",
+    "batch": "SYNTH-BATCH-EUR-2026-01-05-0005",
+    "truth": 3,
+    "matched": 3,
+    "exact": true,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.36,
+    "band": "learned_cycle",
+    "latency_s": 0.617
+   },
+   {
+    "scenario": "failure-recovery",
+    "batch": "SYNTH-BATCH-EUR-2026-01-15-0007",
+    "truth": 3,
+    "matched": 8,
+    "exact": false,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.36,
+    "band": "learned_cycle",
+    "latency_s": 1.182
+   },
+   {
+    "scenario": "failure-recovery",
+    "batch": "SYNTH-BATCH-EUR-2026-01-25-0009",
+    "truth": 2,
+    "matched": 774,
+    "exact": false,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.05,
+    "band": "arithmetic_only",
+    "latency_s": 0.664
+   },
+   {
+    "scenario": "failure-recovery",
+    "batch": "SYNTH-BATCH-GBP-2026-01-04-0011",
+    "truth": 3,
+    "matched": 3,
+    "exact": true,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.36,
+    "band": "learned_cycle",
+    "latency_s": 0.388
+   },
+   {
+    "scenario": "failure-recovery",
+    "batch": "SYNTH-BATCH-GBP-2026-01-15-0000",
+    "truth": 2,
+    "matched": 3,
+    "exact": false,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.36,
+    "band": "learned_cycle",
+    "latency_s": 1.278
+   },
+   {
+    "scenario": "failure-recovery",
+    "batch": "SYNTH-BATCH-GBP-2026-01-25-0002",
+    "truth": 2,
+    "matched": 2,
+    "exact": true,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.36,
+    "band": "learned_cycle",
+    "latency_s": 1.166
+   },
+   {
+    "scenario": "failure-recovery",
+    "batch": "SYNTH-BATCH-USD-2026-01-04-0004",
+    "truth": 20,
+    "matched": 23,
+    "exact": false,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.36,
+    "band": "learned_cycle",
+    "latency_s": 1.237
+   },
+   {
+    "scenario": "failure-recovery",
+    "batch": "SYNTH-BATCH-USD-2026-01-14-0006",
+    "truth": 21,
+    "matched": 19,
+    "exact": false,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.36,
+    "band": "learned_cycle",
+    "latency_s": 3.782
+   },
+   {
+    "scenario": "failure-recovery",
+    "batch": "SYNTH-BATCH-USD-2026-01-24-0008",
+    "truth": 21,
+    "matched": 17,
+    "exact": false,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.36,
+    "band": "learned_cycle",
+    "latency_s": 3.909
+   },
+   {
+    "scenario": "mixed-exceptions",
+    "batch": "SYNTH-BATCH-AMOUNT-BREAK-000266",
+    "truth": 1,
+    "matched": 1170,
+    "exact": false,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.05,
+    "band": "anchors_all_used",
+    "latency_s": 0.819
+   },
+   {
+    "scenario": "mixed-exceptions",
+    "batch": "SYNTH-BATCH-CURRENCY-000041",
+    "truth": 1,
+    "matched": 1,
+    "exact": true,
+    "cleared": true,
+    "false_clear": false,
+    "confidence": 0.87,
+    "band": "fully_anchored",
+    "latency_s": 0.053
+   },
+   {
+    "scenario": "mixed-exceptions",
+    "batch": "SYNTH-BATCH-DUPLICATE-000849",
+    "truth": 1,
+    "matched": 1,
+    "exact": true,
+    "cleared": true,
+    "false_clear": false,
+    "confidence": 0.87,
+    "band": "fully_anchored",
+    "latency_s": 0.042
+   },
+   {
+    "scenario": "mixed-exceptions",
+    "batch": "SYNTH-BATCH-EUR-2026-01-14-0000",
+    "truth": 4,
+    "matched": 4,
+    "exact": true,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.8,
+    "band": "learned_cycle",
+    "latency_s": 0.053
+   },
+   {
+    "scenario": "mixed-exceptions",
+    "batch": "SYNTH-BATCH-GBP-2026-01-13-0001",
+    "truth": 5,
+    "matched": 5,
+    "exact": true,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.36,
+    "band": "learned_cycle",
+    "latency_s": 0.14
+   },
+   {
+    "scenario": "mixed-exceptions",
+    "batch": "SYNTH-BATCH-LATE-000920",
+    "truth": 1,
+    "matched": 1,
+    "exact": true,
+    "cleared": true,
+    "false_clear": false,
+    "confidence": 0.95,
+    "band": "fully_anchored",
+    "latency_s": 0.043
+   },
+   {
+    "scenario": "mixed-exceptions",
+    "batch": "SYNTH-BATCH-PROC-ONLY-000020",
+    "truth": 1,
+    "matched": 1,
+    "exact": true,
+    "cleared": true,
+    "false_clear": false,
+    "confidence": 0.95,
+    "band": "fully_anchored",
+    "latency_s": 0.031
+   },
+   {
+    "scenario": "mixed-exceptions",
+    "batch": "SYNTH-BATCH-REFUND-000445",
+    "truth": 1,
+    "matched": 1,
+    "exact": true,
+    "cleared": true,
+    "false_clear": false,
+    "confidence": 0.87,
+    "band": "fully_anchored",
+    "latency_s": 0.043
+   },
+   {
+    "scenario": "mixed-exceptions",
+    "batch": "SYNTH-BATCH-USD-2026-01-04-0000",
+    "truth": 17,
+    "matched": 17,
+    "exact": false,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.36,
+    "band": "learned_cycle",
+    "latency_s": 0.307
+   },
+   {
+    "scenario": "mixed-exceptions",
+    "batch": "SYNTH-BATCH-USD-2026-01-11-0001",
+    "truth": 16,
+    "matched": 14,
+    "exact": false,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.36,
+    "band": "learned_cycle",
+    "latency_s": 0.763
+   },
+   {
+    "scenario": "month-end-close",
+    "batch": "SYNTH-BATCH-AMOUNT-BREAK-000231",
+    "truth": 1,
+    "matched": 788,
+    "exact": false,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.05,
+    "band": "anchors_all_used",
+    "latency_s": 0.985
+   },
+   {
+    "scenario": "month-end-close",
+    "batch": "SYNTH-BATCH-EUR-2026-01-12-0002",
+    "truth": 3,
+    "matched": 6,
+    "exact": false,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.36,
+    "band": "learned_cycle",
+    "latency_s": 0.933
+   },
+   {
+    "scenario": "month-end-close",
+    "batch": "SYNTH-BATCH-EUR-2026-01-23-0009",
+    "truth": 3,
+    "matched": 804,
+    "exact": false,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.05,
+    "band": "arithmetic_only",
+    "latency_s": 0.783
+   },
+   {
+    "scenario": "month-end-close",
+    "batch": "SYNTH-BATCH-GBP-2026-01-04-0003",
+    "truth": 3,
+    "matched": 3,
+    "exact": true,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.36,
+    "band": "learned_cycle",
+    "latency_s": 0.386
+   },
+   {
+    "scenario": "month-end-close",
+    "batch": "SYNTH-BATCH-GBP-2026-01-15-0010",
+    "truth": 2,
+    "matched": 5,
+    "exact": false,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.36,
+    "band": "learned_cycle",
+    "latency_s": 0.832
+   },
+   {
+    "scenario": "month-end-close",
+    "batch": "SYNTH-BATCH-GBP-2026-01-27-0004",
+    "truth": 2,
+    "matched": 2,
+    "exact": true,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.36,
+    "band": "learned_cycle",
+    "latency_s": 0.783
+   },
+   {
+    "scenario": "month-end-close",
+    "batch": "SYNTH-BATCH-REFUND-000304",
+    "truth": 1,
+    "matched": 1,
+    "exact": true,
+    "cleared": true,
+    "false_clear": false,
+    "confidence": 0.87,
+    "band": "fully_anchored",
+    "latency_s": 0.313
+   },
+   {
+    "scenario": "month-end-close",
+    "batch": "SYNTH-BATCH-REFUND-007485",
+    "truth": 1,
+    "matched": 1,
+    "exact": true,
+    "cleared": true,
+    "false_clear": false,
+    "confidence": 0.87,
+    "band": "fully_anchored",
+    "latency_s": 0.352
+   },
+   {
+    "scenario": "month-end-close",
+    "batch": "SYNTH-BATCH-USD-2026-01-10-0012",
+    "truth": 18,
+    "matched": 15,
+    "exact": false,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.36,
+    "band": "learned_cycle",
+    "latency_s": 2.528
+   },
+   {
+    "scenario": "month-end-close",
+    "batch": "SYNTH-BATCH-USD-2026-01-22-0006",
+    "truth": 19,
+    "matched": 25,
+    "exact": false,
+    "cleared": false,
+    "false_clear": false,
+    "confidence": 0.36,
+    "band": "learned_cycle",
+    "latency_s": 2.99
+   }
+  ]
+ }
+}

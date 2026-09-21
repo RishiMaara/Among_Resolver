@@ -78,7 +78,7 @@ For a deeper dive into how this engine stacks up against industry standards, rea
 | **False clears, everywhere above** | **0** |
 | Confidence calibration, 180 scenarios, in-sample (`calibration.py` default) | ECE **0.1567** · MCE 0.3087 · Brier 0.1808 — not a good number; see below |
 | Confidence calibration, ReconRiver, out-of-sample (`calibration_out_of_sample.py`) | ECE 0.0766 · MCE 0.46 · Brier 0.0616, 74 predictions |
-| Tests | **545** backend · **97** frontend |
+| Tests | **564** backend · **97** frontend |
 
 Every figure in that table except the two calibration rows is re-measured by
 `python scripts/generate_benchmarks.py`, which writes
@@ -178,7 +178,7 @@ engine/        Python engine
   src/                       one module per agent — see docs/ARCHITECTURE.md
   src/api/                   the HTTP surface: models, presentation, route groups
   scripts/                   benchmarks, calibration, stress runs, data fetch
-  tests/                     545 tests
+  tests/                     564 tests
   benchmarks/                measurement snapshots
   data/                      Sanctions lists, test ledgers
 design/                    Design canvases the UI is ported from
@@ -279,6 +279,15 @@ trail a reviewer reads afterwards.
   scenarios; with it, 65%, with zero wrong approvals in both arms. This is
   deterministic entity resolution, not AI — the script says so, because it
   was first written claiming otherwise.
+- **Learned linkage for payouts with no reference** (`linkage_em.py`,
+  `settlement_cycle.py`). A Fellegi-Sunter model — the method behind Splink —
+  with m-probabilities learned by EM from anchored records, or from the
+  processor's settlement cycle as read off earlier verified clears (T+1, T+2:
+  the engine learns which). On ReconRiver with every settlement id stripped,
+  exact sets identified rise from **21.6% to 56.8%**, zero false clears, with
+  the cycle learned only from other scenarios. They arrive as proposals, not
+  auto-clears: seven measured cases do not justify releasing money. Every
+  response carries what the model learned (`summary.learned_linkage`).
 - **Scale.** 200,000 records in one settlement: the exact 55-transaction
   true set, precision and recall 1.0, no exceptions
   (`scripts/run_scale_proof.py`). Throughput measured 13,700–26,900

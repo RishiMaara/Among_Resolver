@@ -75,6 +75,7 @@ import re
 import auto_disposition
 import settled_ledger
 import open_items
+import settlement_cycle
 import india_calendar
 
 # Without this, every logger.info(...) call in the pipeline (compliance
@@ -656,6 +657,11 @@ async def reconcile_upload(
             report.batch_id, matched_ids,
             when=(formatted.get("summary") or {}).get("as_of_utc") or "")
 
+    # A verified clear teaches the processor's settlement cycle. After the
+    # already-settled check, so a clear that check withdrew teaches nothing.
+    if (formatted.get("summary") or {}).get("cleared") and matched_ids:
+        settlement_cycle.learn_from(batch, candidates, matched_ids)
+
     # What is still waiting to be paid out, carried to the next run. After the
     # already-settled check, so a clear that check withdrew closes nothing.
     formatted["open_items"] = open_items.update_from_run(
@@ -897,6 +903,11 @@ async def reconcile_queue(
             summary = report.summary()
             queue_outcomes.append((batch, report.match_result.matched_txn_ids,
                                    bool(summary["cleared"])))
+            # Learned as the queue goes: a payout with references that clears
+            # teaches the cycle to the payouts after it that have none.
+            if summary["cleared"]:
+                settlement_cycle.learn_from(batch, candidates,
+                                            report.match_result.matched_txn_ids)
             results.append({
                 "batch_id": bid,
                 "status": ("cleared" if summary["cleared"]

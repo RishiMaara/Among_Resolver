@@ -46,6 +46,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import timedelta
 
+import linkage_em
 from schema import NormalizedTxn, SettlementBatch
 
 # A token shorter than this carries no identifying power — "1", "AB" match
@@ -130,6 +131,10 @@ class LinkedCandidate:
     txn: NormalizedTxn
     signals: LinkSignals
     score: float
+    # Probability this record is a member, from the Fellegi-Sunter model EM
+    # fitted to this pool (linkage_em.py). 0.0 when the model is off or the
+    # pool was too small to learn from.
+    em_posterior: float = 0.0
 
 
 @dataclass
@@ -145,6 +150,10 @@ class LinkageResult:
     # Collision-safe identities, for code. Callers deciding whether a specific
     # transaction is anchored MUST use this — see txn_key.
     anchor_keys: set[str] = field(default_factory=set)
+    # Records the learned model rates more likely members than not.
+    learned_keys: set[str] = field(default_factory=set)
+    # What the model learned, for the report and the audit trail.
+    em: dict | None = None
 
     @property
     def reduction_factor(self) -> float:
@@ -362,19 +371,30 @@ def build_candidate_links(
             abs(t.timestamp_utc - batch.settled_at_utc) <= window
         )
 
+    posteriors, em_summary, cohort = _learned_posteriors(batch, pool, signals)
     scored = [
         LinkedCandidate(txn=t, signals=signals[txn_key(t)],
-                        score=signals[txn_key(t)].score())
+                        score=signals[txn_key(t)].score(),
+                        em_posterior=posteriors.get(txn_key(t), 0.0))
         for t in pool
     ]
-    scored.sort(key=lambda c: c.score, reverse=True)
+    # The learned posterior breaks ties within a score. Without it the cap
+    # below kept whichever equal-scored records came first in the file, and
+    # in a pool with no references almost every record scores the same.
+    scored.sort(key=lambda c: (c.score, c.em_posterior), reverse=True)
+    learned_keys = cohort
 
-    linked = [c for c in scored if c.score > 0.0]
+    # A record the learned model rates a likely member is linked even with no
+    # hand-weighted signal: in a feed with no references, timing and currency
+    # may be the only evidence there is.
+    linked = [c for c in scored
+              if c.score > 0.0 or txn_key(c.txn) in learned_keys]
 
     if not linked:
         return LinkageResult(
             candidates=pool, scored=scored,
             pool_before=len(pool), pool_after=len(pool),
+            em=em_summary,
             method="no_linkage_signal",
             reasoning=(
                 "No reference, cluster or cross-source signal found anywhere "
@@ -447,6 +467,7 @@ def build_candidate_links(
         return LinkageResult(
             candidates=[], scored=scored,
             pool_before=len(pool), pool_after=0,
+            em=em_summary,
             method="no_in_scope_candidates",
             reasoning=(
                 f"No {member_source.value if member_source else 'in-scope'} "
@@ -501,11 +522,66 @@ def build_candidate_links(
         ),
         anchor_cluster_ids=surviving_anchors,
         anchor_keys=surviving_keys,
+        learned_keys=learned_keys & kept_keys,
+        em=em_summary,
     )
 
 
+def _learned_posteriors(batch: SettlementBatch, pool: list[NormalizedTxn],
+                        signals: dict) -> tuple[dict[str, float], dict | None, set[str]]:
+    """
+    Fit the Fellegi-Sunter model to this pool and score every record.
+
+    Fitted on the member feed when it is declared: the other feeds hold the
+    same payments again, and a model fitted across all of them would learn
+    that "a member" is anything with a twin. LINKAGE_EM=0 switches it off,
+    which is how the before/after benchmark runs the same code both ways.
+    """
+    if os.environ.get("LINKAGE_EM", "1").strip() == "0":
+        return {}, None, set()
+    scope = [t for t in pool
+             if batch.member_source is None or t.source is batch.member_source]
+    if len(scope) < 4:
+        return {}, None, set()
+
+    settled_day = batch.settled_at_utc.date()
+
+    def vector(t: NormalizedTxn) -> dict[str, str]:
+        s = signals[txn_key(t)]
+        return {
+            "anchor": "yes" if s.settlement_id_match else "no",
+            "ref_cluster": "yes" if s.shared_ref_token else "no",
+            "ref_names_batch": "yes" if s.ref_prefix_cluster else "no",
+            "amount_peer": "yes" if s.cross_source_amount_peer else "no",
+            "currency": "yes" if t.currency == batch.currency else "no",
+            "lag": linkage_em.lag_level((settled_day - t.timestamp_utc.date()).days),
+        }
+
+    vectors = {txn_key(t): vector(t) for t in scope}
+    amounts = sorted(abs(t.amount_cents) for t in scope if t.amount_cents)
+    target = batch.net_amount_cents + (batch.declared_deductions_cents or 0)
+    typical = amounts[len(amounts) // 2] if amounts else 0
+    expected = (abs(target) / typical) if typical else None
+
+    import settlement_cycle  # pylint: disable=import-outside-toplevel
+    member_feed = (batch.member_source.value if batch.member_source else "gateway")
+    cycle = settlement_cycle.profile(member_feed, batch.currency)
+    model = linkage_em.fit(list(vectors.values()), expected_members=expected,
+                           lag_m=cycle["m"] if cycle else None)
+    if model is None:
+        return {}, None, set()
+    posteriors = {k: model.posterior(v) for k, v in vectors.items()}
+    cohort = model.cohort(vectors, expected if expected else model.expected_members)
+    summary = model.summary()
+    if cycle:
+        summary["cycle_learned_from"] = {"settlements": cycle["settlements"],
+                                         "members": cycle["members"]}
+    summary["cohort_size"] = len(cohort)
+    return posteriors, summary, cohort
+
+
 def confidence_band(anchored: set[str], matched_keys: set[str],
-                    mean_link: float) -> str:
+                    mean_link: float, learned: set[str] | None = None) -> str:
     """
     WHICH claim the engine is making about a matched set — named, so it can
     be measured.
@@ -528,6 +604,10 @@ def confidence_band(anchored: set[str], matched_keys: set[str],
         return "anchors_all_used"
     if anchored & matched_keys:
         return "anchors_ignored"
+    if learned and matched_keys <= learned:
+        # Nothing names the settlement, but every member is in the cohort
+        # the learned settlement cycle points at.
+        return "learned_cycle"
     if mean_link >= 0.4:
         return "clustered"
     return "arithmetic_only"
@@ -571,6 +651,14 @@ CONFIDENCE_BANDS = {
     "clustered": 0.54,            # UNMEASURED — never fired in either corpus
     "arithmetic_only": 0.19,      # benchmark 0.200; the edge corpus, which is
                                   # 26% deliberately unrecoverable, says 0.000
+    # Measured on ReconRiver with references stripped and the cycle learned
+    # from the OTHER scenarios' clears (scripts/learned_linkage_benchmark.py):
+    # where this band set the reported confidence, 7 of 7 proposals were the
+    # exact set; over every match it touched, 13 of 25. Seven is too few to
+    # release money on — the Wilson 95% lower bound for 7/7 is 0.65 — so the
+    # band sits below the 0.85 gate even with the small-pool bonus: it
+    # proposes, a person confirms. Raise it only on more measured cases.
+    "learned_cycle": 0.80,
 }
 
 
@@ -629,7 +717,8 @@ def link_confidence(result: LinkageResult, matched_keys: set[str]) -> float:
     # Values are set at or slightly below observed accuracy, because the two
     # directions of error are not symmetric. Overconfidence tells a reviewer
     # to skip a batch that was wrong; underconfidence wastes their time.
-    base = CONFIDENCE_BANDS[confidence_band(anchored, matched_keys, mean_link)]
+    base = CONFIDENCE_BANDS[confidence_band(anchored, matched_keys, mean_link,
+                                            result.learned_keys)]
 
     # A narrowed pool makes an exact sum far less likely to be coincidence.
     if result.pool_after <= 25:

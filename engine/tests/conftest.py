@@ -35,3 +35,18 @@ def pytest_sessionfinish(session, exitstatus):
             p.unlink(missing_ok=True)
         except OSError:
             pass
+
+
+import pytest  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _fresh_settlement_cycle():
+    """
+    A learned settlement cycle is durable by design, which inside one test
+    session means a clear in one test changes linkage in the next. Every test
+    starts with nothing learned; tests about learning build their own history.
+    """
+    import settlement_cycle
+    settlement_cycle.reset()
+    yield

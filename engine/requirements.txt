@@ -7,7 +7,7 @@ httpx==0.28.1          # for test client
 # Data & matching
 pydantic>=2.11.0       # 2.9.2 has no Python 3.14 wheel; 2.11+ does
 pandas>=2.2.0
-python-dateutil==2.9.0
+python-dateutil==2.9.0.post0  # holidays needs .post0 or later
 rapidfuzz==3.14.5      # 3.10.0 has no Python 3.14 wheel
 ortools==9.15.6755     # 9.11.4210 has no Python 3.14 wheel; CP-SAT solver
 
