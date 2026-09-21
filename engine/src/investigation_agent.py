@@ -372,7 +372,29 @@ def verify(p: Proposal, case: dict) -> dict:
         # is a guess dressed as a finding. Measured: without this rule, 11
         # arithmetically valid WRONG sets reached reviewers from 58 cases.
         chosen = set(ids)
-        rivals = [set(r) for r in case.get("_sets", []) if r and set(r) != chosen]
+        # A rival is compared as the payments it stands for. The engine's own
+        # set can reach into the ledger feed, and its ledger copies name the
+        # settlement too: taken as they are, they tied the TRUE set on
+        # evidence and got it rejected — on CI, whose parallel solver picked a
+        # different engine set than a laptop did. Dropping such sets instead
+        # let 4 more wrong proposals through in the evaluation, because their
+        # evidence is real; it belongs to the gateway payments they copy. So
+        # each other-feed record is read as its member-feed twin (same
+        # reference, same amount) where one exists.
+        twin = {(v.get("ref"), v["amount_cents"]): i for i, v in pool.items()
+                if feed and v.get("feed") == feed and v.get("ref")}
+
+        def as_member_feed(group):
+            out = set()
+            for i in group:
+                rec = pool.get(i, {})
+                if feed and rec.get("feed") != feed:
+                    i = twin.get((rec.get("ref"), rec.get("amount_cents")), i)
+                out.add(i)
+            return out
+
+        rivals = [r for r in (as_member_feed(g) for g in case.get("_sets", []) if g)
+                  if r != chosen]
         if not failed and rivals:
             def named(group):
                 return sum(1 for i in group if pool.get(i, {}).get("named"))

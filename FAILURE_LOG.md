@@ -553,6 +553,17 @@ one: 14 right, verified proposals of 58 (was 16), 4 wrong ones passing the
 verifier (unchanged), fixed rules 2 of 58. The model answered 54 of 58; the
 other 4 are scored as the rules scored them, which is what production does.
 
+CI then failed the new test that the true set still passes. Its parallel
+solver picked a different engine set than a laptop did, and that set's
+ledger copies name the settlement as well, so on the verifier's evidence
+rule the engine's set tied the true one and got it rejected. Dropping sets
+that reach outside the member feed from the comparison fixed CI and let 4
+more wrong proposals through in the evaluation, because their evidence is
+real: it belongs to the gateway payments they copy. So a rival is now read
+as the payments it stands for, with each ledger copy translated to its
+gateway twin by reference and amount. With that change the true set passes
+on any machine, and the figures above are unchanged.
+
 ---
 
 ## 31. The tiebreak ignored the declared member feed

@@ -146,7 +146,8 @@ class TestTheVerifier:
         """
         sc, _, case = withheld
         truth = sorted(sc.truth_ids)
-        rival = [i for i in case["_pool"] if i not in sc.truth_ids][:3]
+        rival = [i for i, v in case["_pool"].items()
+                 if i not in sc.truth_ids and v["feed"] == case["member_feed"]][:3]
         tied = dict(case, _sets=[truth, rival],
                     _pool={i: dict(v, named=False) for i, v in case["_pool"].items()})
         v = inv.verify(match(truth), tied)
@@ -155,7 +156,8 @@ class TestTheVerifier:
     def test_more_evidence_than_every_rival_passes(self, withheld):
         sc, _, case = withheld
         truth = sorted(sc.truth_ids)
-        rival = [i for i in case["_pool"] if i not in sc.truth_ids][:3]
+        rival = [i for i, v in case["_pool"].items()
+                 if i not in sc.truth_ids and v["feed"] == case["member_feed"]][:3]
         pool = {i: dict(v, named=i in sc.truth_ids) for i, v in case["_pool"].items()}
         assert inv.verify(match(truth), dict(case, _sets=[truth, rival], _pool=pool))["valid"]
 
@@ -248,24 +250,90 @@ def undeclared():
     return body, case
 
 
+def feed_case(target_cents, declared=False, sets=()):
+    """A small case with one payment recorded in both feeds (FC_pay_1 / FC_JV1)."""
+    pool = {
+        "FC_pay_1": {"amount_cents": 1000, "currency": "INR", "named": True,
+                     "feed": "gateway", "ref": "ORD1"},
+        "FC_JV1": {"amount_cents": 1000, "currency": "INR", "named": True,
+                   "feed": "erp", "ref": "ORD1"},
+        "FC_pay_2": {"amount_cents": 2000, "currency": "INR", "named": True,
+                     "feed": "gateway", "ref": "ORD2"},
+        "FC_pay_3": {"amount_cents": 2000, "currency": "INR", "named": False,
+                     "feed": "gateway", "ref": "ORD3"},
+    }
+    return {"batch_id": "FEED-CASE", "currency": "INR", "target_cents": target_cents,
+            "tolerance_cents": 5, "residual_cents": 0, "settled_on": "2026-09-02",
+            "withheld_reason": "alternate_subset", "confidence": 0.3,
+            "member_feed": "gateway", "member_feed_declared": declared,
+            "engine_proposal": [], "engine_proposal_sum_cents": 0, "alternatives": [],
+            "alternative_sums_cents": [], "pool_size": 3, "exceptions": [],
+            "next_working_day": "2026-09-03", "_pool": pool, "_sets": [list(x) for x in sets]}
+
+
+class TestTheMemberFeed:
+    """FAILURE_LOG 30: what a set may be drawn from, checked on a case built by hand."""
+
+    @pytest.fixture(autouse=True)
+    def nothing_paid_out(self, monkeypatch):
+        monkeypatch.setattr(settled_ledger, "owners", lambda ids: {})
+
+    def test_a_payment_counted_in_both_feeds_is_rejected(self):
+        # Sums to the target exactly, and is still one payment counted twice.
+        verdict = inv.verify(match(["FC_pay_1", "FC_JV1"]), feed_case(2000))
+        failed = " ".join(verdict["failed"])
+        assert not verdict["valid"]
+        assert "1 payment(s) counted twice" in failed and "FC_JV1 and FC_pay_1" in failed
+
+    def test_a_record_from_another_feed_is_rejected(self):
+        verdict = inv.verify(match(["FC_JV1", "FC_pay_2"]), feed_case(3000))
+        failed = " ".join(verdict["failed"])
+        assert "not from the gateway feed" in failed and "declare it and re-run" in failed
+        declared = inv.verify(match(["FC_JV1", "FC_pay_2"]), feed_case(3000, declared=True))
+        assert "declare it" not in " ".join(declared["failed"])
+
+    def test_a_ledger_copy_is_read_as_the_payment_it_copies(self):
+        # The listed set holds FC_pay_1's ledger booking. Read as the payments
+        # it stands for, it IS the chosen set, so it cannot tie it — on CI it
+        # did, and the true set was rejected.
+        case = feed_case(3000, sets=[["FC_JV1", "FC_pay_2"]])
+        assert inv.verify(match(["FC_pay_1", "FC_pay_2"]), case)["valid"]
+
+    def test_a_ledger_copy_still_carries_its_payments_evidence(self):
+        # Dropping such a set instead let 4 more wrong proposals through.
+        case = feed_case(3000, sets=[["FC_JV1", "FC_pay_2"]])
+        verdict = inv.verify(match(["FC_pay_1", "FC_pay_3"]), case)
+        assert not verdict["valid"] and "escalate" in " ".join(verdict["failed"])
+
+    def test_an_equal_rival_inside_the_feed_still_forces_escalation(self):
+        case = feed_case(3000, sets=[["FC_pay_1", "FC_pay_3"]])
+        rival_named_too = dict(case["_pool"])
+        rival_named_too["FC_pay_3"] = {**rival_named_too["FC_pay_3"], "named": True}
+        case["_pool"] = rival_named_too
+        verdict = inv.verify(match(["FC_pay_1", "FC_pay_2"]), case)
+        assert not verdict["valid"] and "escalate" in " ".join(verdict["failed"])
+
+
 class TestAnUndeclaredMemberFeed:
-    """FAILURE_LOG 30: the engine's proposal reached the case with records missing."""
+    """The demo's withheld preset. Which set the engine proposes differs by
+    machine (parallel CP-SAT), so these assert only what holds on any of them."""
 
     def test_the_case_shows_every_record_the_engine_proposed(self, undeclared):
         body, case = undeclared
         assert not body["summary"]["cleared"]
         shown = [r["id"] for r in case["engine_proposal"]]
         assert sorted(shown) == sorted(body["matched_txn_ids"])
-        assert {r["feed"] for r in case["engine_proposal"]} == {"gateway", "erp"}
+        assert all(r["feed"] in ("gateway", "erp") for r in case["engine_proposal"])
         assert case["member_feed"] == "gateway" and not case["member_feed_declared"]
 
-    def test_a_payment_counted_in_both_feeds_is_rejected(self, undeclared):
+    def test_the_engines_set_is_stopped_when_it_leaves_the_member_feed(self, undeclared):
         body, case = undeclared
+        off_feed = [r for r in case["engine_proposal"] if r["feed"] != "gateway"]
+        if not off_feed:
+            pytest.skip("this machine's solver proposed a set inside the member feed")
         verdict = inv.verify(match(body["matched_txn_ids"]), case)
         assert not verdict["valid"]
-        failed = " ".join(verdict["failed"])
-        assert "counted twice" in failed and "JV00000 and pay_0000" in failed
-        assert "declare it and re-run" in failed
+        assert "declare it and re-run" in " ".join(verdict["failed"])
 
     def test_the_payout_that_every_record_names_still_passes(self, undeclared, monkeypatch):
         _, case = undeclared
