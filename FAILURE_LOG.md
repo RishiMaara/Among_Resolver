@@ -295,7 +295,10 @@ sums. The recon fixtures had the same misreading — they built `credit` as
 amount − fee − tax, where Razorpay's own example is amount − fee.
 
 Mitigation: the deduction is `fees`; the fee audit reads the fee before tax
-as `fee − tax`; a test pins the 200000/590/90 reference.
+as `fee − tax`; a test pins the 200000/590/90 reference. The recorded-shape
+fixture `pull_razorpay.py --fixture` reads had the misreading too, on 17
+lines, and is corrected; its tie-out never noticed, because `credit` was
+right and `credit` is all the arithmetic uses.
 
 ---
 
@@ -382,4 +385,34 @@ and it was not learning.
 Mitigation: removed; `dynamic_weights.py` now holds only the environment
 overrides the weight sweep uses. The learned model that exists is
 `linkage_em.py`, with its benchmark and its limits written next to it.
+
+---
+
+## 22. Refunds audited as sales
+
+Severity: Low
+Fails safe: Yes — a spurious finding, never a wrong clear
+
+The fee audit ran every row with a fee field through the rate card, so a
+refund — fee 0, because nothing is charged on money going back — came out as
+a card "fee undercharge" of 2% of the refund. Found on the first run of the
+Razorpay sample, where every payout carries a refund.
+
+Mitigation: rows that are refunds or negative are skipped; a test on the
+sample fails if a refund appears among the findings again.
+
+---
+
+## 23. A trail-clearing helper that cleared the wrong tier
+
+Severity: Low (tests only)
+Fails safe: Yes
+
+`audit.clear_trail` removed a batch's entries from Redis, files and memory,
+and not from SQLite — the tier that actually serves. Tests that cleared a
+trail and counted entries were counting old ones, which is why so many tests
+took to minting a fresh batch id each. Found while adding the hash chain,
+whose tamper tests need a trail that really is empty.
+
+Mitigation: it deletes SQLite rows too, and the chain head with them.
 

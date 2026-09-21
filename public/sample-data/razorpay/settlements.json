@@ -1,0 +1,62 @@
+{
+ "_note": "Invented values in Razorpay's published response shapes. Not from a live account; see engine/src/razorpay_recon.py for what has and has not been verified.",
+ "entity": "collection",
+ "count": 5,
+ "items": [
+  {
+   "id": "setl_SAMPLE000001",
+   "entity": "settlement",
+   "amount": 6807991,
+   "status": "processed",
+   "fees": 0,
+   "tax": 0,
+   "utr": "UTIB0000SMPL0001",
+   "created_at": 1788931800,
+   "currency": "INR"
+  },
+  {
+   "id": "setl_SAMPLE000002",
+   "entity": "settlement",
+   "amount": 6804465,
+   "status": "processed",
+   "fees": 0,
+   "tax": 0,
+   "utr": "UTIB0000SMPL0002",
+   "created_at": 1789018200,
+   "currency": "INR"
+  },
+  {
+   "id": "setl_SAMPLE000003",
+   "entity": "settlement",
+   "amount": 8392410,
+   "status": "processed",
+   "fees": 0,
+   "tax": 0,
+   "utr": "UTIB0000SMPL0003",
+   "created_at": 1789104600,
+   "currency": "INR"
+  },
+  {
+   "id": "setl_SAMPLE000004",
+   "entity": "settlement",
+   "amount": 9349447,
+   "status": "processed",
+   "fees": 0,
+   "tax": 0,
+   "utr": "UTIB0000SMPL0004",
+   "created_at": 1789191000,
+   "currency": "INR"
+  },
+  {
+   "id": "setl_SAMPLE000005",
+   "entity": "settlement",
+   "amount": 11480231,
+   "status": "processed",
+   "fees": 0,
+   "tax": 0,
+   "utr": "UTIB0000SMPL0005",
+   "created_at": 1789277400,
+   "currency": "INR"
+  }
+ ]
+}

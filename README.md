@@ -78,7 +78,7 @@ For a deeper dive into how this engine stacks up against industry standards, rea
 | **False clears, everywhere above** | **0** |
 | Confidence calibration, 180 scenarios, in-sample (`calibration.py` default) | ECE **0.1567** · MCE 0.3087 · Brier 0.1808 — not a good number; see below |
 | Confidence calibration, ReconRiver, out-of-sample (`calibration_out_of_sample.py`) | ECE 0.0766 · MCE 0.46 · Brier 0.0616, 74 predictions |
-| Tests | **564** backend · **97** frontend |
+| Tests | **599** backend · **97** frontend |
 
 Every figure in that table except the two calibration rows is re-measured by
 `python scripts/generate_benchmarks.py`, which writes
@@ -178,7 +178,7 @@ engine/        Python engine
   src/                       one module per agent — see docs/ARCHITECTURE.md
   src/api/                   the HTTP surface: models, presentation, route groups
   scripts/                   benchmarks, calibration, stress runs, data fetch
-  tests/                     564 tests
+  tests/                     599 tests
   benchmarks/                measurement snapshots
   data/                      Sanctions lists, test ledgers
 design/                    Design canvases the UI is ported from
@@ -288,6 +288,29 @@ trail a reviewer reads afterwards.
   the cycle learned only from other scenarios. They arrive as proposals, not
   auto-clears: seven measured cases do not justify releasing money. Every
   response carries what the model learned (`summary.learned_linkage`).
+- **Razorpay as the primary feed** (`razorpay_recon.py`,
+  `POST /razorpay/reconcile` live with keys, `/razorpay/reconcile/upload`
+  with saved API responses). The Settlement Recon API already says which
+  payments, refunds and adjustments each payout contains, so re-deriving that
+  by subset-sum would be solving a solved problem worse. The engine checks
+  what the list does not prove: the lines sum to the payout **to the paisa**;
+  a **blind re-solve** with settlement ids stripped and capture times only —
+  the payout cycle learned from the *other* settlements, never the one being
+  checked — reaches the same set; the bank credit carries the settlement's
+  UTR and exact amount; every order is in the books; fees, GST, TDS and TCS
+  are right for their dates. On the sample (`public/sample-data/razorpay/`,
+  invented values in Razorpay's published shapes) three payouts verify, one
+  has a 2.5% card fee and an unbooked order, one arrived ₹10 short at the
+  bank, and the blind solve reaches Razorpay's exact set on all five. Not yet
+  run against a live account — that needs the merchant's test keys.
+- **A tamper-evident audit trail.** Every entry carries the SHA-256 of the
+  entry before it; edit a word, delete a line or reorder two and
+  `GET /audit/{batch_id}/verify` names the first entry that no longer checks
+  out. A chain cannot see its own tail cut off, so every reconciliation also
+  returns its head hash (`audit_head`) as a receipt, and verifying against the
+  receipt catches truncation. Tamper-evident, not tamper-proof: someone with
+  write access can rebuild a chain, but not one that matches a receipt
+  somebody else already holds.
 - **Scale.** 200,000 records in one settlement: the exact 55-transaction
   true set, precision and recall 1.0, no exceptions
   (`scripts/run_scale_proof.py`). Throughput measured 13,700–26,900

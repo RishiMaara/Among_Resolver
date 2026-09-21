@@ -123,6 +123,13 @@ def _format_report(report, audit_trail=None, batch=None, candidates=None) -> dic
     formatted["exceptions"], formatted["exceptions_summary"] = exception_ranking.rank(
         formatted["exceptions"], candidates, report.match_result.target_cents,
     )
+    # The receipt: the hash at the head of this batch's audit chain when the
+    # result was produced. Whoever keeps it can later prove, through
+    # GET /audit/{batch_id}/verify?receipt=..., that nothing up to that point
+    # was altered or removed. A chain cannot see its own tail being cut off;
+    # a head hash held somewhere else can.
+    trail = formatted["audit_trail"]
+    formatted["audit_head"] = next((e.get("hash") for e in reversed(trail) if e.get("hash")), None)
     # Kept so a question can be answered from what the engine actually
     # recorded, rather than by re-running the match at question time.
     settlement_qa.store_result(report.batch_id, formatted)

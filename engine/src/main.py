@@ -964,6 +964,7 @@ from api.routes_webhook import router as _webhook_router      # noqa: E402
 from api.routes_chargebacks import router as _chargeback_router  # noqa: E402
 from api.routes_tax import router as _tax_router              # noqa: E402
 from api.routes_open_items import router as _open_items_router  # noqa: E402
+from api.routes_razorpay import router as _razorpay_router    # noqa: E402
 
 app.include_router(_decisions_router)
 app.include_router(_reports_router)
@@ -971,6 +972,16 @@ app.include_router(_webhook_router)
 app.include_router(_chargeback_router)
 app.include_router(_tax_router)
 app.include_router(_open_items_router)
+app.include_router(_razorpay_router)
+
+
+@app.get("/audit/{batch_id}/verify", summary="Check a batch's audit trail has not been altered")
+def verify_audit(batch_id: str, receipt: str = ""):
+    """
+    Walk the hash chain. With `receipt` — the `audit_head` a reconciliation
+    returned — also prove nothing after it was cut off.
+    """
+    return audit.verify_chain(batch_id, receipt=receipt.strip())
 
 
 @app.get("/audit/{batch_id}", summary="Retrieve full audit trail for a batch")

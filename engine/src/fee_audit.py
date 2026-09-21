@@ -273,9 +273,11 @@ def audit_transaction_fees(
         txn_id = getattr(txn, "source_txn_id", "?")
         amount_cents = getattr(txn, "amount_cents", 0)
 
-        # Skip transactions with no fee data — nothing to audit
+        # Skip transactions with no fee data — nothing to audit. A refund is
+        # money going back, not a sale, so no rate card applies to it: read
+        # as a sale with a zero fee it was flagged as an undercharge.
         actual_fee, actual_gst = fee_fields(extra)
-        if actual_fee is None:
+        if actual_fee is None or amount_cents <= 0 or str(extra.get("type", "")).lower() == "refund":
             continue
         amount_cents = _gross_cents(txn)
 

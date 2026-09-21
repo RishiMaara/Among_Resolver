@@ -44,12 +44,17 @@ import threading
 from collections import Counter
 from datetime import datetime
 
+import contextvars
+from contextlib import contextmanager
+
 import audit
 from linkage_em import LAG_LEVELS, lag_level
 
 logger = logging.getLogger(__name__)
 
 MIN_SETTLEMENTS = 3
+_OVERRIDE: contextvars.ContextVar = contextvars.ContextVar("settlement_cycle_override",
+                                                          default=None)
 _REDIS_KEY = "settlement_cycle"
 _lock = threading.Lock()
 _memory: dict[str, dict] = {}
@@ -166,6 +171,32 @@ def record_clear(batch_id: str, member_source: str, currency: str,
         _save(key, body)
 
 
+@contextmanager
+def using(profile_body: dict | None):
+    """
+    Use this profile instead of the stored one, for the calls inside.
+
+    The Razorpay blind check needs the cycle learned from every OTHER
+    settlement in the batch — never the one being checked, whose own lags
+    would hand it the answer — and must not write that into the store.
+    """
+    token = _OVERRIDE.set(profile_body)
+    try:
+        yield
+    finally:
+        _OVERRIDE.reset(token)
+
+
+def profile_from(lags: list[int], settlements: int) -> dict | None:
+    """A profile built from raw lags, as profile() would build it."""
+    if settlements < MIN_SETTLEMENTS or not lags:
+        return None
+    counts = Counter(lag_level(d) for d in lags)
+    total = sum(counts.values()) + 0.5 * len(LAG_LEVELS)
+    return {"m": {lv: (counts.get(lv, 0) + 0.5) / total for lv in LAG_LEVELS},
+            "settlements": settlements, "members": len(lags)}
+
+
 def profile(member_source: str, currency: str) -> dict | None:
     """
     The learned m-probabilities for the lag comparison, or None if too thin.
@@ -174,6 +205,9 @@ def profile(member_source: str, currency: str) -> dict | None:
     a processor that settles T+1 still has the odd payment that waits a day
     longer, and an m of exactly zero would veto it outright.
     """
+    override = _OVERRIDE.get()
+    if override is not None:
+        return override
     body = _load(_key(member_source, currency))
     if int(body.get("settlements", 0)) < MIN_SETTLEMENTS:
         return None

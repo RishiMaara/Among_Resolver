@@ -55,6 +55,32 @@ tries not to have:
      accumulating entries that silently vanish on the next request. Reached
      only if the engine directory itself is not writable.
 
+TAMPER-EVIDENT: EVERY ENTRY CARRIES THE HASH OF THE ONE BEFORE
+-------------------------------------------------------------
+A log that can be edited quietly is a log of whatever the last editor wanted.
+Each batch's trail is a hash chain: an entry stores `prev_hash`, the hash of
+the entry before it (64 zeros for the first), and `hash`, the SHA-256 of its
+own content with that link included. Change a word in an old entry and its
+hash no longer matches; delete or reorder one and the next entry's link no
+longer points at what precedes it. `verify_chain()` walks the trail and names
+the first entry that breaks, and GET /audit/{batch_id}/verify serves it.
+
+A chain alone cannot see its own tail being cut off — the shortened chain is
+still a valid chain. So every reconciliation returns the head hash to the
+caller (`audit_head`), and verifying against a receipt checks that the entry
+it names is still there. Whoever keeps the receipt can prove the trail was
+not truncated after they read it.
+
+This is tamper-EVIDENT, not tamper-proof: someone with write access to the
+store can rewrite a whole chain from the first entry on. What they cannot do
+is make it agree with a head hash somebody else already holds, which is why
+the receipt goes out with every response.
+
+Appends are serialised so two writers cannot both extend the same head:
+SQLite inside BEGIN IMMEDIATE, Redis by compare-and-set in a Lua script, the
+file and memory tiers under the process lock. Entries written before the
+chain existed carry no hash and are reported as unchained, never as verified.
+
 WHY A FILE (OR SQLITE) BEATS AN IN-MEMORY STORE
 ------------------------------------------------
 The original in-memory list failed in any multi-process deployment (gunicorn
@@ -71,6 +97,7 @@ processes.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
@@ -85,6 +112,35 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+GENESIS = "0" * 64
+_CHAIN_FIELDS = ("timestamp_utc", "batch_id", "agent", "detail", "prev_hash")
+
+
+def entry_hash(entry: dict) -> str:
+    """SHA-256 over the entry's content and its link, canonically serialised."""
+    body = {k: entry.get(k) for k in _CHAIN_FIELDS}
+    raw = json.dumps(body, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def _seal(entry: dict, prev_hash: str) -> dict:
+    entry["prev_hash"] = prev_hash or GENESIS
+    entry["hash"] = entry_hash(entry)
+    return entry
+
+
+# Compare-and-set append: extend the chain only if its head is still the
+# one this writer hashed against. Redis has no SHA-256 in Lua, so the hash
+# is computed in Python and the script only guards the link.
+_REDIS_APPEND = """
+local head = redis.call('GET', KEYS[2])
+if not head then head = ARGV[4] end
+if head ~= ARGV[1] then return 0 end
+redis.call('RPUSH', KEYS[1], ARGV[2])
+redis.call('SET', KEYS[2], ARGV[3])
+return 1
+"""
 
 # ---------------------------------------------------------------------------
 # Redis backend
@@ -272,16 +328,25 @@ def close_all() -> None:
 atexit.register(close_all)
 
 
+_FILE_HEADS: dict[str, str] = {}
+
+
 def _file_write(entry: dict) -> None:
     """Append one JSON line to this batch's file, thread-safe in-process."""
-    line = json.dumps(entry, default=str) + "\n"
     with _AUDIT_FILE_LOCK:
-        fh = _get_handle(entry.get("batch_id", "unknown"))
+        bid = entry.get("batch_id", "unknown")
+        if bid not in _FILE_HEADS:
+            prior = _file_read(bid)
+            _FILE_HEADS[bid] = (prior[-1].get("hash") if prior else None) or GENESIS
+        _seal(entry, _FILE_HEADS[bid])
+        line = json.dumps(entry, default=str) + "\n"
+        fh = _get_handle(bid)
         fh.write(line)
         # Flushed per entry so another worker reading the file sees it
         # immediately. This is the cross-process visibility guarantee the whole
         # file backend exists for; buffering would break it.
         fh.flush()
+        _FILE_HEADS[bid] = entry["hash"]
 
 
 def _file_read(batch_id: str) -> list[dict]:
@@ -333,6 +398,8 @@ def _memory_write(entry: dict) -> None:
             "and all entries are lost on process exit. For a shared trail "
             "configure Redis, or ensure the temp directory is writable."
         )
+    prior = _memory_read(entry.get("batch_id", "unknown"))
+    _seal(entry, (prior[-1].get("hash") if prior else None) or GENESIS)
     _FALLBACK_LOG.append(entry)
 
 
@@ -396,6 +463,12 @@ def _get_db():
                )"""
         )
         conn.execute("CREATE INDEX IF NOT EXISTS ix_audit_batch ON audit(batch_id, id)")
+        # The chain columns arrived after the table did; a store created
+        # before them gains them here, and its older rows stay unchained.
+        cols = {r[1] for r in conn.execute("PRAGMA table_info(audit)")}
+        for col in ("prev_hash", "hash"):
+            if col not in cols:
+                conn.execute(f"ALTER TABLE audit ADD COLUMN {col} TEXT")  # nosec B608 - fixed names
         conn.commit()
         _DB = conn
         if not _DB_WARNED:
@@ -413,15 +486,41 @@ def _get_db():
         return None
 
 
+_DB_WRITE_LOCK = threading.Lock()
+
+
 def _db_write(entry: dict) -> None:
     conn = _get_db()
     if conn is None:
         raise RuntimeError("durable store unavailable")
-    conn.execute(
-        "INSERT INTO audit (batch_id, ts, agent, detail) VALUES (?,?,?,?)",
-        (entry["batch_id"], entry["timestamp_utc"], entry["agent"], entry["detail"]),
-    )
-    conn.commit()
+    # BEGIN IMMEDIATE takes SQLite's write lock before the head is read, so a
+    # second process cannot extend the same head between the read and the
+    # insert; the thread lock does the same for this process's connection.
+    with _DB_WRITE_LOCK:
+        # The connection is shared with the settled ledger, open items and
+        # the settlement cycle, which commit their own writes. If one left a
+        # transaction open, BEGIN would raise and this entry would fall back
+        # to the file tier — splitting the chain across two stores.
+        if conn.in_transaction:
+            conn.commit()
+        conn.execute("BEGIN IMMEDIATE")
+        try:
+            row = conn.execute(
+                "SELECT hash FROM audit WHERE batch_id = ? ORDER BY id DESC LIMIT 1",
+                (entry["batch_id"],),
+            ).fetchone()
+            _seal(entry, (row[0] if row and row[0] else GENESIS))
+            conn.execute(
+                "INSERT INTO audit (batch_id, ts, agent, detail, prev_hash, hash) "
+                "VALUES (?,?,?,?,?,?)",
+                (entry["batch_id"], entry["timestamp_utc"], entry["agent"],
+                 entry["detail"], entry["prev_hash"], entry["hash"]),
+            )
+            conn.commit()
+        except Exception:
+            if conn.in_transaction:
+                conn.rollback()
+            raise
 
 
 def _db_read(batch_id: str) -> list[dict] | None:
@@ -430,17 +529,20 @@ def _db_read(batch_id: str) -> list[dict] | None:
         return None
     try:
         rows = conn.execute(
-            "SELECT ts, batch_id, agent, detail FROM audit "
+            "SELECT ts, batch_id, agent, detail, prev_hash, hash FROM audit "
             "WHERE batch_id = ? ORDER BY id",
             (batch_id,),
         ).fetchall()
     except Exception as exc:
         logger.warning("Audit: durable read failed (%s: %s).", type(exc).__name__, exc)
         return None
-    return [
-        {"timestamp_utc": r[0], "batch_id": r[1], "agent": r[2], "detail": r[3]}
-        for r in rows
-    ]
+    out = []
+    for r in rows:
+        e = {"timestamp_utc": r[0], "batch_id": r[1], "agent": r[2], "detail": r[3]}
+        if r[5]:
+            e["prev_hash"], e["hash"] = r[4], r[5]
+        out.append(e)
+    return out
 
 
 def storage_status() -> dict:
@@ -477,7 +579,7 @@ def log_decision(batch_id: str, agent: str, detail: str) -> dict:
     client = _get_redis()
     if client:
         try:
-            client.rpush(f"audit:{batch_id}", json.dumps(entry))
+            _redis_append(client, entry)
             return entry
         except Exception as exc:
             # Redis became unavailable mid-session (connection lost, failover).
@@ -504,6 +606,85 @@ def log_decision(batch_id: str, agent: str, detail: str) -> dict:
 
     _memory_write(entry)
     return entry
+
+
+def _redis_append(client, entry: dict) -> None:
+    """Extend the batch's chain in Redis, retrying if another writer won."""
+    list_key, head_key = f"audit:{entry['batch_id']}", f"audit:{entry['batch_id']}:head"
+    for _ in range(8):
+        raw_head = client.get(head_key)
+        head = (raw_head.decode() if isinstance(raw_head, bytes) else raw_head) or GENESIS
+        _seal(entry, head)
+        try:
+            won = client.eval(_REDIS_APPEND, 2, list_key, head_key, head,
+                              json.dumps(entry), entry["hash"], GENESIS)
+        except Exception:
+            # A server without scripting: append without the guard. The chain
+            # is still written; only the race between two writers is open.
+            client.rpush(list_key, json.dumps(entry))
+            client.set(head_key, entry["hash"])
+            return
+        if int(won or 0) == 1:
+            return
+    raise RuntimeError("audit chain: could not extend the head after 8 attempts")
+
+
+def verify_chain(batch_id: str, receipt: str = "") -> dict:
+    """
+    Walk a batch's trail and check every link. Names the first break.
+
+    `receipt` is a head hash a caller was given earlier; if supplied, the
+    entry it names must still be in the chain, which is what catches a trail
+    whose tail was cut off after the receipt was issued.
+    """
+    entries = get_audit_trail(batch_id)
+    unchained = 0
+    while unchained < len(entries) and not entries[unchained].get("hash"):
+        unchained += 1
+    prev = GENESIS
+    verdict = {"batch_id": batch_id, "entries": len(entries),
+               "unchained_before_chain_began": unchained, "verified": 0,
+               "intact": True, "broken_at": None, "reason": "", "head": None}
+    for i in range(unchained, len(entries)):
+        e = entries[i]
+        if not e.get("hash"):
+            verdict.update(intact=False, broken_at=i,
+                           reason=f"Entry {i} carries no hash inside the chain: it was "
+                                  f"inserted by something that bypassed the audit log.")
+            break
+        if e.get("prev_hash") != prev:
+            verdict.update(intact=False, broken_at=i,
+                           reason=f"Entry {i} does not point at the entry before it: "
+                                  f"an entry was removed, reordered or inserted there.")
+            break
+        if entry_hash(e) != e["hash"]:
+            verdict.update(intact=False, broken_at=i,
+                           reason=f"Entry {i} was changed after it was written: its "
+                                  f"content no longer matches its hash.")
+            break
+        prev = e["hash"]
+        verdict["verified"] += 1
+    verdict["head"] = prev if verdict["verified"] else None
+
+    if receipt and verdict["intact"]:
+        hashes = [e.get("hash") for e in entries]
+        if receipt not in hashes:
+            verdict.update(intact=False, broken_at=len(entries),
+                           reason="The entry this receipt ends at is no longer in the "
+                                  "trail: entries at or after it were removed.")
+        else:
+            verdict["receipt_position"] = hashes.index(receipt)
+
+    if verdict["intact"]:
+        verdict["plain"] = (
+            f"All {verdict['verified']} chained entries check out: none altered, "
+            f"removed or reordered."
+            + (f" {unchained} older entr{'y' if unchained == 1 else 'ies'} predate the "
+               f"chain and cannot be verified." if unchained else "")
+            + (" The receipt's entry is still present." if receipt else ""))
+    else:
+        verdict["plain"] = "TAMPERING DETECTED. " + verdict["reason"]
+    return verdict
 
 
 def get_audit_trail(batch_id: str) -> list[dict]:
@@ -548,14 +729,26 @@ def clear_trail(batch_id: str) -> None:
     Remove all audit entries for batch_id.
 
     Intended for test teardown. Does not raise if the batch is not found.
+    It used to leave SQLite rows in place — the tier that actually serves —
+    which is why tests took to minting a fresh batch id each.
     """
     client = _get_redis()
     if client:
         try:
-            client.delete(f"audit:{batch_id}")
+            client.delete(f"audit:{batch_id}", f"audit:{batch_id}:head")
             return
         except Exception:
             pass
+
+    conn = _get_db()
+    if conn is not None:
+        try:
+            with _DB_WRITE_LOCK:
+                conn.execute("DELETE FROM audit WHERE batch_id = ?", (batch_id,))
+                conn.commit()
+        except Exception as exc:
+            logger.warning("Audit: could not clear durable entries: %s", exc)
+    _FILE_HEADS.pop(batch_id, None)
 
     # File backend: one file per batch, so clearing is a delete rather than a
     # read-filter-rewrite of everything ever logged.
