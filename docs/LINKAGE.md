@@ -308,17 +308,17 @@ a corpus the gate was never tuned against:
 
 | corpus | predictions | ECE | at/above 0.85 | wrong above the gate |
 |---|---:|---:|---:|---:|
-| own benchmark *(in-sample)* | 180 | 0.1567 | 133 | 30 |
-| ReconRiver *(out-of-sample)* | 74 | 0.0766 | 46 | 4 |
+| own benchmark *(in-sample)* | 180 | 0.0544 | 103 | **0** |
+| ReconRiver *(out-of-sample)* | 74 | 0.1037 | 42 | **0** |
 
-Out-of-sample ECE is actually a little better than in-sample, but "wrong above
-the gate" is the number that matters and it is not zero in either corpus. None
-of those wrong-but-confident predictions were actually auto-cleared in any
-benchmark run — the substitutability and evidence guards independently
-withheld them — so the false-clear rate has stayed at 0 regardless. But the
-specific claim that every prediction at or above 0.85 is correct is false, and
-was already false in-sample before this was ever checked out-of-sample; see
-the next paragraph.
+"Wrong above the gate" is the number that matters, and it is zero in both.
+It was not when this table was first written — 30 of 133 in-sample and 4 of
+46 out-of-sample, none of them auto-cleared because other guards withheld
+them — and the next paragraph says what changed. Out-of-sample ECE is higher
+than in-sample now because the remaining error sits in the lowest band,
+which is overconfident (says 0.14, right 3.1%) and never clears; calibrated
+(`calibration_map.py`, fitted on the benchmark and judged on ReconRiver) it
+falls to 0.040.
 
 Two corpora is validation, not proof, and both carry usable references — what
 the gate does where references are absent entirely is not measured by either.

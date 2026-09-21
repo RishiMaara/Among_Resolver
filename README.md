@@ -76,9 +76,9 @@ For a deeper dive into how this engine stacks up against industry standards, rea
 | ReconRiver corpus (references stripped) | 21.62% — the rest declined, none wrong |
 | Own benchmark, 120 scenarios (`benchmark.py` default) | 62% auto-clear, 65% truth identified, 0 false clears |
 | **False clears, everywhere above** | **0** |
-| Confidence calibration, 180 scenarios, in-sample (`calibration.py` default) | ECE **0.1567** · MCE 0.3087 · Brier 0.1808 — not a good number; see below |
-| Confidence calibration, ReconRiver, out-of-sample (`calibration_out_of_sample.py`) | ECE 0.0766 · MCE 0.46 · Brier 0.0616, 74 predictions |
-| Tests | **646** backend · **97** frontend |
+| Confidence calibration, 180 scenarios, in-sample (`calibration.py` default) | ECE 0.0544 · MCE 0.20 · Brier 0.0443 — 103 of 103 correct at or above the 0.85 gate |
+| Confidence calibration, ReconRiver, out-of-sample (`calibration_out_of_sample.py`) | ECE 0.1037 raw, **0.040** calibrated (`fit_calibration.py`) · 42 of 42 correct above the gate, 74 predictions |
+| Tests | **691** backend · **97** frontend |
 
 Every figure in that table except the two calibration rows is re-measured by
 `python scripts/generate_benchmarks.py`, which writes
@@ -178,7 +178,7 @@ engine/        Python engine
   src/                       one module per agent — see docs/ARCHITECTURE.md
   src/api/                   the HTTP surface: models, presentation, route groups
   scripts/                   benchmarks, calibration, stress runs, data fetch
-  tests/                     646 tests
+  tests/                     691 tests
   benchmarks/                measurement snapshots
   data/                      Sanctions lists, test ledgers
 design/                    Design canvases the UI is ported from
@@ -327,6 +327,23 @@ trail a reviewer reads afterwards.
   journal a person approved — and separation of duties means the approver is
   not whoever accepted the match — and recorded in the audit trail with who
   exported it. The engine still posts nothing; Tally does, on import.
+- **AI where it measured better, and a check in code wherever it is used**
+  — [docs/AI_EVALUATION.md](docs/AI_EVALUATION.md) has every figure and the
+  script behind it. Bank narrations (UTR, settlement ref, payer, rail): a
+  grounded model reads 97.5% of fields right on bank formats the rules never
+  saw, against 82.7% for the rules, and no value it returns is kept unless it
+  appears in the narration. Withheld settlements: an investigator proposes one
+  typed action — match, wait, request a document, write off rounding,
+  escalate — and a verifier checks the arithmetic, the ledger, the calendar,
+  the evidence and every figure in the reason before a reviewer sees it; on
+  58 withheld benchmark cases it puts 16 right, verified proposals in front
+  of a reviewer against 2 from fixed rules, with 4 wrong ones getting through
+  where the evidence itself misleads. Questions about a result: 44 of 44 on a
+  small set, facts from the record and refusals where the record cannot
+  answer. Confidence is shown calibrated as well as raw (out-of-sample ECE
+  0.104 → 0.040), and reviewer decisions flag drift. The first investigator
+  measurement read the benchmark's labels and was thrown away; the write-up
+  says how.
 - **A tamper-evident audit trail.** Every entry carries the SHA-256 of the
   entry before it; edit a word, delete a line or reorder two and
   `GET /audit/{batch_id}/verify` names the first entry that no longer checks
@@ -415,9 +432,12 @@ One number moved the wrong way and is reported rather than dropped:
 out-of-sample ECE rose from 0.0766 to 0.1037 while in-sample fell from
 0.1567 to 0.0544, and out-of-sample MCE — the worst single bucket — improved
 from 0.46 to 0.13. Removing a block of confident-and-wrong
-predictions concentrates the residual error in the low band, where the
-engine is now underconfident — the safe direction, and the direction that
-costs review time rather than money.
+predictions concentrates the residual error in the low band, which is
+OVERconfident — it says 0.14 and is right 3.1% of the time. An earlier
+version of this paragraph called that underconfidence; it is the opposite.
+It costs nothing only because that band never clears anything: every
+proposal in it goes to a person. The calibrated figure shown beside it
+(`calibration_map.py`) says 0.09, which is closer to the truth.
 
 **Fees assume one rate card per batch.** Real Indian settlements mix payment
 methods at different rates — UPI near zero, cards around 2%, netbanking often

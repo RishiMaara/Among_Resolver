@@ -108,6 +108,12 @@ def compliance_rulebook():
     }
 
 
+@router.get("/calibration", summary="What confidence has been worth, and what reviewers say")
+def calibration():
+    import calibration_map  # pylint: disable=import-outside-toplevel
+    return calibration_map.report()
+
+
 @router.get("/history", summary="Previously recorded reconciliation runs")
 def list_history(limit: int = 100, batch_id: str | None = None):
     """

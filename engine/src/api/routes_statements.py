@@ -11,7 +11,10 @@ reading can be checked on its own, before anything depends on it.
 from __future__ import annotations
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
+from pydantic import BaseModel
 
+import llm_provider
+import narration_reader
 import statement_parsers
 
 router = APIRouter()
@@ -37,4 +40,30 @@ async def parse_statement(file: UploadFile = File(...)):
                    "balance_cents": ln.balance_cents} for ln in st.lines],
         "check": check,
         "notes": st.notes,
+    }
+
+
+class NarrationRequest(BaseModel):
+    narrations: list[str]
+    use_model: bool = False
+
+
+@router.post("/narrations/read", summary="Read UTR, settlement ref, counterparty and rail")
+def read_narrations(req: NarrationRequest):
+    """
+    Regex always; the model only when asked for and configured, and only
+    with values that appear in the narration they came from.
+    """
+    if len(req.narrations) > 500:
+        raise HTTPException(status_code=422, detail={
+            "message": "too many narrations",
+            "plain": "Send at most 500 narrations per request."})
+    stats: dict = {}
+    use = req.use_model and llm_provider.is_configured()
+    rows = narration_reader.read(req.narrations, use_llm=use, stats=stats)
+    return {
+        "reader": "model first, regex fallback" if use else "regex",
+        "model_requested_but_unavailable": req.use_model and not use,
+        "ungrounded_values_dropped": stats.get("ungrounded", 0),
+        "results": [{"narration": t, **r} for t, r in zip(req.narrations, rows)],
     }

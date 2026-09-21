@@ -24,6 +24,7 @@ import compliance_rulebook as compliance_rulebook_mod
 import history
 import settled_ledger
 import open_items
+import calibration_map
 import settlement_qa
 from api.presentation import _check_then_record
 
@@ -183,6 +184,15 @@ def record_decision(batch_id: str, body: ReviewDecision):
             "plain": ("A decision has to be attributed to someone. Sign in "
                       "before confirming or rejecting a batch."),
         })
+
+    # A person's verdict on a proposed set is an outcome the calibration can
+    # be checked against (calibration_map.report, GET /calibration).
+    from api.routes_exports import latest_result  # pylint: disable=import-outside-toplevel
+    recorded = latest_result(batch_id) or {}
+    summary = recorded.get("summary") or {}
+    if summary.get("matched_count"):
+        calibration_map.record_outcome(batch_id, float(summary.get("confidence") or 0.0),
+                                       decision == "confirmed", reviewer)
 
     covered = f" covering {len(body.txn_ids)} payment(s)" if body.txn_ids else ""
     note = f" Note: {body.note.strip()}" if (body.note or "").strip() else ""

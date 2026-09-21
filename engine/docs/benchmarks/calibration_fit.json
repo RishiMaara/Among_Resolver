@@ -1,0 +1,69 @@
+{
+ "benchmark_pairs": 180,
+ "reconriver_pairs": 74,
+ "cross": [
+  {
+   "fit": "benchmark -> ReconRiver",
+   "train_pairs": 180,
+   "test_pairs": 74,
+   "ece_raw": 0.1036,
+   "ece_calibrated": 0.0397,
+   "low_band_raw": {
+    "n": 32,
+    "said": 0.1428,
+    "right": 0.0312
+   },
+   "low_band_calibrated": {
+    "n": 32,
+    "said": 0.0885,
+    "right": 0.0312
+   }
+  },
+  {
+   "fit": "ReconRiver -> benchmark",
+   "train_pairs": 74,
+   "test_pairs": 180,
+   "ece_raw": 0.0538,
+   "ece_calibrated": 0.0691,
+   "low_band_raw": {
+    "n": 72,
+    "said": 0.15,
+    "right": 0.1389
+   },
+   "low_band_calibrated": {
+    "n": 72,
+    "said": 0.2533,
+    "right": 0.1389
+   }
+  }
+ ],
+ "shipped_map": {
+  "xs": [
+   0.05,
+   0.11,
+   0.19,
+   0.36,
+   0.8,
+   0.87,
+   0.88,
+   0.91,
+   0.95,
+   0.97
+  ],
+  "ys": [
+   0.0278,
+   0.0385,
+   0.04,
+   0.48,
+   0.8571,
+   0.9828,
+   0.9828,
+   0.9828,
+   0.9848,
+   0.9848
+  ],
+  "fitted_on": 254,
+  "source": "benchmark + ReconRiver"
+ },
+ "gate_note": "Auto-clear still reads the raw confidence; the calibrated figure is shown beside it."
+}

@@ -46,6 +46,8 @@ import re
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 
+import narration_reader
+
 FORMATS = ("mt940", "camt053", "ofx", "pdf")
 
 
@@ -454,5 +456,10 @@ def to_rows(st: ParsedStatement, credits_only: bool = True) -> list[dict]:
             "memo": ln.description,
             "statement_format": st.format,
             "value_date": ln.value_date.isoformat() if ln.value_date else "",
+            # What the narration says, read by rules only: ingestion stays
+            # deterministic, and the model reader is an explicit request
+            # (POST /narrations/read), never a side effect of an upload.
+            **{f"narration_{k}": v for k, v in
+               narration_reader.regex_read(ln.description).__dict__.items() if v},
         })
     return rows

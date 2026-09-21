@@ -44,6 +44,7 @@ from linkage import LinkageResult, build_candidate_links, link_confidence, txn_k
 import audit
 from fee_audit import run_fee_audit, MethodRateCard, FeeAuditFinding
 from india_tax import ist_date
+import calibration_map
 
 
 
@@ -129,6 +130,10 @@ class ReconciliationReport:
             "ambiguous": self.match_result.ambiguous,
             "withheld_reason": self.match_result.withheld_reason,
             "confidence": self.match_result.confidence,
+            # What claims at this confidence have actually been worth
+            # (calibration_map.py). Shown beside the raw figure; the auto-clear
+            # gate still reads the raw one, which is the figure with a record.
+            "calibrated_confidence": calibration_map.calibrated(self.match_result.confidence),
             "false_positive_cost_estimate_cents": self.false_positive_cost_estimate_cents,
             "requires_human_approval": (
                 not self.match_result.cleared

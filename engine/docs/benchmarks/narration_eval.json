@@ -1,0 +1,425 @@
+{
+ "narrations": 240,
+ "seed": 20260921,
+ "regex": {
+  "dev": {
+   "n": 120,
+   "fields": {
+    "utr": {
+     "accuracy": 0.9667,
+     "wrong": 3,
+     "missed": 1
+    },
+    "settlement_ref": {
+     "accuracy": 0.9167,
+     "wrong": 1,
+     "missed": 9
+    },
+    "counterparty": {
+     "accuracy": 0.6667,
+     "wrong": 3,
+     "missed": 37
+    },
+    "rail": {
+     "accuracy": 0.9917,
+     "wrong": 0,
+     "missed": 1
+    }
+   },
+   "mean_accuracy": 0.8854
+  },
+  "held_out": {
+   "n": 120,
+   "fields": {
+    "utr": {
+     "accuracy": 0.9667,
+     "wrong": 1,
+     "missed": 3
+    },
+    "settlement_ref": {
+     "accuracy": 0.9083,
+     "wrong": 0,
+     "missed": 11
+    },
+    "counterparty": {
+     "accuracy": 0.4333,
+     "wrong": 17,
+     "missed": 51
+    },
+    "rail": {
+     "accuracy": 1.0,
+     "wrong": 0,
+     "missed": 0
+    }
+   },
+   "mean_accuracy": 0.8271
+  }
+ },
+ "model_then_regex": {
+  "dev": {
+   "n": 120,
+   "fields": {
+    "utr": {
+     "accuracy": 0.9667,
+     "wrong": 4,
+     "missed": 0
+    },
+    "settlement_ref": {
+     "accuracy": 0.9667,
+     "wrong": 4,
+     "missed": 0
+    },
+    "counterparty": {
+     "accuracy": 0.975,
+     "wrong": 1,
+     "missed": 2
+    },
+    "rail": {
+     "accuracy": 1.0,
+     "wrong": 0,
+     "missed": 0
+    }
+   },
+   "mean_accuracy": 0.9771
+  },
+  "held_out": {
+   "n": 120,
+   "fields": {
+    "utr": {
+     "accuracy": 0.9833,
+     "wrong": 1,
+     "missed": 1
+    },
+    "settlement_ref": {
+     "accuracy": 0.9667,
+     "wrong": 4,
+     "missed": 0
+    },
+    "counterparty": {
+     "accuracy": 0.95,
+     "wrong": 1,
+     "missed": 5
+    },
+    "rail": {
+     "accuracy": 1.0,
+     "wrong": 0,
+     "missed": 0
+    }
+   },
+   "mean_accuracy": 0.975
+  }
+ },
+ "model_only": {
+  "dev": {
+   "n": 120,
+   "fields": {
+    "utr": {
+     "accuracy": 0.9667,
+     "wrong": 4,
+     "missed": 0
+    },
+    "settlement_ref": {
+     "accuracy": 0.9667,
+     "wrong": 4,
+     "missed": 0
+    },
+    "counterparty": {
+     "accuracy": 0.975,
+     "wrong": 1,
+     "missed": 2
+    },
+    "rail": {
+     "accuracy": 1.0,
+     "wrong": 0,
+     "missed": 0
+    }
+   },
+   "mean_accuracy": 0.9771
+  },
+  "held_out": {
+   "n": 120,
+   "fields": {
+    "utr": {
+     "accuracy": 0.9667,
+     "wrong": 1,
+     "missed": 3
+    },
+    "settlement_ref": {
+     "accuracy": 0.9667,
+     "wrong": 4,
+     "missed": 0
+    },
+    "counterparty": {
+     "accuracy": 0.95,
+     "wrong": 1,
+     "missed": 5
+    },
+    "rail": {
+     "accuracy": 1.0,
+     "wrong": 0,
+     "missed": 0
+    }
+   },
+   "mean_accuracy": 0.9708
+  }
+ },
+ "regex_then_model": {
+  "dev": {
+   "n": 120,
+   "fields": {
+    "utr": {
+     "accuracy": 0.9583,
+     "wrong": 5,
+     "missed": 0
+    },
+    "settlement_ref": {
+     "accuracy": 0.9667,
+     "wrong": 4,
+     "missed": 0
+    },
+    "counterparty": {
+     "accuracy": 0.95,
+     "wrong": 4,
+     "missed": 2
+    },
+    "rail": {
+     "accuracy": 1.0,
+     "wrong": 0,
+     "missed": 0
+    }
+   },
+   "mean_accuracy": 0.9688
+  },
+  "held_out": {
+   "n": 120,
+   "fields": {
+    "utr": {
+     "accuracy": 0.975,
+     "wrong": 2,
+     "missed": 1
+    },
+    "settlement_ref": {
+     "accuracy": 0.9667,
+     "wrong": 4,
+     "missed": 0
+    },
+    "counterparty": {
+     "accuracy": 0.8167,
+     "wrong": 17,
+     "missed": 5
+    },
+    "rail": {
+     "accuracy": 1.0,
+     "wrong": 0,
+     "missed": 0
+    }
+   },
+   "mean_accuracy": 0.9396
+  }
+ },
+ "model_ungrounded_values_dropped": 14,
+ "model_calls": 10,
+ "model": "gemini-flash-latest",
+ "examples": [
+  {
+   "split": "dev",
+   "text": "mmt/imps/306316306579/payment/razorpay payments pvt ltd",
+   "truth": {
+    "utr": "306316306579",
+    "settlement_ref": null,
+    "counterparty": "RAZORPAYPAYMENTSPVTLTD",
+    "rail": "IMPS"
+   }
+  },
+  {
+   "split": "dev",
+   "text": "BY TRANSFER RTGS UTR NO: ICICR54169308836478982 RAZORPAY SOFTWARE PVT LTD",
+   "truth": {
+    "utr": "ICICR54169308836478982",
+    "settlement_ref": null,
+    "counterparty": "RAZORPAYSOFTWAREPVTLTD",
+    "rail": "RTGS"
+   }
+  },
+  {
+   "split": "dev",
+   "text": "UPI/717371076531/NILGIRI FOODS LLP/nilgiri@okhdfcbank/HDFC ",
+   "truth": {
+    "utr": "717371076531",
+    "settlement_ref": null,
+    "counterparty": "NILGIRIFOODSLLP",
+    "rail": "UPI"
+   }
+  },
+  {
+   "split": "dev",
+   "text": "by transfer-rtgs utr no: cnrbr60330717097436202-kaveri enterprises",
+   "truth": {
+    "utr": "CNRBR60330717097436202",
+    "settlement_ref": null,
+    "counterparty": "KAVERIENTERPRISES",
+    "rail": "RTGS"
+   }
+  },
+  {
+   "split": "dev",
+   "text": "MMT/IMPS/247690320439/PAYMENT/CASHFREE PAYMEN",
+   "truth": {
+    "utr": "247690320439",
+    "settlement_ref": null,
+    "counterparty": "CASHFREEPAYMEN",
+    "rail": "IMPS"
+   }
+  },
+  {
+   "split": "dev",
+   "text": "MMT/IMPS/125107190088/SETTL setl_8A3z3up5sKYHyk/CASHFR",
+   "truth": {
+    "utr": "125107190088",
+    "settlement_ref": "setl_8A3z3up5sKYHyk",
+    "counterparty": "CASHFR",
+    "rail": "IMPS"
+   }
+  },
+  {
+   "split": "dev",
+   "text": "NEFT CR-HDFC0102883-RAZORPAY PAYMENTS PVT LTD-SETTL set",
+   "truth": {
+    "utr": null,
+    "settlement_ref": null,
+    "counterparty": "RAZORPAYPAYMENTSPVTLTD",
+    "rail": "NEFT"
+   }
+  },
+  {
+   "split": "dev",
+   "text": "BY TRANSFER-RTGS UTR NO: FDRLR20306017349746276-KAVERI ENTERPRISES",
+   "truth": {
+    "utr": "FDRLR20306017349746276",
+    "settlement_ref": null,
+    "counterparty": "KAVERIENTERPRISES",
+    "rail": "RTGS"
+   }
+  },
+  {
+   "split": "dev",
+   "text": "neftcr-utib0888788-kaverienterprises-settlsettle-3692-sbinn66815941697",
+   "truth": {
+    "utr": "SBINN66815941697",
+    "settlement_ref": "SETTLE-3692",
+    "counterparty": "KAVERIENTERPRISES",
+    "rail": null
+   }
+  },
+  {
+   "split": "dev",
+   "text": "NEFT CR-YESB0566599-RAZORPAY SOFTWARE PVT LTD-SETTL SETTLE-0159-HDFCN42789272425",
+   "truth": {
+    "utr": "HDFCN42789272425",
+    "settlement_ref": "SETTLE-0159",
+    "counterparty": "RAZORPAYSOFTWAREPVTLTD",
+    "rail": "NEFT"
+   }
+  },
+  {
+   "split": "held_out",
+   "text": "NEFT CREDIT CASHFREE PAYMENTS INDIA PVT LTD ICICN67",
+   "truth": {
+    "utr": null,
+    "settlement_ref": null,
+    "counterparty": "CASHFREEPAYMENTSINDIAPVTLTD",
+    "rail": "NEFT"
+   }
+  },
+  {
+   "split": "held_out",
+   "text": "MOB-IMPS-CR/SHARMA TRADERS/106826773346",
+   "truth": {
+    "utr": "106826773346",
+    "settlement_ref": null,
+    "counterparty": "SHARMATRADERS",
+    "rail": "IMPS"
+   }
+  },
+  {
+   "split": "held_out",
+   "text": "NEFT INWARD/SBINN11147510038/CASHFREE PAYMENTS INDIA PVT LTD/SETTL setl_UedMx7CsP8Ve4U",
+   "truth": {
+    "utr": "SBINN11147510038",
+    "settlement_ref": "setl_UedMx7CsP8Ve4U",
+    "counterparty": "CASHFREEPAYMENTSINDIAPVTLTD",
+    "rail": "NEFT"
+   }
+  },
+  {
+   "split": "held_out",
+   "text": "MOB-IMPS-CR/SHARMA TRADERS/818499530820",
+   "truth": {
+    "utr": "818499530820",
+    "settlement_ref": null,
+    "counterparty": "SHARMATRADERS",
+    "rail": "IMPS"
+   }
+  },
+  {
+   "split": "held_out",
+   "text": "imps cr 932271789034 razorpay payments pvt ltd settl settle 0228",
+   "truth": {
+    "utr": "932271789034",
+    "settlement_ref": "SETTLE-0228",
+    "counterparty": "RAZORPAYPAYMENTSPVTLTD",
+    "rail": "IMPS"
+   }
+  },
+  {
+   "split": "held_out",
+   "text": "NEFT/ICICN42687808695/KAVERI ENTERPRI/ICIC08",
+   "truth": {
+    "utr": "ICICN42687808695",
+    "settlement_ref": null,
+    "counterparty": "KAVERIENTERPRI",
+    "rail": "NEFT"
+   }
+  },
+  {
+   "split": "held_out",
+   "text": "NEFT ICICN20625049347 CASHFREE PAYMEN SBIN0481863",
+   "truth": {
+    "utr": "ICICN20625049347",
+    "settlement_ref": null,
+    "counterparty": "CASHFREEPAYMEN",
+    "rail": "NEFT"
+   }
+  },
+  {
+   "split": "held_out",
+   "text": "IMPS-CR-437223643778-ANJALI MEHTA-SETTL SETTLE-7938",
+   "truth": {
+    "utr": "437223643778",
+    "settlement_ref": "SETTLE-7938",
+    "counterparty": "ANJALIMEHTA",
+    "rail": "IMPS"
+   }
+  },
+  {
+   "split": "held_out",
+   "text": "imps-cr-969524459481-anjali mehta-settl setl_yd17hux4nqgwtw",
+   "truth": {
+    "utr": "969524459481",
+    "settlement_ref": "setl_yD17HuX4NQGwTw",
+    "counterparty": "ANJALIMEHTA",
+    "rail": "IMPS"
+   }
+  },
+  {
+   "split": "held_out",
+   "text": "IMPS CR 200328018472 ANJALI MEHTA SETTL setl_ZDjBJAH5WDXhdz",
+   "truth": {
+    "utr": "200328018472",
+    "settlement_ref": "setl_ZDjBJAH5WDXhdz",
+    "counterparty": "ANJALIMEHTA",
+    "rail": "IMPS"
+   }
+  }
+ ]
+}

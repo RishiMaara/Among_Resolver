@@ -416,3 +416,110 @@ whose tamper tests need a trail that really is empty.
 
 Mitigation: it deletes SQLite rows too, and the chain head with them.
 
+---
+
+## 24. The narration reader in the wrong order
+
+Severity: Low (caught by its own evaluation)
+Fails safe: Yes — both orders keep only grounded values
+
+The narration reader was designed regex-first, the model filling only the
+fields the regex left empty. Measured on bank formats the regex was not
+written for, that order scored 94.0% and model-first 97.5%: a regex that
+returns the wrong payer leaves no gap for the model to fill, so its mistakes
+survive.
+
+Mitigation: model first, regex where the model found nothing, and the table
+that decided it is in the module's docstring.
+
+---
+
+## 25. A verifier stricter than the engine it checks
+
+Severity: Medium (a right answer would have been rejected)
+Fails safe: Yes — it rejected, it did not approve
+
+The investigator's verifier demanded a match sum to the target to the paisa.
+The engine itself accepts within a tolerance, because a target rebuilt from
+an estimated fee can land a paisa off the members' true sum — and the
+verifier rejected the TRUE set in 4 of 38 solvable benchmark cases. It also
+rejected 18 sound proposals whose reasons quoted a set's total, because the
+case never stated set totals.
+
+Mitigation: the verifier holds a proposal to the engine's own tolerance, and
+the case states each set's total. A test asserts the true set passes.
+
+---
+
+## 26. The model read the benchmark's labels
+
+Severity: High (to credibility) — a published figure would have been false
+Fails safe: Yes — found before anything was published
+
+The first investigator evaluation gave the model the benchmark's cases as
+they are. The benchmark names its true members `S19_TRUE_0`, names each
+settlement after the failure it simulates (`..._out_of_window_...`), and
+writes memos like "decoy" and "unrelated payment". The model's reasons cited
+"the true legs (S19_TRUE_0 to S19_TRUE_3)". Its 46.6% was a measurement of
+reading labels.
+
+Mitigation: the case the model sees in evaluation replaces every id and the
+settlement's name with opaque aliases and removes reference and memo text,
+keeping a per-record flag for whether the reference names the settlement.
+Re-measured: 34.5% right. AI_EVALUATION.md states what the redacted run can
+and cannot show.
+
+---
+
+## 27. An arithmetic tie passed as a finding
+
+Severity: High (wrong sets in front of reviewers as verified proposals)
+Fails safe: No — a rubber stamp would have approved them
+
+With labels gone, the model often chose between sets that reach the same
+target on arithmetic alone. Each such choice passed every check the verifier
+had — in the pool, once each, right sum — and 11 wrong sets would have
+reached reviewers as verified proposals from 58 cases.
+
+Mitigation: a match that ties another listed set must carry more evidence
+than every rival (records whose reference names the settlement), or it is
+escalated with the sets listed. Wrong verified matches fell from 11 to 4; 3
+right ones were demoted with them, correctly, because nothing distinguished
+them from their rivals.
+
+---
+
+## 28. A calibration map that returned coin flips
+
+Severity: Medium (a reviewer-facing figure would have been arbitrary)
+Fails safe: Yes — the gate never reads it
+
+The first isotonic fit kept tied confidences as separate points. The engine
+emits a handful of discrete values, so ties are the rule, and a lookup at
+0.05 returned whichever single outcome sorted first. The corrected fit then
+mapped seven right out of seven to a calibrated 1.0 — "certain", beside a
+proposal the engine had withheld.
+
+Mitigation: ties are pooled before the fit, blocks are Laplace-smoothed
+((right + 1) / (n + 2)) with monotonicity restored, and values between
+blocks are interpolated. Tests pin all three.
+
+---
+
+## 29. Overconfidence called underconfidence
+
+Severity: Low (to credibility)
+Fails safe: Yes — the band never clears
+
+Three documents described the lowest confidence band out-of-sample as
+"underconfident — the safe direction". Its own numbers say the opposite: it
+states 0.14 and is right 3.1% of the time. It is harmless only because no
+proposal in that band is ever cleared. The README headline table also still
+showed a calibration row from before the fix it described (ECE 0.0766, 4 of
+46 wrong above the gate) beside prose describing the fix.
+
+Mitigation: the wording says overconfident, the headline rows are the
+current measurement (in-sample ECE 0.0544 and 103 of 103 above the gate;
+out-of-sample 0.1037 raw, 0.040 calibrated, 42 of 42), and each report now
+carries a calibrated figure beside the raw one.
+

@@ -75,6 +75,8 @@ import re
 import auto_disposition
 import settled_ledger
 import open_items
+import investigation_agent
+import llm_provider
 import settlement_cycle
 import india_calendar
 
@@ -370,6 +372,12 @@ async def reconcile_upload(
     # because which payout absorbs a clawback is a fact about the processor's
     # timing rather than something the engine should assume.
     include_chargebacks: bool = Form(False),
+    # A settlement that does not clear can be handed to the investigator
+    # (investigation_agent.py): read-only case, one typed proposal, verified
+    # in code before anyone sees it. The model proposer only when asked for
+    # AND configured; otherwise fixed rules propose.
+    investigate: bool = Form(False),
+    investigate_with_model: bool = Form(False),
     gateway_file: Optional[UploadFile] = File(None),
     bank_file: Optional[UploadFile] = File(None),
     erp_file: Optional[UploadFile] = File(None),
@@ -661,6 +669,20 @@ async def reconcile_upload(
     # already-settled check, so a clear that check withdrew teaches nothing.
     if (formatted.get("summary") or {}).get("cleared") and matched_ids:
         settlement_cycle.learn_from(batch, candidates, matched_ids)
+
+    if investigate and not (formatted.get("summary") or {}).get("cleared"):
+        found = investigation_agent.investigate(
+            batch, candidates, report,
+            use_model=investigate_with_model and llm_provider.is_configured())
+        if found:
+            formatted["investigation"] = found
+            prop, ver = found["proposal"], found["verification"]
+            audit.log_decision(
+                batch_id=report.batch_id, agent="investigator",
+                detail=(f"Proposed {prop['action']} ({prop['proposer']}): {prop['reason']} "
+                        + ("Verified in code; still a proposal for a reviewer."
+                           if ver["valid"] else "REJECTED by the verifier: "
+                           + "; ".join(ver["failed"]))))
 
     # What is still waiting to be paid out, carried to the next run. After the
     # already-settled check, so a clear that check withdrew closes nothing.
