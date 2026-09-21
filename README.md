@@ -2,15 +2,55 @@
 
 [![CI](https://github.com/RishiMaara/Among_Resolver/actions/workflows/ci.yml/badge.svg)](https://github.com/RishiMaara/Among_Resolver/actions/workflows/ci.yml)
 
-A multi-source settlement reconciliation engine. Built for the Razorpay AI
-Buildathon, Track 04 — AI Finance Controller.
+**Settlement reconciliation for Indian payments.** It works out which payments
+make up each payout, proves the answer to the paisa, and refuses to clear
+what it cannot prove — then says what a person should do next. Across every
+corpus it has been measured on, it has never cleared a wrong set.
 
-Give it a gateway export, a bank statement and an ERP ledger, and it works out
-which transactions make up a settlement, proves the arithmetic ties out, screens
-the records against a published compliance rulebook, and produces a cash
-position with a balanced posting proposal.
+Built for the Razorpay AI Buildathon, Track 04 — AI Finance Controller.
+**[Live demo](https://among-resolver.vercel.app/)** ·
+**[Judge it in five minutes](https://among-resolver.vercel.app/judge)** — live
+checks against the engine, and every figure below with the file it came from.
 
-It never writes to a ledger. It proposes, and a human approves.
+It never writes to a ledger. It proposes; a person approves.
+
+| | |
+|---|---|
+| Wrong sets cleared, every measured corpus | **0** |
+| Third-party corpus (ReconRiver), references present | 94.6% of settlements identified exactly |
+| Same corpus, every settlement reference stripped | 21.6% → **56.8%** with learned linkage |
+| Bank narrations read right, bank formats the rules never saw | 82.7% rules → **97.5%** grounded model |
+| One settlement found inside 200,000 records | exact 55 members, precision and recall 1.0 |
+
+**What it does**
+
+- **Reads Razorpay directly.** The Settlement Recon API names each payout's
+  members, so the engine checks what that list does not prove: the lines sum
+  to the payout to the paisa; a blind re-solve without the settlement ids
+  reaches the same set; the bank credit carries the UTR and exact amount;
+  every order is in the books; fees, GST, TDS and TCS are right for their
+  dates.
+- **Reads bank statements as banks send them** — MT940, CAMT.053, OFX, PDF —
+  and proves each read: opening + credits − debits = closing, line by line.
+- **Finds the members when nothing names them.** Linkage (anchors, and a
+  Fellegi-Sunter model that learns the processor's payout cycle) narrows
+  the pool; exact CP-SAT subset-sum verifies it; four refusal gates stop
+  anything the evidence does not carry.
+- **Knows Indian specifics.** TDS under Section 194-O until 31 March 2026 and
+  Section 393(1) Sl. 8(v) after; TCS under Section 52 CGST; input tax credit
+  against the gateway's invoice; T+2 in working days across second Saturdays
+  and state holidays; a Tally XML export of the approved posting.
+- **Keeps what is left in view.** Open items carried across runs and aged;
+  exceptions filed by finance category with an owner and a first step; an
+  investigator that proposes what to do with a withheld payout, verified in
+  code before anyone sees it.
+- **Controls.** Separation of duties, a hash-chained audit trail with
+  receipts, approval-gated exports, and a failure log of everything that went
+  wrong ([FAILURE_LOG.md](FAILURE_LOG.md)).
+
+**Where AI is used, and what checks it** — every model proposes and code
+decides; each use has a deterministic fallback and a measurement:
+[docs/AI_EVALUATION.md](docs/AI_EVALUATION.md).
 
 ---
 
@@ -27,13 +67,14 @@ the members scored **0.0% accuracy**.
 You can run that yourself — `AMONGRESOLVER_NO_LINKAGE=1 python
 scripts/benchmark.py`, about forty seconds.
 
-This is an AI system that had to decide where AI belongs. Two agents use an
-LLM — schema mapping and settlement Q&A, both language problems. Twelve do
-not, because "which payments compose this settlement" is a money problem with
-millions of arithmetically valid answers, and the number above is what
-happens when you let a search pick one anyway: 0.0%. The judgment call is the
-contribution, not a limitation to apologize for. The full argument, including
-what would change our mind, is its own page:
+This is an AI system that had to decide where AI belongs. Language models
+read language here — column headers, bank narrations, questions about a
+result — and propose an action for a settlement the engine withheld; every
+one of those outputs is checked in code before it counts. None of them
+decides which payments compose a settlement, because that is a money problem
+with millions of arithmetically valid answers, and the number above is what
+happens when you let a search pick one anyway: 0.0%. The full argument,
+including what would change our mind:
 **[Why not just an LLM?](docs/WHY_NOT_AN_LLM.md)**
 
 So the engine reframes the problem: **reconciliation is entity resolution
@@ -45,22 +86,30 @@ down to 55. The sum then *verifies* a set that was *identified* by evidence.
 When the evidence is not there, the engine says so instead of guessing. That
 is the behaviour the numbers below are really measuring.
 
-## AmongResolver vs. Traditional Platforms
+## How it differs from matching by score
 
-**Identify vs. Verify:** Legacy systems and ML models use fuzzy matching or probabilistic scoring to *suggest* matches (Identification). AmongResolver uses these same techniques to narrow the pool, but relies on subset-sum arithmetic (CP-SAT) as an uncompromising gatekeeper to *prove* the settlement down to the exact paise (Verification). 
+**Identify, then verify.** Fuzzy matching and probabilistic scoring are how
+reconciliation tools usually *suggest* matches. This engine uses the same
+ideas to narrow the pool, then requires an exact subset-sum (CP-SAT) to
+*prove* the settlement to the paisa, and withholds whatever it cannot prove.
 
-**Natively Built for Gateways:** Traditional reconciliation tools (e.g., Trintech, BlackLine) break when bank settlements are deposited net of gateway fees. AmongResolver dynamically parses unstructured CSVs on the fly and natively decomposes fees, converting a net deposit back to its true gross target—built specifically for the modern Stripe/Razorpay/Adyen era.
+**Built for net settlements.** Gateway payouts arrive net of fees and tax.
+The engine reconstructs the gross target from declared deductions or a rate
+card, and when it has to estimate, it says so in the report.
 
-**Zero False Positives:** Where traditional platforms settle for a "95% confidence score" and rely on heavy, rigid ETL pipelines for month-end closes, AmongResolver is a lightweight, high-velocity pipeline that micro-routes decisions in milliseconds and demands mathematical proof. Its uncompromising guardrails ensure exactly **0 false clears**.
+**Refusal is a feature.** A confident wrong answer costs money; a withheld
+one costs review time. The engine is built to pay the second to avoid the
+first — 0 false clears everywhere it has been measured.
 
-For a deeper dive into how this engine stacks up against industry standards, read **[Industry Comparison](docs/INDUSTRY_COMPARISON.md)**.
+More on how this compares with established tools, and what it does not yet
+do that they do: **[Industry Comparison](docs/INDUSTRY_COMPARISON.md)**.
 
 ## Core Capabilities
 
 1. **N:M (Many-to-Many) Reconciliation:** `POST /reconcile/joint` solves several settlement targets in one CP-SAT model, so a transaction contested between two batches is resolved by what the *other* batch needs, not by whichever batch happened to run first. It reuses the same evidence-based safety the 1:N path has — linkage narrows each batch's own candidates, an anchored refund is still forced, an unevidenced arithmetic match is still withheld — and falls back to running the proven 1:N path per batch if the joint model can't satisfy every target at once, so N:M is never worse than calling the 1:N path on each batch separately. See `engine/src/subset_sum_nm.py` and `orchestrator.reconcile_many`.
 2. **Anchorless Math Fallbacks:** If the pool is too massive for exact subset-sum, the engine gracefully degrades to a custom greedy approximation solver (`approximate_subset_sum_greedy`) rather than timing out.
 3. **ERP Journal Sync (no real ERP has received one):** On a genuine clear, the engine builds a balanced double-entry journal and POSTs it to `ERP_JOURNAL_URL`. Unset by default, and unset means **nothing is posted and the journal says `no_target_configured`** — it does not quietly succeed. This module previously caught an unreachable endpoint and returned success with the journal marked `posted_mock`, so a connection refused left the books showing a journal as posted that no ERP ever received; a crash gets investigated, a false success gets reconciled against next month. Every outcome is now distinct (`posted`, `posted_to_mock`, `rejected_by_erp`, `unreachable`, `no_target_configured`, `skipped_unbalanced`) and only the first two return true. The payload is the shape NetSuite/Tally/QuickBooks accept, with exact integer paise carried alongside each decimal — but "would be accepted" is a design claim, not a measurement. Ingestion is **settlements pushed, transactions pulled**: `POST /webhooks/razorpay` receives signed `settlement.processed` events (HMAC-SHA256 over the raw body, constant-time compare, replay-suppressed across every instance through the shared Redis store, 503 rather than accepting an unsigned delivery), while the payments a settlement decomposes into still arrive by CSV upload or the `razorpay_source.py` pull. So a verified delivery queues a settlement for reconciliation rather than reconciling it — the transaction feed is what reconciliation needs and the webhook does not carry it.
-4. **Dynamic Linkage Weights:** Uses dynamic machine-learned temporal clustering and cross-feed correspondence to build candidate evidence, replacing brittle hardcoded heuristics.
+4. **Learned Linkage Weights:** A Fellegi-Sunter model (`linkage_em.py`) with m-probabilities learned by EM from anchored records, or from the processor's payout cycle as read off verified clears — beside the reasoned 0.55/0.25/0.15/0.10 weights, which remain unfitted. An earlier version of this line claimed "machine-learned" weights that were in fact word counts (FAILURE_LOG 21).
 5. **Deterministic LLM Fallbacks:** When external LLM APIs fail (latency or 503s), the engine seamlessly falls back to local deterministic string similarity (`difflib`) to keep the pipeline moving.
 6. **AML Screening:** Compliance rulebook enforcement against the UN Consolidated Sanctions List — exact match after normalisation (no fuzzy, transliteration or DOB matching; `docs/ARCHITECTURE.md` states this alongside the caveat it implies). Without a fetched list it screens four illustrative names and says so loudly (see "Running it").
 
@@ -78,7 +127,7 @@ For a deeper dive into how this engine stacks up against industry standards, rea
 | **False clears, everywhere above** | **0** |
 | Confidence calibration, 180 scenarios, in-sample (`calibration.py` default) | ECE 0.0544 · MCE 0.20 · Brier 0.0443 — 103 of 103 correct at or above the 0.85 gate |
 | Confidence calibration, ReconRiver, out-of-sample (`calibration_out_of_sample.py`) | ECE 0.1037 raw, **0.040** calibrated (`fit_calibration.py`) · 42 of 42 correct above the gate, 74 predictions |
-| Tests | **691** backend · **97** frontend |
+| Tests | **691** backend · **110** frontend |
 
 Every figure in that table except the two calibration rows is re-measured by
 `python scripts/generate_benchmarks.py`, which writes

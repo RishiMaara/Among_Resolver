@@ -27,6 +27,7 @@ import { Route as IndexRoute } from "@/routes/index";
 import { Route as HistoryRoute } from "@/routes/history";
 import { Route as RulebookRoute } from "@/routes/rulebook";
 import { Route as EscalationsRoute } from "@/routes/escalations";
+import { Route as JudgeRoute } from "@/routes/judge";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const SCREENS: Record<string, { route: any; self: string }> = {
@@ -34,10 +35,11 @@ const SCREENS: Record<string, { route: any; self: string }> = {
   History: { route: HistoryRoute, self: "/history" },
   Rulebook: { route: RulebookRoute, self: "/rulebook" },
   Escalations: { route: EscalationsRoute, self: "/escalations" },
+  "For judges": { route: JudgeRoute, self: "/judge" },
 };
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-const ALL = ["/", "/history", "/rulebook", "/escalations"];
+const ALL = ["/", "/history", "/rulebook", "/escalations", "/judge"];
 
 beforeEach(() => {
   sessionStorage.setItem(
