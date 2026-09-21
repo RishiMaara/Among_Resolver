@@ -14,7 +14,15 @@ export interface Measured {
   after: string;
   note: string;
   /** engine/docs/benchmarks/<file>, and the dotted path to the figure(s). */
-  source: { file: string; path: string; beforePath?: string; scale?: number; digits?: number };
+  source: {
+    file: string;
+    path: string;
+    beforePath?: string;
+    scale?: number;
+    digits?: number;
+    /** Divide by this path's value in thousands: a total becomes "per 1,000". */
+    perThousandOf?: string;
+  };
 }
 
 export const MEASURED: Measured[] = [
@@ -58,19 +66,19 @@ export const MEASURED: Measured[] = [
   {
     label: "Withheld settlements: right, verified proposals reaching a reviewer (of 58)",
     before: "2",
-    after: "16",
-    note: "fixed rules vs the investigator; ids aliased and label-bearing text removed.",
+    after: "14",
+    note: "fixed rules vs the investigator as deployed (model, rules where it gave no answer); ids aliased and label-bearing text removed.",
     source: {
       file: "investigation_eval.json",
       beforePath: "rules.right_and_reaching_reviewer",
-      path: "model.right_and_reaching_reviewer",
+      path: "investigator.right_and_reaching_reviewer",
       digits: 0,
     },
   },
   {
     label: "Confidence calibration error, out-of-sample",
-    before: "0.1036",
-    after: "0.0397",
+    before: "0.0901",
+    after: "0.0262",
     note: "ECE raw vs calibrated; the auto-clear gate still reads the raw figure.",
     source: {
       file: "calibration_fit.json",
@@ -90,6 +98,17 @@ export const MEASURED: Measured[] = [
     after: "55",
     note: "members found exactly — precision and recall 1.0, no exceptions.",
     source: { file: "scale_proof.json", path: "matched_count", digits: 0 },
+  },
+  {
+    label: "Seconds per 1,000 records, parse to verdict",
+    after: "0.053",
+    note: "the same 200,000-record run, on one development machine. No model is called to decide membership; a test fails if one is.",
+    source: {
+      file: "scale_proof.json",
+      path: "total_wall_clock_s",
+      perThousandOf: "total_records",
+      digits: 3,
+    },
   },
 ];
 

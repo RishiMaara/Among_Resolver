@@ -15,7 +15,7 @@ import { LoadingMark } from "@/components/loading-mark";
 import { Wordmark } from "@/components/wordmark";
 import { currentSession, signIn, DEMO_EMAIL, DEMO_PASSWORD, type Session } from "@/lib/session";
 
-export function AuthGate({ children }: { children: ReactNode }) {
+export function AuthGate({ children, open = false }: { children: ReactNode; open?: boolean }) {
   const [session, setSession] = useState<Session | null>(null);
   // The session lives in sessionStorage, which does not exist during the
   // server render. Gating on `ready` keeps the server and client markup
@@ -27,6 +27,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
     setReady(true);
   }, []);
 
+  // A page that records no decision needs no name. It renders the same on
+  // the server and the client, so it does not wait for sessionStorage either.
+  if (open) return <>{children}</>;
   if (!ready) return null;
   if (session) return <>{children}</>;
   return <SignIn onSignedIn={setSession} />;

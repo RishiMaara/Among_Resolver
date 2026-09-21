@@ -258,8 +258,8 @@ transaction ID:
 
 | condition | batches | exact | auto-cleared correct | false clears | mean latency | max latency |
 |---|---|---|---|---|---|---|
-| anchored | 37 | **94.59%** | 91.89% | **0** | 0.58s | 6.52s |
-| settlement id stripped | 37 | 21.62% | 21.62% | **0** | 0.94s | 4.92s |
+| anchored | 37 | **94.59%** | 91.89% | **0** | 0.36s | 4.20s |
+| settlement id stripped | 37 | 24.32% | 21.62% | **0** | 0.87s | 4.67s |
 
 **Batch close** — 738 records across 60 settlements, every one attempted,
 hazards seeded at one settlement in sixteen:
@@ -298,12 +298,12 @@ by `scripts/generate_benchmarks.py` with the commit it was measured at.
 `calibration.py` and the runs quoted here use 180; `realistic_benchmark.py`
 defaults to 48 per profile. Any figure below names the count it came from.
 
-**Calibration** — ECE **0.0544**, MCE 0.2, Brier 0.0443 over 180 scenarios
+**Calibration** — ECE **0.0538**, MCE 0.2, Brier 0.0439 over 180 scenarios
 at seed 7 (`calibration.py`, in-sample). Bucketed:
 
 | confidence | n | said | actual | verdict |
 |---|---:|---:|---:|---|
-| [0.00, 0.50) | 72 | 0.151 | 0.139 | well calibrated |
+| [0.00, 0.50) | 72 | 0.150 | 0.139 | well calibrated |
 | [0.70, 0.85) | 5 | 0.800 | 1.000 | underconfident |
 | [0.85, 0.93) | 41 | 0.876 | 1.000 | underconfident |
 | [0.93, 1.01) | 62 | 0.955 | 1.000 | well calibrated |
@@ -350,15 +350,15 @@ figure **and** the three other independent guards to agree (see
 
 ### Calibration measured out-of-sample — and the gate does not fully hold
 
-ECE 0.0654 is measured on 180 scenarios we wrote, using the buckets the 0.85
+ECE 0.0538 is measured on 180 scenarios we wrote, using the buckets the 0.85
 gate was picked from. Real, and in-sample, and those are not the same claim.
 `scripts/calibration_out_of_sample.py` measures it on a corpus the gate was
 never tuned against:
 
 | corpus | predictions | ECE | at/above 0.85 | wrong above gate | of those, auto-cleared |
 |---|---:|---:|---:|---:|---:|
-| own benchmark *(in-sample)* | 180 | 0.0544 | 103 | **0** | 0 |
-| ReconRiver *(out-of-sample)* | 74 | 0.1037 | 42 | **0** | 0 |
+| own benchmark *(in-sample)* | 180 | 0.0538 | 103 | **0** | 0 |
+| ReconRiver *(out-of-sample)* | 74 | 0.0901 | 42 | **0** | 0 |
 
 The safety-relevant column is "wrong above gate", and it is now zero in both:
 every prediction at or above 0.85 was the exact true set, on our own corpus
@@ -367,7 +367,8 @@ ReconRiver predictions above the gate were wrong.
 
 **One number moved the wrong way and is reported rather than dropped.**
 Out-of-sample ECE rose, 0.0766 to 0.1037, while in-sample ECE fell from
-0.1567 to 0.0544. (Out-of-sample MCE — the worst single bucket, which is the
+0.1567 to 0.0544 (since FAILURE_LOG 31: 0.0901 out-of-sample, 0.0538 in).
+(Out-of-sample MCE — the worst single bucket, which is the
 figure that actually bounds how wrong any one claim can be — improved from
 0.46 to 0.13.) The two are measuring different things about the same change: the
 fuzzy bundles that used to sit at 0.90 now sit at 0.05, which removes a large
@@ -501,10 +502,10 @@ What a streaming deployment would add, and what each piece is for:
   true set — 103 of 103 in-sample, 42 of 42 out-of-sample on ReconRiver. Above
   the gate it errs low (says 0.87, is right every time), which costs review
   time rather than money. Below the gate the out-of-sample low band is
-  overconfident: it says 0.14 and is right 3.1% of the time (n=32). That band
+  overconfident: it says 0.14 and is right 6.3% of the time (2 of 32). That band
   never clears anything, so the harm is a reviewer seeing a hopeful number on
   a proposal already routed to them — but it is the reason out-of-sample ECE
-  (0.1037) is worse than in-sample (0.0544). The in-sample band that used to
+  (0.0901) is worse than in-sample (0.0538). The in-sample band that used to
   be overconfident — [0.50, 0.70), claiming 0.54 against 36.4% — was set to
   its measured 0.36. See "Calibration measured out-of-sample" above for the
   full breakdown.
@@ -550,7 +551,7 @@ python scripts/run_reconriver.py          # accuracy, third-party data
 python scripts/pull_razorpay.py --month YYYY-MM   # live Razorpay settlements
 python scripts/close_batch.py --generate  # batch close: match rate + exceptions
 python scripts/calibration.py             # is the confidence real
-python -m pytest tests/ -q                # 695 tests
+python -m pytest tests/ -q                # 696 tests
 ```
 
 Frontend: `npm run dev` (port 8080).
@@ -612,7 +613,7 @@ The suite is honest about which of the two it ran against. A fresh clone
 now carries a real list — `engine/data/sanctions/un_consolidated.txt` is
 tracked so a deployed engine, which is built from git, screens against the UN
 Consolidated List instead of silently dropping to four demo names — so the
-run is **695 passed** with or without a fetch. If neither list is present,
+run is **696 passed** with or without a fetch. If neither list is present,
 `test_compliance.py` skips its real-list assertion and names itself, rather
 than passing quietly against the demo set. A fresh fetch into `data/sanctions/`
 at the repo root takes priority over the tracked snapshot, and CI does one.

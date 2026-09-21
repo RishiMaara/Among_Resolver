@@ -326,7 +326,8 @@ def verify(p: Proposal, case: dict) -> dict:
             failed.append("a transaction is named twice")
         unknown = [i for i in ids if i not in pool]
         if unknown:
-            failed.append(f"{len(unknown)} id(s) are not in this settlement's pool: {unknown[:3]}")
+            failed.append(f"{len(unknown)} id(s) are not in this settlement's pool: "
+                          + ", ".join(unknown[:3]))
         known = [i for i in set(ids) if i in pool]
         if any(pool[i]["currency"] != case["currency"] for i in known):
             failed.append("a transaction is in another currency")
@@ -356,7 +357,7 @@ def verify(p: Proposal, case: dict) -> dict:
                 f"settlement's payments are"
                 + ("" if case.get("member_feed_declared") else
                    " (assumed: no member feed was declared — declare it and re-run)")
-                + f": {outside[:3]}")
+                + ": " + ", ".join(outside[:3]))
         total = sum(pool[i]["amount_cents"] for i in known)
         if not unknown and abs(total - case["target_cents"]) > case["tolerance_cents"]:
             failed.append(f"the set sums to {total} paise, {total - case['target_cents']:+d} "

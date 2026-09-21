@@ -125,9 +125,9 @@ do that they do: **[Industry Comparison](docs/INDUSTRY_COMPARISON.md)**.
 | ReconRiver corpus (references stripped) | 24.32% exact, **56.76%** once the payout cycle is learned from earlier payouts; 21.62% auto-cleared, the rest withheld, none wrong |
 | Own benchmark, 120 scenarios (`benchmark.py` default) | 62% auto-clear, 65% truth identified, 0 false clears |
 | **False clears, everywhere above** | **0** |
-| Confidence calibration, 180 scenarios, in-sample (`calibration.py` default) | ECE 0.0544 · MCE 0.20 · Brier 0.0443 — 103 of 103 correct at or above the 0.85 gate |
-| Confidence calibration, ReconRiver, out-of-sample (`calibration_out_of_sample.py`) | ECE 0.1037 raw, **0.040** calibrated (`fit_calibration.py`) · 42 of 42 correct above the gate, 74 predictions |
-| Tests | **695** backend · **125** frontend |
+| Confidence calibration, 180 scenarios, in-sample (`calibration.py` default) | ECE 0.0538 · MCE 0.20 · Brier 0.0439 — 103 of 103 correct at or above the 0.85 gate |
+| Confidence calibration, ReconRiver, out-of-sample (`calibration_out_of_sample.py`) | ECE 0.0901 raw, **0.026** calibrated (`fit_calibration.py`) · 42 of 42 correct above the gate, 74 predictions |
+| Tests | **696** backend · **129** frontend |
 
 Every figure in that table except the two calibration rows is re-measured by
 `python scripts/generate_benchmarks.py`, which writes
@@ -202,9 +202,14 @@ Frontend (Vite, port 8080):
 npm install && npm run dev
 ```
 
-Then open <http://localhost:8080>.
+Then open <http://localhost:8080>. The demo sign-in — its account is printed
+on the screen — exists so decisions carry a name. `/judge` needs no sign-in;
+`/payouts` checks Razorpay payouts and lists what is still waiting.
 
-**If you are here to evaluate this, read [docs/FINAL_PITCH_SCRIPT.md](docs/FINAL_PITCH_SCRIPT.md) first.** It provides the exact 5-minute narrative for the live demonstration, including the verification standard and the zero-hallucination math.
+**If you are here to evaluate this, start at `/judge`**: live checks against the
+engine, and every measured figure with the file it came from. Then
+[docs/FINAL_PITCH_SCRIPT.md](docs/FINAL_PITCH_SCRIPT.md) has the five-minute
+narrative for a live demonstration.
 
 `sample-data/` holds the original three-feed fixture and
 `sample-data/README.md` has its exact form values. Enter the settlement date
@@ -227,7 +232,7 @@ engine/        Python engine
   src/                       one module per agent — see docs/ARCHITECTURE.md
   src/api/                   the HTTP surface: models, presentation, route groups
   scripts/                   benchmarks, calibration, stress runs, data fetch
-  tests/                     695 tests
+  tests/                     696 tests
   benchmarks/                measurement snapshots
   data/                      Sanctions lists, test ledgers
 design/                    Design canvases the UI is ported from
@@ -267,7 +272,7 @@ trail a reviewer reads afterwards.
   threshold, 0.90, as though it were a confidence — on bundles of ~63
   transactions that were the exact right set 0% of the time. Below the gate
   it is calibrated in-sample (says 0.15, right 13.9%) but overconfident
-  out-of-sample: the low band says 0.14 and is right 3.1% of the time (n=32).
+  out-of-sample: the low band says 0.14 and is right 6.3% of the time (2 of 32).
   That band never clears anything — it sits far below 0.85 — so the cost is a
   reviewer seeing a slightly hopeful number on a proposal already sent to
   them, not a payment released. In-sample no bucket is overconfident; the last
@@ -386,12 +391,12 @@ trail a reviewer reads afterwards.
   typed action — match, wait, request a document, write off rounding,
   escalate — and a verifier checks the arithmetic, the ledger, the calendar,
   the evidence and every figure in the reason before a reviewer sees it; on
-  58 withheld benchmark cases it puts 16 right, verified proposals in front
+  58 withheld benchmark cases it puts 14 right, verified proposals in front
   of a reviewer against 2 from fixed rules, with 4 wrong ones getting through
   where the evidence itself misleads. Questions about a result: 44 of 44 on a
   small set, facts from the record and refusals where the record cannot
   answer. Confidence is shown calibrated as well as raw (out-of-sample ECE
-  0.104 → 0.040), and reviewer decisions flag drift. The first investigator
+  0.090 → 0.026), and reviewer decisions flag drift. The first investigator
   measurement read the benchmark's labels and was thrown away; the write-up
   says how.
 - **A tamper-evident audit trail.** Every entry carries the SHA-256 of the
@@ -483,7 +488,9 @@ out-of-sample ECE rose from 0.0766 to 0.1037 while in-sample fell from
 0.1567 to 0.0544, and out-of-sample MCE — the worst single bucket — improved
 from 0.46 to 0.13. Removing a block of confident-and-wrong
 predictions concentrates the residual error in the low band, which is
-OVERconfident — it says 0.14 and is right 3.1% of the time. An earlier
+OVERconfident — it says 0.14 and is right 6.3% of the time (2 of 32; it was
+1 of 32 before FAILURE_LOG 31, which also brought out-of-sample ECE to
+0.0901). An earlier
 version of this paragraph called that underconfidence; it is the opposite.
 It costs nothing only because that band never clears anything: every
 proposal in it goes to a person. The calibrated figure shown beside it

@@ -10,10 +10,10 @@ differences below are noise.
 | Use | Without the model | With it | The check in code |
 |---|---|---|---|
 | Reading bank narrations | regex: 88.5% / 82.7% | 97.7% / 97.5% | every value must appear in the narration |
-| Investigating withheld settlements | rules: 2 of 58 right and verified | 16 of 58 | a verifier: arithmetic, ledger, calendar, evidence, grounding |
+| Investigating withheld settlements | rules: 2 of 58 right and verified | 14 of 58 | a verifier: arithmetic, ledger, calendar, evidence, grounding |
 | Answering questions about a result | — | 44 of 44 | every figure and id must trace to the recorded result |
 | Linkage where references are gone | 24.3% of sets found | 56.8% | the solver: exact sums only, 0 false clears |
-| Confidence calibration | ECE 0.104 out-of-sample | 0.040 | isotonic, and the auto-clear gate never reads it |
+| Confidence calibration | ECE 0.090 out-of-sample | 0.026 | isotonic, and the auto-clear gate never reads it |
 
 The last two are statistical models, not language models, and are in the
 table because they are the other place the engine learns from data.
@@ -43,12 +43,14 @@ model reads only when `POST /narrations/read` asks it to.
 ## Investigating withheld settlements — `investigation_agent.py`
 
 For a settlement the engine would not clear, the investigator gathers the
-case: the engine's own set, up to three other sets that reach the target,
+case: the engine's own set, every record with its feed, up to three other sets that reach the target,
 exceptions by category, and the next working day. All of these tools are
 read-only and are run for it. It then proposes one typed action: match,
 wait, request a document, write off rounding, or escalate. A verifier checks
 every proposal before a reviewer sees it:
 - the set is in the pool, each record once, in the right currency;
+- every record is from the member feed, and no payment is counted twice —
+  once as the gateway's record and again as its ledger booking;
 - nothing in it was already paid out elsewhere;
 - it sums to the target within the engine's own tolerance;
 - a wait ends on a working day;
@@ -59,12 +61,22 @@ every proposal before a reviewer sees it:
 `scripts/investigation_eval.py` runs on the 58 benchmark settlements the
 engine withheld: 38 solvable, 20 where a member is missing.
 
-| | rules | model |
+| | rules | investigator |
 |---|---:|---:|
-| right action | 3 | 20 |
-| right, verified, reaching a reviewer | 2 | **16** |
-| wrong match reaching a reviewer, no verifier | 35 | 11 |
+| right action | 3 | 17 |
+| right, verified, reaching a reviewer | 2 | **14** |
+| wrong match reaching a reviewer, no verifier | 55 | 20 |
 | wrong match reaching a reviewer, with verifier | 3 | **4** |
+
+The investigator column is what is deployed: the model's proposal where it
+gave one (54 of 58) and the rules' where it did not, as `investigate()` falls
+back in production. These figures replace an earlier 16 right and 11 wrong
+without the verifier, measured on cases that were missing records: the case
+showed only the member feed's part of the engine's proposal, so a set that
+reached into the ledger feed arrived truncated, and one that counted a
+payment in both feeds could not be seen (FAILURE_LOG 30). The rules' "no
+verifier" count rose from 35 to 55 for the same reason — their proposals are
+now shown whole — and the verifier stops all but 3 of them.
 
 **What this measures, and what it doesn't.** The model sees ids and the
 settlement's name as opaque aliases, with reference and memo text removed,
@@ -114,7 +126,7 @@ reported beside the raw confidence and never read by the auto-clear gate.
 
 | fitted on → judged on | ECE raw | ECE calibrated | low band said / right |
 |---|---:|---:|---|
-| benchmark → ReconRiver | 0.104 | **0.040** | 0.14 → 0.09 / 0.03 |
+| benchmark → ReconRiver | 0.090 | **0.026** | 0.14 → 0.09 / 0.06 |
 | ReconRiver → benchmark | 0.054 | 0.069 | 0.15 → 0.25 / 0.14 |
 
 Fitted on the larger corpus, it transfers. Fitted on the 74-prediction one,

@@ -141,7 +141,7 @@ async function razorpayChecks(): Promise<Line[]> {
     ].filter(Boolean);
     out.push({
       tone,
-      text: `${r.settlement_id} (${inr(r.amount_cents)}) — ${r.status}. ${notes.join(" · ")}`,
+      text: `${r.settlement_id} (${inr(r.amount_cents)}) — ${String(r.status).replace(/_/g, " ")}. ${notes.join(" · ")}`,
     });
   }
   if (res.unsettled_lines?.plain) out.push({ tone: "muted", text: res.unsettled_lines.plain });

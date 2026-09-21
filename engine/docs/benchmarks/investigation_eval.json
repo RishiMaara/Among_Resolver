@@ -7,21 +7,30 @@
   "cases": 58,
   "right": 3,
   "right_pct": 5.2,
-  "rejected_by_verifier": 33,
+  "rejected_by_verifier": 53,
   "right_and_reaching_reviewer": 2,
-  "harmful_reaching_reviewer_without_verifier": 35,
+  "harmful_reaching_reviewer_without_verifier": 55,
   "harmful_reaching_reviewer_with_verifier": 3
  },
  "model": {
-  "cases": 58,
-  "right": 20,
-  "right_pct": 34.5,
-  "rejected_by_verifier": 12,
-  "right_and_reaching_reviewer": 16,
-  "harmful_reaching_reviewer_without_verifier": 11,
+  "cases": 54,
+  "right": 17,
+  "right_pct": 31.5,
+  "rejected_by_verifier": 16,
+  "right_and_reaching_reviewer": 14,
+  "harmful_reaching_reviewer_without_verifier": 16,
   "harmful_reaching_reviewer_with_verifier": 4
  },
- "model_answered": 58,
+ "model_answered": 54,
+ "investigator": {
+  "cases": 58,
+  "right": 17,
+  "right_pct": 29.3,
+  "rejected_by_verifier": 20,
+  "right_and_reaching_reviewer": 14,
+  "harmful_reaching_reviewer_without_verifier": 20,
+  "harmful_reaching_reviewer_with_verifier": 4
+ },
  "model_calls_this_run": 0,
  "model_name": "gemini-flash-latest",
  "cases": [
@@ -64,13 +73,15 @@
     "right_with_verifier": false
    },
    "model": {
-    "action": "ESCALATE",
-    "right": true,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
-    "right_with_verifier": true,
-    "failed": []
+    "action": "MATCH_PROPOSAL",
+    "right": false,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
+    "right_with_verifier": false,
+    "failed": [
+     "3 other set(s) reach the same target and this one has no more evidence than the best of them (2 vs 4 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+    ]
    }
   },
   {
@@ -79,11 +90,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "WAIT_FOR_DATA",
+    "action": "MATCH_PROPOSAL",
     "right": false,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false
    },
    "model": {
@@ -102,11 +113,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "WAIT_FOR_DATA",
+    "action": "MATCH_PROPOSAL",
     "right": false,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false
    },
    "model": {
@@ -117,7 +128,7 @@
     "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false,
     "failed": [
-     "2 other set(s) reach the same target and this one has no more evidence than the best of them (0 vs 0 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+     "3 other set(s) reach the same target and this one has no more evidence than the best of them (0 vs 0 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
     ]
    }
   },
@@ -181,13 +192,15 @@
     "right_with_verifier": false
    },
    "model": {
-    "action": "ESCALATE",
-    "right": true,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
-    "right_with_verifier": true,
-    "failed": []
+    "action": "MATCH_PROPOSAL",
+    "right": false,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
+    "right_with_verifier": false,
+    "failed": [
+     "the set sums to 310568 paise, -30868 from the target, beyond the engine's tolerance of 10"
+    ]
    }
   },
   {
@@ -196,11 +209,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "WAIT_FOR_DATA",
+    "action": "MATCH_PROPOSAL",
     "right": false,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false
    },
    "model": {
@@ -219,11 +232,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "WAIT_FOR_DATA",
+    "action": "MATCH_PROPOSAL",
     "right": false,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false
    },
    "model": {
@@ -275,14 +288,14 @@
     "right_with_verifier": false
    },
    "model": {
-    "action": "ESCALATE",
+    "action": "MATCH_PROPOSAL",
     "right": false,
-    "harmful": false,
+    "harmful": true,
     "valid": false,
     "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false,
     "failed": [
-     "the reason cites figures or ids not in the case: 57266124"
+     "3 other set(s) reach the same target and this one has no more evidence than the best of them (0 vs 0 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
     ]
    }
   },
@@ -303,12 +316,10 @@
     "action": "ESCALATE",
     "right": true,
     "harmful": false,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": true,
-    "failed": [
-     "the reason cites figures or ids not in the case: 191353076"
-    ]
+    "failed": []
    }
   },
   {
@@ -340,11 +351,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "WAIT_FOR_DATA",
+    "action": "MATCH_PROPOSAL",
     "right": false,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false
    },
    "model": {
@@ -363,11 +374,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "WAIT_FOR_DATA",
+    "action": "MATCH_PROPOSAL",
     "right": false,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false
    },
    "model": {
@@ -447,7 +458,7 @@
     "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false,
     "failed": [
-     "3 other set(s) reach the same target and this one has no more evidence than the best of them (0 vs 4 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+     "the set sums to 481166 paise, -28023 from the target, beyond the engine's tolerance of 10"
     ]
    }
   },
@@ -465,13 +476,15 @@
     "right_with_verifier": false
    },
    "model": {
-    "action": "ESCALATE",
-    "right": true,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
-    "right_with_verifier": true,
-    "failed": []
+    "action": "MATCH_PROPOSAL",
+    "right": false,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
+    "right_with_verifier": false,
+    "failed": [
+     "3 other set(s) reach the same target and this one has no more evidence than the best of them (1 vs 3 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+    ]
    }
   },
   {
@@ -480,21 +493,23 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "WAIT_FOR_DATA",
+    "action": "MATCH_PROPOSAL",
     "right": false,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false
    },
    "model": {
-    "action": "ESCALATE",
+    "action": "MATCH_PROPOSAL",
     "right": false,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false,
-    "failed": []
+    "failed": [
+     "3 other set(s) reach the same target and this one has no more evidence than the best of them (0 vs 0 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+    ]
    }
   },
   {
@@ -503,11 +518,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "WAIT_FOR_DATA",
+    "action": "MATCH_PROPOSAL",
     "right": false,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false
    },
    "model": {
@@ -560,10 +575,12 @@
     "action": "ESCALATE",
     "right": false,
     "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false,
-    "failed": []
+    "failed": [
+     "the reason cites figures or ids not in the case: 15784543"
+    ]
    }
   },
   {
@@ -622,11 +639,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "WAIT_FOR_DATA",
+    "action": "MATCH_PROPOSAL",
     "right": false,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false
    },
    "model": {
@@ -645,11 +662,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "WAIT_FOR_DATA",
+    "action": "MATCH_PROPOSAL",
     "right": false,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false
    },
    "model": {
@@ -762,21 +779,23 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "WAIT_FOR_DATA",
+    "action": "MATCH_PROPOSAL",
     "right": false,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false
    },
    "model": {
-    "action": "ESCALATE",
+    "action": "MATCH_PROPOSAL",
     "right": false,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false,
-    "failed": []
+    "failed": [
+     "5 record(s) are not from the gateway feed, where this settlement's payments are (assumed: no member feed was declared \u2014 declare it and re-run): S68_TRUE_0_MIRROR, S68_TRUE_1_MIRROR, S68_TRUE_2_MIRROR"
+    ]
    }
   },
   {
@@ -785,11 +804,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "WAIT_FOR_DATA",
+    "action": "MATCH_PROPOSAL",
     "right": false,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false
    },
    "model": {
@@ -900,11 +919,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "WAIT_FOR_DATA",
+    "action": "MATCH_PROPOSAL",
     "right": false,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false
    },
    "model": {
@@ -923,11 +942,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "WAIT_FOR_DATA",
+    "action": "MATCH_PROPOSAL",
     "right": false,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false
    },
    "model": {
@@ -1040,11 +1059,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "WAIT_FOR_DATA",
+    "action": "MATCH_PROPOSAL",
     "right": false,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false
    },
    "model": {
@@ -1063,11 +1082,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "WAIT_FOR_DATA",
+    "action": "MATCH_PROPOSAL",
     "right": false,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false
    },
    "model": {
@@ -1155,11 +1174,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "WAIT_FOR_DATA",
+    "action": "MATCH_PROPOSAL",
     "right": false,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false
    },
    "model": {
@@ -1178,21 +1197,12 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "WAIT_FOR_DATA",
+    "action": "MATCH_PROPOSAL",
     "right": false,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false
-   },
-   "model": {
-    "action": "ESCALATE",
-    "right": false,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
-    "right_with_verifier": false,
-    "failed": []
    }
   },
   {
@@ -1207,15 +1217,6 @@
     "valid": false,
     "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false
-   },
-   "model": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
-    "right_with_verifier": false,
-    "failed": []
    }
   },
   {
@@ -1255,14 +1256,14 @@
     "right_with_verifier": false
    },
    "model": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
+    "action": "ESCALATE",
+    "right": true,
+    "harmful": false,
     "valid": false,
     "reaches_reviewer_with_verifier": false,
-    "right_with_verifier": false,
+    "right_with_verifier": true,
     "failed": [
-     "3 other set(s) reach the same target and this one has no more evidence than the best of them (1 vs 3 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+     "the reason cites figures or ids not in the case: 14237409"
     ]
    }
   },
@@ -1295,23 +1296,12 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "WAIT_FOR_DATA",
-    "right": false,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
-    "right_with_verifier": false
-   },
-   "model": {
     "action": "MATCH_PROPOSAL",
-    "right": true,
-    "harmful": false,
+    "right": false,
+    "harmful": true,
     "valid": false,
     "reaches_reviewer_with_verifier": false,
-    "right_with_verifier": false,
-    "failed": [
-     "2 other set(s) reach the same target and this one has no more evidence than the best of them (0 vs 0 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
-    ]
+    "right_with_verifier": false
    }
   },
   {
@@ -1320,21 +1310,12 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "WAIT_FOR_DATA",
+    "action": "MATCH_PROPOSAL",
     "right": false,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false
-   },
-   "model": {
-    "action": "ESCALATE",
-    "right": false,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
-    "right_with_verifier": false,
-    "failed": []
    }
   },
   {
@@ -1374,9 +1355,9 @@
     "right_with_verifier": false
    },
    "model": {
-    "action": "ESCALATE",
+    "action": "MATCH_PROPOSAL",
     "right": false,
-    "harmful": false,
+    "harmful": true,
     "valid": true,
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false,

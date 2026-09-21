@@ -312,28 +312,28 @@ a corpus the gate was never tuned against:
 
 | corpus | predictions | ECE | at/above 0.85 | wrong above the gate |
 |---|---:|---:|---:|---:|
-| own benchmark *(in-sample)* | 180 | 0.0544 | 103 | **0** |
-| ReconRiver *(out-of-sample)* | 74 | 0.1037 | 42 | **0** |
+| own benchmark *(in-sample)* | 180 | 0.0538 | 103 | **0** |
+| ReconRiver *(out-of-sample)* | 74 | 0.0901 | 42 | **0** |
 
 "Wrong above the gate" is the number that matters, and it is zero in both.
 It was not when this table was first written — 30 of 133 in-sample and 4 of
 46 out-of-sample, none of them auto-cleared because other guards withheld
 them — and the next paragraph says what changed. Out-of-sample ECE is higher
 than in-sample now because the remaining error sits in the lowest band,
-which is overconfident (says 0.14, right 3.1%) and never clears; calibrated
+which is overconfident (says 0.14, right 6.3%) and never clears; calibrated
 (`calibration_map.py`, fitted on the benchmark and judged on ReconRiver) it
-falls to 0.040.
+falls to 0.026.
 
 Two corpora is validation, not proof, and both carry usable references — what
 the gate does where references are absent entirely is not measured by either.
 
 **Confidence is trustworthy where it is used to clear, and not everywhere
 below that.** `scripts/calibration.py` buckets 180 predictions against
-outcomes: ECE 0.0544, MCE 0.20, Brier 0.0443. Every prediction at or above
+outcomes: ECE 0.0538, MCE 0.20, Brier 0.0439. Every prediction at or above
 the 0.85 auto-clear gate was the exact true set — 41 of 41 in [0.85, 0.93),
 62 of 62 in [0.93, 1.01) — and no in-sample bucket is overconfident.
-Out-of-sample on ReconRiver: ECE 0.1037, 42 of 42 correct above the gate, and
-one overconfident band, the lowest — says 0.14, right 3.1% (n=32) — which
+Out-of-sample on ReconRiver: ECE 0.0901, 42 of 42 correct above the gate, and
+one overconfident band, the lowest — says 0.14, right 6.3% (2 of 32) — which
 never clears anything.
 
 It got there in two measured steps, both worth knowing because each was a

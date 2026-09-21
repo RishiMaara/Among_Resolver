@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -143,15 +144,23 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+// Readable without signing in. The sign-in exists so that decisions carry a
+// name; the judge page records none, and a judge sent there from the README —
+// or by the "For judges" link on the sign-in screen itself — met the login
+// form instead of the page.
+const PUBLIC_PATHS = new Set(["/judge"]);
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const open = PUBLIC_PATHS.has(pathname.replace(/\/+$/, "") || "/");
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Every screen sits behind the demo sign-in. The gate renders nothing
+      {/* Every screen but the judge page sits behind the demo sign-in. The gate renders nothing
           until it has read sessionStorage on the client, so the server and
           client markup agree and hydration has nothing to reconcile. */}
-      <AuthGate>
+      <AuthGate open={open}>
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
       </AuthGate>

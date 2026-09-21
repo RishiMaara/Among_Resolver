@@ -30,7 +30,8 @@ describe("measured figures", () => {
   for (const m of MEASURED) {
     it(`${m.label} matches ${m.source.file}`, () => {
       const data = JSON.parse(readFileSync(path.join(BENCH, m.source.file), "utf-8"));
-      expect(format(pick(data, m.source.path), m.source)).toBe(m.after);
+      const per = m.source.perThousandOf ? pick(data, m.source.perThousandOf) / 1000 : 1;
+      expect(format(pick(data, m.source.path) / per, m.source)).toBe(m.after);
       if (m.source.beforePath) {
         expect(format(pick(data, m.source.beforePath), m.source)).toBe(m.before);
       }

@@ -6,17 +6,17 @@
    "fit": "benchmark -> ReconRiver",
    "train_pairs": 180,
    "test_pairs": 74,
-   "ece_raw": 0.1036,
-   "ece_calibrated": 0.0397,
+   "ece_raw": 0.0901,
+   "ece_calibrated": 0.0262,
    "low_band_raw": {
     "n": 32,
     "said": 0.1428,
-    "right": 0.0312
+    "right": 0.0625
    },
    "low_band_calibrated": {
     "n": 32,
     "said": 0.0885,
-    "right": 0.0312
+    "right": 0.0625
    }
   },
   {
@@ -53,7 +53,7 @@
   "ys": [
    0.0278,
    0.0385,
-   0.04,
+   0.08,
    0.48,
    0.8571,
    0.9828,

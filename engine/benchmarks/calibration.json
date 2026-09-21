@@ -1,17 +1,17 @@
 {
   "pairs": 180,
   "overall_accuracy": 0.6556,
-  "mean_confidence": 0.6113,
-  "ece": 0.0544,
+  "mean_confidence": 0.6107,
+  "ece": 0.0538,
   "mce": 0.2,
-  "brier": 0.0443,
+  "brier": 0.0439,
   "buckets": [
     {
       "range": "[0.00, 0.50)",
       "n": 72,
-      "predicted": 0.1515,
+      "predicted": 0.15,
       "observed": 0.1389,
-      "gap": -0.0126
+      "gap": -0.0111
     },
     {
       "range": "[0.70, 0.85)",
@@ -41,10 +41,10 @@
     "[0.85, 0.93)"
   ],
   "run": {
-    "measured_at_utc": "2026-09-12T14:01:42+00:00",
+    "measured_at_utc": "2026-09-21T16:30:57+00:00",
     "scenarios": 180,
     "seed": 7,
-    "commit": "5106e64",
+    "commit": "5bab4a8",
     "solver_workers": 1,
     "note": "benchmark.run_scenario pins CP-SAT to one worker. Under the default parallel search this measurement does not reproduce: scenarios with more than one valid subset flip between runs."
   }

@@ -67,6 +67,58 @@ describe("the judge page", () => {
     expect(lines[1]).toMatch(/1 April 2026: Section 393\(1\)/);
   });
 
+  it("reconciles the payout, then shows the verifier stopping a proposal", async () => {
+    let uploads = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        const u = String(url);
+        if (u.includes("/sample-data/")) {
+          return { ok: true, status: 200, blob: async () => new Blob(["x"]) } as Response;
+        }
+        let body: unknown = {};
+        if (u.includes("/verify?receipt=")) {
+          body = { intact: true, plain: "All 20 chained entries check out." };
+        } else if (u.includes("reconcile/upload")) {
+          uploads += 1;
+          // The first run declares the member feed; the second must not.
+          const declared = (init?.body as FormData).get("member_source");
+          body =
+            uploads === 1
+              ? {
+                  summary: { cleared: true, matched_count: 14, confidence: 0.95 },
+                  audit_head: "fc172d071420abcdef",
+                  plain_summary: "Matched.",
+                  declared,
+                }
+              : {
+                  summary: { cleared: false, matched_count: 13, confidence: 0.36 },
+                  declared,
+                  investigation: {
+                    proposal: { proposer: "rules", action: "MATCH_PROPOSAL", reason: "sums" },
+                    verification: {
+                      valid: false,
+                      plain: "REJECTED before reaching a reviewer: 4 payment(s) counted twice.",
+                    },
+                  },
+                };
+        }
+        return { ok: true, status: 200, json: async () => body } as Response;
+      }),
+    );
+    render(<Judge />);
+    const c = card("Reconcile a payout; investigate one it will not clear");
+    await userEvent.click(within(c).getByRole("button", { name: /run/i }));
+    await waitFor(() => expect(within(c).getByText(/counted twice/)).toBeTruthy());
+    const lines = within(c)
+      .getAllByRole("listitem")
+      .map((li) => li.textContent ?? "");
+    expect(lines[0]).toMatch(/^Cleared: 14 payment/);
+    expect(lines.some((l) => /Audit receipt fc172d071420…: All 20/.test(l))).toBe(true);
+    expect(lines.some((l) => /^Member feed undeclared — Withheld: 13/.test(l))).toBe(true);
+    expect(uploads).toBe(2);
+  });
+
   it("shows an engine failure as a failure", async () => {
     vi.stubGlobal(
       "fetch",

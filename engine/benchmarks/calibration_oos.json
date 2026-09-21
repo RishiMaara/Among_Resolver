@@ -1,18 +1,18 @@
 {
   "reconriver": {
     "pairs": 74,
-    "overall_accuracy": 0.5811,
+    "overall_accuracy": 0.5946,
     "mean_confidence": 0.5739,
-    "ece": 0.1037,
+    "ece": 0.0901,
     "mce": 0.13,
-    "brier": 0.0206,
+    "brier": 0.029,
     "buckets": [
       {
         "range": "[0.00, 0.50)",
         "n": 32,
         "predicted": 0.1428,
-        "observed": 0.0312,
-        "gap": -0.1116
+        "observed": 0.0625,
+        "gap": -0.0803
       },
       {
         "range": "[0.85, 0.93)",

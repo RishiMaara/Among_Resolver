@@ -523,3 +523,71 @@ current measurement (in-sample ECE 0.0544 and 103 of 103 above the gate;
 out-of-sample 0.1037 raw, 0.040 calibrated, 42 of 42), and each report now
 carries a calibrated figure beside the raw one.
 
+---
+
+## 30. The investigator saw part of the engine's proposal
+
+Severity: High (to credibility) — a published figure was measured on it
+Fails safe: Partly — truncated sets were rejected, but so were sound ones,
+and a set that counted payments twice passed
+
+When no member feed is declared, the engine searches every feed, but the
+investigator's case kept only the gateway feed's records. The engine's
+proposal reached the case with its ledger-side records silently dropped: on
+the demo's withheld preset, 4 of 13. The verifier then rejected that set as
+₹47,620 off the target, a shortfall the dropped records explained. Shown in
+full, the same set exposed a second fault. It counts four orders twice, once
+as the gateway payment and once as its ledger booking, and still reaches the
+target; the verifier had no check for that and would have passed it.
+
+Found by running the demo's withheld preset with an investigation, not by a
+test: every test built its case from a declared feed.
+
+Mitigation: the case shows every record the engine proposed, with its feed,
+and states the member feed, marked as assumed when none was declared. The
+verifier rejects records from outside the member feed and any payment
+counted in two feeds, naming the pairs. The investigator evaluation was
+re-run on the corrected cases, with the model's answers keyed by the content
+of the case so an answer to the old case could not be scored against the new
+one: 14 right, verified proposals of 58 (was 16), 4 wrong ones passing the
+verifier (unchanged), fixed rules 2 of 58. The model answered 54 of 58; the
+other 4 are scored as the rules scored them, which is what production does.
+
+---
+
+## 31. The tiebreak ignored the declared member feed
+
+Severity: Medium (impossible sets in front of reviewers)
+Fails safe: Yes — the tiebreak only runs on results that are withheld
+
+Linkage confines the solve to the declared member feed. The tiebreak that
+chooses between equally valid sets searched every feed. On the demo sample,
+under a batch id its references do not name, it chose 18 records: 11 were
+ledger copies, and 7 of those doubled a gateway payment already in the set.
+Nothing cleared, but a reviewer was shown a set that could never be right.
+
+Mitigation: the tiebreak searches the declared member feed only. Every
+figure it could move was re-measured. ReconRiver with references stripped:
+exact sets 8 → 9 of 37 (21.6% → 24.3%), with learned linkage unchanged at
+56.8%. Calibration: in-sample ECE 0.0544 → 0.0538; out-of-sample 0.1037 →
+0.0901 raw and 0.040 → 0.026 calibrated. The lowest band is now right 2 of
+32 times instead of 1, which also raises out-of-sample Brier, 0.0206 →
+0.029. Auto-clears, false clears and every prediction above the gate are
+unchanged.
+
+---
+
+## 32. A payment and its own ledger entry filed as a duplicate
+
+Severity: Low (wrong advice on a withheld run)
+Fails safe: Yes — advice only; nothing acts on it
+
+The matcher calls any two records with the same reference and amount a
+duplicate. A gateway payment and its ledger booking are exactly that, and
+the exception taxonomy filed them under "Duplicate record — remove the
+duplicate at the source". On the demo's withheld preset, that was 77
+exceptions telling a reviewer to delete correct ledger entries.
+
+Mitigation: one record in each of two feeds is filed as "Booked, not in this
+payout" and owned by nobody yet. Two in the same feed is still a duplicate.
+A test pins both.
