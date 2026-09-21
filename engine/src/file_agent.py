@@ -1510,6 +1510,9 @@ def parse_settlements(content: bytes, filename: str,
 def parse_file_content(content: bytes, filename: str,
                        warnings_out: list[str] | None = None) -> list[dict[str, Any]]:
     """Determine file type and parse accordingly."""
+    import statement_parsers  # pylint: disable=import-outside-toplevel
+    if statement_parsers.detect(content, filename):
+        return _parse_statement(content, filename, warnings_out)
     try:
         text = content.decode("utf-8")
     except UnicodeDecodeError:
@@ -1521,3 +1524,42 @@ def parse_file_content(content: bytes, filename: str,
     else:
         # Default to CSV
         return parse_csv(text, filename, warnings_out)
+
+
+def _parse_statement(content: bytes, filename: str,
+                     warnings_out: list[str] | None) -> list[dict[str, Any]]:
+    """
+    MT940, CAMT.053, OFX or PDF, read and then proved.
+
+    A statement that does not balance is refused whole: a misread line means
+    the reconciliation would be wrong in a way nothing downstream can see.
+    """
+    import statement_parsers  # pylint: disable=import-outside-toplevel
+    try:
+        st, check = statement_parsers.parse(content, filename)
+    except statement_parsers.StatementUnreadable as exc:
+        raise FileRejected(filename, [str(exc)], plain=(
+            f"'{filename}' looks like a bank statement but could not be read: {exc}"))
+    rule = check.get("golden_rule")
+    if rule and rule["checkable"] and not check["holds"]:
+        where = check.get("running_balance") or {}
+        extra = (f" The first line that breaks the running balance is line "
+                 f"{where['first_bad_line'] + 1}." if where.get("first_bad_line") is not None else "")
+        raise FileRejected(filename, ["the statement does not balance"], plain=(
+            f"'{filename}' was read as {st.format.upper()} but it does not balance. "
+            f"{check['plain']}{extra} Either a line was misread or the statement is "
+            f"incomplete, so nothing from it was used."))
+    rows = statement_parsers.to_rows(st)
+    if warnings_out is not None:
+        debits = sum(1 for ln in st.lines if ln.amount_cents < 0)
+        warnings_out.append(
+            f"Read as a {st.format.upper()} bank statement: {len(st.lines)} line(s). "
+            f"{check['plain']} {len(rows)} credit(s) go to reconciliation; {debits} "
+            f"debit(s) stay out, since money leaving cannot make up a settlement credit."
+            + (" " + " ".join(st.notes) if st.notes else ""))
+    if not rows:
+        raise FileRejected(filename, ["the statement has no credits"], plain=(
+            f"'{filename}' balances but has no credits, so there is nothing a "
+            f"settlement could have arrived as."))
+    return rows
+

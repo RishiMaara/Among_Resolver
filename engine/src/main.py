@@ -965,6 +965,7 @@ from api.routes_chargebacks import router as _chargeback_router  # noqa: E402
 from api.routes_tax import router as _tax_router              # noqa: E402
 from api.routes_open_items import router as _open_items_router  # noqa: E402
 from api.routes_razorpay import router as _razorpay_router    # noqa: E402
+from api.routes_statements import router as _statements_router  # noqa: E402
 
 app.include_router(_decisions_router)
 app.include_router(_reports_router)
@@ -973,6 +974,7 @@ app.include_router(_chargeback_router)
 app.include_router(_tax_router)
 app.include_router(_open_items_router)
 app.include_router(_razorpay_router)
+app.include_router(_statements_router)
 
 
 @app.get("/audit/{batch_id}/verify", summary="Check a batch's audit trail has not been altered")

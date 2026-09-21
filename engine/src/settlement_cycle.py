@@ -30,7 +30,9 @@ from the first and applies it to the second, with no history at all.
 SCOPE
 -----
 Kept per member feed and currency — a USD processor and an INR one may run
-different cycles. SETTLEMENT_CYCLE_STORE=memory keeps it in-process only,
+different cycles. That assumes one merchant per deployment, which is what
+this engine is: a deployment serving several merchants would key the cycle by
+merchant too, or one merchant's payouts would teach another's. SETTLEMENT_CYCLE_STORE=memory keeps it in-process only,
 which is what the benchmarks use so that one run cannot leak into the next.
 """
 

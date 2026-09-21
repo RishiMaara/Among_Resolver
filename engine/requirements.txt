@@ -31,3 +31,7 @@ holidays==0.104
 # still decides. The engine runs identically without this package.
 google-genai>=2.0.0
 python-dotenv>=1.0
+
+# Bank statements: PDF text layer, and XML (CAMT.053) from outside parsed safely.
+pypdf==6.16.2
+defusedxml==0.7.1

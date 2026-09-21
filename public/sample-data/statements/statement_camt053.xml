@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.08">
+  <BkToCstmrStmt>
+    <GrpHdr><MsgId>STMT20260904</MsgId><CreDtTm>2026-09-04T23:59:00+05:30</CreDtTm></GrpHdr>
+    <Stmt>
+      <Id>STMT20260904-001</Id>
+      <Acct><Id><Othr><Id>50200012345678</Id></Othr></Id><Ccy>INR</Ccy></Acct>
+      <Bal><Tp><CdOrPrtry><Cd>OPBD</Cd></CdOrPrtry></Tp><Amt Ccy="INR">1254320.00</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd><Dt><Dt>2026-08-30</Dt></Dt></Bal>
+      <Bal><Tp><CdOrPrtry><Cd>CLBD</Cd></CdOrPrtry></Tp><Amt Ccy="INR">923753.86</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd><Dt><Dt>2026-09-04</Dt></Dt></Bal>
+      <Ntry>
+        <Amt Ccy="INR">85000.00</Amt>
+        <CdtDbtInd>DBIT</CdtDbtInd>
+        <Sts><Cd>BOOK</Cd></Sts>
+        <BookgDt><Dt>2026-08-31</Dt></BookgDt>
+        <ValDt><Dt>2026-08-31</Dt></ValDt>
+        <AcctSvcrRef>N243250001</AcctSvcrRef>
+        <NtryDtls><TxDtls><Refs><EndToEndId>N243250001</EndToEndId></Refs>
+          <RmtInf><Ustrd>NEFT DR VENDOR ANAND PACKAGING</Ustrd></RmtInf></TxDtls></NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="INR">66466.36</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Sts><Cd>BOOK</Cd></Sts>
+        <BookgDt><Dt>2026-09-01</Dt></BookgDt>
+        <ValDt><Dt>2026-09-01</Dt></ValDt>
+        <AcctSvcrRef>UTR20260901001</AcctSvcrRef>
+        <NtryDtls><TxDtls><Refs><EndToEndId>UTR20260901001</EndToEndId></Refs>
+          <RmtInf><Ustrd>NEFT CR UTR20260901001 RAZORPAY SOFTWARE PVT LTD SETTLE-001</Ustrd></RmtInf></TxDtls></NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="INR">12500.00</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Sts><Cd>BOOK</Cd></Sts>
+        <BookgDt><Dt>2026-09-01</Dt></BookgDt>
+        <ValDt><Dt>2026-09-01</Dt></ValDt>
+        <AcctSvcrRef>624418889120</AcctSvcrRef>
+        <NtryDtls><TxDtls><Refs><EndToEndId>624418889120</EndToEndId></Refs>
+          <RmtInf><Ustrd>UPI CR 624418889120 SHARMA TRADERS</Ustrd></RmtInf></TxDtls></NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="INR">8742.50</Amt>
+        <CdtDbtInd>DBIT</CdtDbtInd>
+        <Sts><Cd>BOOK</Cd></Sts>
+        <BookgDt><Dt>2026-09-02</Dt></BookgDt>
+        <ValDt><Dt>2026-09-02</Dt></ValDt>
+        <AcctSvcrRef>ACH0909221</AcctSvcrRef>
+        <NtryDtls><TxDtls><Refs><EndToEndId>ACH0909221</EndToEndId></Refs>
+          <RmtInf><Ustrd>ACH DR ELECTRICITY BESCOM</Ustrd></RmtInf></TxDtls></NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="INR">4210.00</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Sts><Cd>BOOK</Cd></Sts>
+        <BookgDt><Dt>2026-09-03</Dt></BookgDt>
+        <ValDt><Dt>2026-09-03</Dt></ValDt>
+        <AcctSvcrRef>624617700031</AcctSvcrRef>
+        <NtryDtls><TxDtls><Refs><EndToEndId>624617700031</EndToEndId></Refs>
+          <RmtInf><Ustrd>IMPS CR 624617700031 REFUND FROM SUPPLIER</Ustrd></RmtInf></TxDtls></NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="INR">320000.00</Amt>
+        <CdtDbtInd>DBIT</CdtDbtInd>
+        <Sts><Cd>BOOK</Cd></Sts>
+        <BookgDt><Dt>2026-09-04</Dt></BookgDt>
+        <ValDt><Dt>2026-09-04</Dt></ValDt>
+        <AcctSvcrRef>SAL2609</AcctSvcrRef>
+        <NtryDtls><TxDtls><Refs><EndToEndId>SAL2609</EndToEndId></Refs>
+          <RmtInf><Ustrd>SALARY BATCH SEP 2026</Ustrd></RmtInf></TxDtls></NtryDtls>
+      </Ntry>
+    </Stmt>
+  </BkToCstmrStmt>
+</Document>

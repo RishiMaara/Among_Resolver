@@ -78,7 +78,7 @@ For a deeper dive into how this engine stacks up against industry standards, rea
 | **False clears, everywhere above** | **0** |
 | Confidence calibration, 180 scenarios, in-sample (`calibration.py` default) | ECE **0.1567** · MCE 0.3087 · Brier 0.1808 — not a good number; see below |
 | Confidence calibration, ReconRiver, out-of-sample (`calibration_out_of_sample.py`) | ECE 0.0766 · MCE 0.46 · Brier 0.0616, 74 predictions |
-| Tests | **599** backend · **97** frontend |
+| Tests | **625** backend · **97** frontend |
 
 Every figure in that table except the two calibration rows is re-measured by
 `python scripts/generate_benchmarks.py`, which writes
@@ -178,7 +178,7 @@ engine/        Python engine
   src/                       one module per agent — see docs/ARCHITECTURE.md
   src/api/                   the HTTP surface: models, presentation, route groups
   scripts/                   benchmarks, calibration, stress runs, data fetch
-  tests/                     599 tests
+  tests/                     625 tests
   benchmarks/                measurement snapshots
   data/                      Sanctions lists, test ledgers
 design/                    Design canvases the UI is ported from
@@ -303,6 +303,17 @@ trail a reviewer reads afterwards.
   has a 2.5% card fee and an unbooked order, one arrived ₹10 short at the
   bank, and the blind solve reaches Razorpay's exact set on all five. Not yet
   run against a live account — that needs the merchant's test keys.
+- **Bank statements as banks send them** (`statement_parsers.py`): SWIFT
+  MT940, ISO 20022 CAMT.053, OFX and text PDFs, straight into the bank slot of
+  any reconciliation, or `POST /statements/parse` to check the read on its own.
+  Every parse proves itself with the rule the bank guarantees — opening +
+  credits − debits = closing, and the running balance line by line (the
+  Golden Rule of the open-source `bankstatementparser`, whose approach this
+  follows without its lxml/pandas<3 dependencies). On a PDF the running balance
+  also decides which column an amount was in. A statement that does not
+  balance is refused with the arithmetic shown, never partly used; a scanned
+  PDF is refused as a scan. Samples of one account in all four formats are in
+  `public/sample-data/statements/`.
 - **A tamper-evident audit trail.** Every entry carries the SHA-256 of the
   entry before it; edit a word, delete a line or reorder two and
   `GET /audit/{batch_id}/verify` names the first entry that no longer checks

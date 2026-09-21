@@ -1,0 +1,46 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 779 >>
+stream
+BT
+/F1 8 Tf
+40 800 Td
+11 TL
+(Account No: 50200012345678   Statement 31/08/2026 to 04/09/2026   Currency INR) Tj
+T* (Opening Balance 12,54,320.00) Tj
+T* (Date Narration Ref Withdrawal Deposit Balance) Tj
+T* (31/08/2026 NEFT DR VENDOR ANAND PACKAGING N243250001 85,000.00 11,69,320.00) Tj
+T* (01/09/2026 NEFT CR UTR20260901001 RAZORPAY SOFTWARE PVT LTD SETTLE-001 UTR20260901001 66,466.36 12,35,786.36) Tj
+T* (01/09/2026 UPI CR 624418889120 SHARMA TRADERS 624418889120 12,500.00 12,48,286.36) Tj
+T* (02/09/2026 ACH DR ELECTRICITY BESCOM ACH0909221 8,742.50 12,39,543.86) Tj
+T* (03/09/2026 IMPS CR 624617700031 REFUND FROM SUPPLIER 624617700031 4,210.00 12,43,753.86) Tj
+T* (04/09/2026 SALARY BATCH SEP 2026 SAL2609 3,20,000.00 9,23,753.86) Tj
+T* (Closing Balance 9,23,753.86) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000001071 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1141
+%%EOF
