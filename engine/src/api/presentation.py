@@ -113,6 +113,9 @@ def _format_report(report, audit_trail=None, batch=None, candidates=None) -> dic
             for e in report.exceptions
         ],
         "audit_trail": audit_trail or audit.get_audit_trail(report.batch_id),
+        # Computed on every cleared match since the fee audit was written, and
+        # returned by none of them until now — a check nobody could see.
+        "fee_audit": fee_audit_view(report),
     }
     # Ranked by the money waiting on each one, largest first — the screen
     # shows ten, history keeps five hundred, Q&A grounds on a few, so the top
@@ -126,6 +129,31 @@ def _format_report(report, audit_trail=None, batch=None, candidates=None) -> dic
     return formatted
 
 
+
+
+def fee_audit_view(report) -> dict | None:
+    """Fee, GST, TDS and TCS findings on the matched set, largest first."""
+    summary = getattr(report, "fee_audit_summary", None)
+    if summary is None:
+        return None
+    return {
+        "summary": summary,
+        "findings": [
+            {
+                "category": f.category.value,
+                "severity": f.severity.value,
+                "txn_id": f.txn_id,
+                "expected_cents": f.expected_cents,
+                "actual_cents": f.actual_cents,
+                "difference_cents": f.difference_cents,
+                "payment_method": f.payment_method,
+                "rule_basis": f.rule_basis,
+                "citation": f.citation,
+                "description": f.description,
+            }
+            for f in report.fee_audit_findings
+        ],
+    }
 
 
 def _check_then_record(batch_id: str, summary: dict, matched_ids: list[str]) -> dict:

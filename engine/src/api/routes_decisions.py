@@ -23,6 +23,7 @@ import compliance_agent
 import compliance_rulebook as compliance_rulebook_mod
 import history
 import settled_ledger
+import open_items
 import settlement_qa
 from api.presentation import _check_then_record
 
@@ -103,6 +104,7 @@ def accept_fifo(batch_id: str, body: AcceptFifo):
         })
 
     written = settled_ledger.record_settled(batch_id, txn_ids)
+    open_items.close(batch_id, txn_ids)
     note = f" Note: {body.note.strip()}" if (body.note or "").strip() else ""
     entry = audit.log_decision(
         batch_id=batch_id,

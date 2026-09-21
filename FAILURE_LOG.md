@@ -271,3 +271,54 @@ Mitigation: reversals carry their filing time, and only those inside the
 settlement's window join the pool or leave the queue. The test that caught
 it (`test_a_reversal_outside_the_window_is_not_taken_and_not_lost`) stays.
 
+---
+
+## 16. Razorpay's tax counted twice
+
+Severity: Medium (only instant settlements carry a settlement fee)
+Fails safe: Yes — a wrong target withholds; it cannot mismatch
+
+Razorpay's `fees` on a settlement already includes the GST on it; `tax`
+states that GST again. Its reference for an instant settlement: 200000
+requested, fees 590 of which tax 90, 199410 settled. `settlement_to_batch`
+added `fees + tax`, so every such target sat 90 paise from anything that
+sums. The recon fixtures had the same misreading — they built `credit` as
+amount − fee − tax, where Razorpay's own example is amount − fee.
+
+Mitigation: the deduction is `fees`; the fee audit reads the fee before tax
+as `fee − tax`; a test pins the 200000/590/90 reference.
+
+---
+
+## 17. A fee sum over the wrong set
+
+Severity: High (would silently move a settlement's target)
+Fails safe: No
+
+`fee_decomposition` had a third path, since the first commit and never
+tested: if candidates carried `fee_amount_cents`, sum it over the candidates
+and call the target declared. The candidates are the whole windowed pool —
+other settlements' payments and decoys included — and which of them are
+members is exactly what has not been solved yet. No source filled the key,
+so it never ran; the day the Razorpay feed filled it, a clean settlement
+stopped tying out, and the recon test caught it.
+
+Mitigation: removed. Per-row fees are audited after the match, on the
+members, which is the only set they can honestly be summed over.
+
+---
+
+## 18. A fee audit nobody could see
+
+Severity: Medium (to credibility)
+Fails safe: Yes — nothing acted on it, which was the problem
+
+The fee and tax audit ran on every cleared match and its findings were
+stored on the report object, and no response returned them. The README
+described per-method fee, GST and TDS checks; an API user or a reviewer in
+the UI could see none of it.
+
+Mitigation: every reconciliation now returns `fee_audit` — summary and
+findings, each statutory one with its citation — with a test on the upload
+endpoint that fails if it disappears again.
+

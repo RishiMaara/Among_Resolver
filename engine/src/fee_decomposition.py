@@ -77,18 +77,14 @@ def compute_fee_breakdown(
             split_known=False,
         )
 
-    # If item-level explicit fees are available in the candidates, use them as a factual fallback
-    if candidates:
-        explicit_fees = [t.extra.get("fee_amount_cents", 0) for t in candidates if "fee_amount_cents" in t.extra]
-        if explicit_fees and sum(explicit_fees) > 0:
-            return FeeBreakdown(
-                batch_id=batch.batch_id,
-                gateway_fee_cents=sum(explicit_fees),
-                flat_fee_cents=rate_card.flat_fee_cents,
-                tax_withholding_cents=0,
-                basis="declared-item-level",
-                split_known=True,
-            )
+    # There was a third path here: sum `fee_amount_cents` over the candidates
+    # and call it declared. The candidates are the whole windowed pool — other
+    # settlements' payments and decoys included — and which of them are
+    # members is exactly what has not been solved yet, so that sum was the
+    # fees of the wrong set. It stayed invisible only because no source filled
+    # the key; the moment the Razorpay feed did, a clean settlement stopped
+    # tying out. Per-row fees are audited after the match (fee_audit.py), on
+    # the members, which is the only set they can honestly be summed over.
 
     # Reverse-engineer approximate gross from net + rates.
     # gross - gross*(gw+tax) - flat = net  =>  gross = (net + flat) / (1 - gw - tax)

@@ -78,7 +78,7 @@ For a deeper dive into how this engine stacks up against industry standards, rea
 | **False clears, everywhere above** | **0** |
 | Confidence calibration, 180 scenarios, in-sample (`calibration.py` default) | ECE **0.1567** · MCE 0.3087 · Brier 0.1808 — not a good number; see below |
 | Confidence calibration, ReconRiver, out-of-sample (`calibration_out_of_sample.py`) | ECE 0.0766 · MCE 0.46 · Brier 0.0616, 74 predictions |
-| Tests | **481** backend · **97** frontend |
+| Tests | **545** backend · **97** frontend |
 
 Every figure in that table except the two calibration rows is re-measured by
 `python scripts/generate_benchmarks.py`, which writes
@@ -178,7 +178,7 @@ engine/        Python engine
   src/                       one module per agent — see docs/ARCHITECTURE.md
   src/api/                   the HTTP surface: models, presentation, route groups
   scripts/                   benchmarks, calibration, stress runs, data fetch
-  tests/                     481 tests
+  tests/                     545 tests
   benchmarks/                measurement snapshots
   data/                      Sanctions lists, test ledgers
 design/                    Design canvases the UI is ported from
@@ -239,13 +239,30 @@ trail a reviewer reads afterwards.
   rupees at stake, the list is sorted largest first, and the results screen
   states the total value waiting on review and its share of the settlement —
   a payment named by two exceptions is counted once in that total.
-- **Fees and tax are audited per payment method** (`fee_audit.py`): UPI,
-  cards, netbanking and wallets against a contract rate card, GST at 18% on
-  the fee rather than the principal, and a Section 194-O TDS check. The TDS
-  default is 0.1% — the rate since 1 October 2024 — and rate, threshold and
-  the check itself are configurable, because whether 194-O applies depends on
-  the merchant's arrangement. The rate card shipped is a starting point, not
-  anyone's contract.
+- **Fees and tax are audited per payment method** (`fee_audit.py`), and the
+  findings come back in every response under `fee_audit`: UPI, cards,
+  netbanking and wallets against a contract rate card, GST at 18% on the fee
+  rather than the principal, e-commerce TDS and GST TCS. Each payment is
+  checked under the law **on its own date** (`india_tax.py`): TDS cites
+  Section 194-O until 31 March 2026 and Section 393(1) Table Sl. 8(v) of the
+  Income-tax Act 2025 from 1 April, at 0.1% (1% before October 2024); TCS
+  under Section 52 CGST is 0.5% from 10 July 2024, on supplies net of
+  returns, and is checked only when the data reports it. A batch straddling
+  1 April cites both Acts. Razorpay's `fee` column includes its GST and is
+  read that way. `POST /tax/itc-check` compares a month's deducted GST with
+  the gateway's invoice: what can be claimed as input tax credit, and what
+  needs a debit or credit note first. Whether any of this applies depends on
+  the merchant's arrangement, so every check is configurable; it is
+  arithmetic, not tax advice.
+- **Open items, carried across runs** (`GET /open-items`). Every
+  reconciliation adds the payments it saw that are not yet paid out, the
+  refunds not yet deducted and the payouts it withheld, and closes whatever a
+  cleared settlement took. What is left is aged in **working days** against a
+  T+2 due date — Sundays, second and fourth Saturdays and the state's bank
+  holidays skipped (`india_calendar.py`, Maharashtra by default, correctable
+  by environment variable without a release). A card payment captured on
+  Friday 11 September 2026 is due Wednesday the 16th, not Sunday the 13th;
+  `GET /calendar/due` shows every skipped day and why.
 - **Separation of duties on posting approvals.** Whoever accepted a match —
   by confirming the batch or accepting the oldest-first convention — cannot
   approve the posting that rests on it; the attempt is refused and recorded.

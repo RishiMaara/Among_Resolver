@@ -29,11 +29,13 @@ from schema import SourceType, TzConfidence  # noqa: E402
 
 
 def payment(entity_id="pay_1", gross=100_000, settlement_id="setl_A", when=1_757_000_000):
-    fee = gross * 2 // 100
-    tax = fee * 18 // 100
+    # Razorpay's `fee` includes the GST on it; `tax` states that GST again.
+    base_fee = gross * 2 // 100
+    tax = base_fee * 18 // 100
+    fee = base_fee + tax
     return {
         "entity_id": entity_id, "type": "payment", "amount": gross,
-        "debit": 0, "credit": gross - fee - tax, "fee": fee, "tax": tax,
+        "debit": 0, "credit": gross - fee, "fee": fee, "tax": tax,
         "currency": "INR", "settled": True, "settled_at": when,
         "settlement_id": settlement_id, "order_id": "order_1", "method": "upi",
     }
@@ -117,10 +119,28 @@ class TestTheBatch:
         assert b.member_source == SourceType.GATEWAY
 
     def test_stated_fees_become_declared_deductions(self):
-        b = rz.settlement_to_batch({"id": "setl_A", "amount": 100, "fees": 200,
+        b = rz.settlement_to_batch({"id": "setl_A", "amount": 100, "fees": 236,
                                     "tax": 36, "created_at": 1})
         # Declared, so the gross target is a fact rather than a rate-card guess.
         assert b.declared_deductions_cents == 236
+
+    def test_the_tax_inside_fees_is_not_counted_twice(self):
+        """
+        Razorpay's instant-settlement reference: 200000 requested, fees 590
+        of which tax is 90, 199410 settled. `fees` already holds the tax, so
+        the deduction is 590. This mapping once added fees and tax — 680 —
+        and put every such target 90 paise away from anything that sums.
+        """
+        b = rz.settlement_to_batch({"id": "setl_I", "amount": 199_410, "fees": 590,
+                                    "tax": 90, "created_at": 1})
+        assert b.net_amount_cents + b.declared_deductions_cents == 200_000
+
+    def test_the_fee_audit_reads_the_fee_net_of_its_tax(self):
+        extra = rz.recon_item_to_txn(payment(gross=100_000)).extra
+        assert extra["fee_amount_cents"] == 2_000
+        assert extra["gst_amount_cents"] == 360
+        assert extra["gross_amount_cents"] == 100_000
+        assert extra["payment_method"] == "upi"
 
     def test_no_fees_means_nothing_is_declared(self):
         b = rz.settlement_to_batch({"id": "setl_A", "amount": 100, "fees": 0,

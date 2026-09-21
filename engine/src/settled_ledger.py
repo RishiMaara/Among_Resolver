@@ -97,6 +97,41 @@ def record_settled(batch_id: str, txn_ids: Iterable[str], when: str = "") -> int
             return 0
 
 
+def owners(txn_ids: Iterable[str]) -> dict[str, str]:
+    """Every one of these payments a cleared settlement took, and which one."""
+    ids = [t for t in (txn_ids or []) if t]
+    if not ids:
+        return {}
+    found: dict[str, str] = {}
+    conn = _db()
+    if conn is None:
+        for t in ids:
+            owner = _memory.get(t)
+            if owner:
+                found[t] = owner
+        return found
+    try:
+        # Chunked so a 50k pool cannot blow SQLite's variable limit.
+        for i in range(0, len(ids), 500):
+            chunk = ids[i:i + 500]
+            # nosec B608 — the f-string interpolates only the PLACEHOLDER
+            # list ("?,?,?"), built from len(chunk). No caller data reaches
+            # the SQL text; every value is bound through execute() below.
+            # This is the standard way to write a variable-length IN clause
+            # in SQLite, and a scanner cannot distinguish it from real
+            # interpolation, so the reasoning is recorded here rather than
+            # rediscovered on every scan.
+            placeholders = ",".join("?" * len(chunk))  # nosec B608
+            q = ("SELECT txn_id, batch_id FROM settled_payments"
+                 f" WHERE txn_id IN ({placeholders})")  # nosec B608
+            for txn, owner in conn.execute(q, chunk):
+                found[txn] = owner
+    except sqlite3.Error as e:
+        logger.warning("Could not check settled payments: %s", e)
+        return {}
+    return found
+
+
 def check_claims(batch_id: str, txn_ids: Iterable[str]) -> dict:
     """
     Which of these payments a DIFFERENT settlement already cleared on.
@@ -104,38 +139,7 @@ def check_claims(batch_id: str, txn_ids: Iterable[str]) -> dict:
     A batch never conflicts with itself: re-running a reconciliation is how a
     person checks it, and that must stay free.
     """
-    ids = [t for t in (txn_ids or []) if t]
-    if not ids:
-        return {"count": 0, "claims": [], "summary": ""}
-
-    found: dict[str, str] = {}
-    conn = _db()
-    if conn is None:
-        for t in ids:
-            owner = _memory.get(t)
-            if owner and owner != batch_id:
-                found[t] = owner
-    else:
-        try:
-            # Chunked so a 50k pool cannot blow SQLite's variable limit.
-            for i in range(0, len(ids), 500):
-                chunk = ids[i:i + 500]
-                # nosec B608 — the f-string interpolates only the PLACEHOLDER
-                # list ("?,?,?"), built from len(chunk). No caller data reaches
-                # the SQL text; every value is bound through execute() below.
-                # This is the standard way to write a variable-length IN clause
-                # in SQLite, and a scanner cannot distinguish it from real
-                # interpolation, so the reasoning is recorded here rather than
-                # rediscovered on every scan.
-                placeholders = ",".join("?" * len(chunk))  # nosec B608
-                q = ("SELECT txn_id, batch_id FROM settled_payments"
-                     f" WHERE txn_id IN ({placeholders})")  # nosec B608
-                for txn, owner in conn.execute(q, chunk):
-                    if owner != batch_id:
-                        found[txn] = owner
-        except sqlite3.Error as e:
-            logger.warning("Could not check settled payments: %s", e)
-            return {"count": 0, "claims": [], "summary": ""}
+    found = {t: b for t, b in owners(txn_ids).items() if b != batch_id}
 
     if not found:
         return {"count": 0, "claims": [], "summary": ""}

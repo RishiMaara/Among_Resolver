@@ -43,6 +43,7 @@ from exception_diagnosis import diagnose_batch_exceptions
 from linkage import LinkageResult, build_candidate_links, link_confidence, txn_key
 import audit
 from fee_audit import run_fee_audit, MethodRateCard, FeeAuditFinding
+from india_tax import ist_date
 
 
 
@@ -887,7 +888,9 @@ def _build_report_and_tie_out(
         fee_findings, fee_summary = run_fee_audit(
             matched_txns,
             batch_deduction_cents=batch.declared_deductions_cents,
-            rate_card=MethodRateCard()
+            rate_card=MethodRateCard(),
+            # A row with no timestamp is taxed under the law on the payout's day.
+            as_of=ist_date(batch.settled_at_utc),
         )
 
     matched_gross = sum(

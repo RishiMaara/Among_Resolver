@@ -28,7 +28,14 @@ WHAT IT MAPS
     currency                        currency
     settled_at (unix seconds)       timestamp_utc
     type (payment/refund/...)       extra["status"], extra["type"]
-    fee, tax                        extra, and summed into declared deductions
+    method                          extra["payment_method"]
+    amount                          extra["gross_amount_cents"]
+    fee - tax, tax                  extra["fee_amount_cents"], ["gst_amount_cents"]
+
+Razorpay's `fee` INCLUDES the GST on it; `tax` is that GST, stated again
+separately. Its API reference shows it: a transfer of 100000 paise with fee
+296 and tax 46 is debited 100296, not 100342. So the fee before tax is
+`fee - tax`, and adding `fee + tax` anywhere counts the tax twice.
 
 Amounts arrive in subunits — paise — as integers. This engine's entire
 arithmetic is integer paise. There is no float in this path and no rounding
@@ -237,6 +244,12 @@ def recon_item_to_txn(item: dict) -> NormalizedTxn | None:
             "fee": int(item.get("fee") or 0),
             "tax": int(item.get("tax") or 0),
             "gross_amount": int(item.get("amount") or 0),
+            # The fee audit's own keys: fee EXCLUSIVE of tax, in paise.
+            "gross_amount_cents": int(item.get("amount") or 0),
+            "fee_amount_cents": int(item.get("fee") or 0) - int(item.get("tax") or 0),
+            "gst_amount_cents": int(item.get("tax") or 0),
+            "payment_method": str(item.get("method") or ""),
+            "settlement_utr": str(item.get("settlement_utr") or ""),
         },
     )
 
@@ -262,12 +275,12 @@ def settlement_to_batch(settlement: dict, *, member_source: SourceType = SourceT
         settled_at_utc=settled_at,
         source=SourceType.BANK,
         member_source=member_source,
-        # fees and tax on the settlement entity are the payout's own charges.
-        # They are stated by the API, so the target is a fact rather than a
-        # rate-card estimate, which is the difference between fee_basis
-        # "declared" and "estimated" in the report.
-        declared_deductions_cents=(int(settlement.get("fees") or 0)
-                                   + int(settlement.get("tax") or 0)) or None,
+        # `fees` on the settlement entity is the payout's own charge, and it
+        # already includes `tax` — an instant settlement of 200000 with fees
+        # 590 (tax 90) pays out 199410. This once added the two and counted
+        # the tax twice. Stated by the API, so the target is a fact rather
+        # than a rate-card estimate: fee_basis "declared", not "estimated".
+        declared_deductions_cents=int(settlement.get("fees") or 0) or None,
     )
 
 

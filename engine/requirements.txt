@@ -17,6 +17,9 @@ ortools==9.15.6755     # 9.11.4210 has no Python 3.14 wheel; CP-SAT solver
 # Caching / audit
 redis==5.1.1
 
+# Bank holidays for working-day ageing (India, by state). ~4.6 MB installed.
+holidays==0.104
+
 # Testing lives in requirements-dev.txt. This file is what a deployment
 # installs, and the serverless bundle sits close to its size limit — a test
 # runner no request can reach does not belong in it.

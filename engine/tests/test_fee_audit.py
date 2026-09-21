@@ -272,7 +272,11 @@ class TestTheDefaultTDSRateIsCurrent:
     """
 
     def test_the_default_is_ten_basis_points(self):
-        assert MethodRateCard().tds_rate_bps == 10
+        # The default follows the statutory schedule; today that is 0.1%.
+        assert MethodRateCard().tds_rate_bps is None
+        import india_tax
+        from datetime import date
+        assert india_tax.in_force(india_tax.TDS_ECOMMERCE, date(2026, 9, 21)).rate_bps == 10
 
     def test_the_default_expects_a_tenth_of_what_one_percent_expects(self):
         txns = [_Txn("TDS-DEF", 1_000_000, extra={})]

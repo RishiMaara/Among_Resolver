@@ -74,6 +74,8 @@ from plain_summary import plain_summary
 import re
 import auto_disposition
 import settled_ledger
+import open_items
+import india_calendar
 
 # Without this, every logger.info(...) call in the pipeline (compliance
 # blocks, linkage narrowing, which tier cleared) is silently swallowed by
@@ -654,6 +656,12 @@ async def reconcile_upload(
             report.batch_id, matched_ids,
             when=(formatted.get("summary") or {}).get("as_of_utc") or "")
 
+    # What is still waiting to be paid out, carried to the next run. After the
+    # already-settled check, so a clear that check withdrew closes nothing.
+    formatted["open_items"] = open_items.update_from_run(
+        batch, candidates, matched_ids,
+        cleared=bool((formatted.get("summary") or {}).get("cleared")))
+
     formatted["plain_summary"] = plain_summary(
         formatted.get("summary") or {}, formatted.get("reasoning") or "",
         formatted.get("interchangeable"))
@@ -867,6 +875,7 @@ async def reconcile_queue(
             })
 
     results = []
+    queue_outcomes = []
     for row in settlement_rows:
         bid = str(row.get("batch_id") or "").strip()
         try:
@@ -886,6 +895,8 @@ async def reconcile_queue(
                 rate_card=_rate_card(gateway_fee_bps, tax_withholding_bps, flat_fee_cents),
             )
             summary = report.summary()
+            queue_outcomes.append((batch, report.match_result.matched_txn_ids,
+                                   bool(summary["cleared"])))
             results.append({
                 "batch_id": bid,
                 "status": ("cleared" if summary["cleared"]
@@ -918,7 +929,9 @@ async def reconcile_queue(
 
     tally = {k: sum(1 for r in results if r["status"] == k)
              for k in ("cleared", "withheld", "unmatched", "error")}
+    ledger_delta = open_items.update_from_runs(queue_outcomes, candidates)
     return {
+        "open_items": ledger_delta,
         "queued": len(results),
         "candidates_pooled": len(candidates),
         "tally": tally,
@@ -938,11 +951,15 @@ from api.routes_decisions import router as _decisions_router  # noqa: E402
 from api.routes_reports import router as _reports_router      # noqa: E402
 from api.routes_webhook import router as _webhook_router      # noqa: E402
 from api.routes_chargebacks import router as _chargeback_router  # noqa: E402
+from api.routes_tax import router as _tax_router              # noqa: E402
+from api.routes_open_items import router as _open_items_router  # noqa: E402
 
 app.include_router(_decisions_router)
 app.include_router(_reports_router)
 app.include_router(_webhook_router)
 app.include_router(_chargeback_router)
+app.include_router(_tax_router)
+app.include_router(_open_items_router)
 
 
 @app.get("/audit/{batch_id}", summary="Retrieve full audit trail for a batch")
@@ -1101,6 +1118,9 @@ def health():
         "audit_storage": storage,
         "history_storage": history_storage,
         "webhook_storage": webhook_storage,
+        # Which holidays working-day ageing counts. A thinner calendar would
+        # call items late on festival days; say which one is in use.
+        "bank_calendar": india_calendar.source(),
         "sanctions_list": sanctions,
         "cors_origins": CORS_ORIGINS,
         "cors_origin_regex": CORS_ORIGIN_REGEX,
