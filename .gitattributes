@@ -1,0 +1,5 @@
+# Bank statement samples are byte-exact fixtures: a PDF's cross-reference
+# table counts bytes, and MT940/OFX/CAMT tests compare exact text. Line-ending
+# conversion on checkout would change them, so git leaves them alone.
+*.pdf binary
+public/sample-data/statements/* -text

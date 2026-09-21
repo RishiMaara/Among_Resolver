@@ -28,6 +28,7 @@ import auto_disposition
 import settled_ledger
 import audit
 import exception_ranking
+import exception_taxonomy
 import erp_sync
 import settlement_qa
 
@@ -123,6 +124,11 @@ def _format_report(report, audit_trail=None, batch=None, candidates=None) -> dic
     formatted["exceptions"], formatted["exceptions_summary"] = exception_ranking.rank(
         formatted["exceptions"], candidates, report.match_result.target_cents,
     )
+    # Filed under the categories a finance team routes by, each with an owner
+    # and a first step — see exception_taxonomy.
+    formatted["exceptions"], by_category = exception_taxonomy.annotate(
+        formatted["exceptions"], candidates)
+    formatted["exceptions_summary"].update(by_category)
     # The receipt: the hash at the head of this batch's audit chain when the
     # result was produced. Whoever keeps it can later prove, through
     # GET /audit/{batch_id}/verify?receipt=..., that nothing up to that point

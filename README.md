@@ -78,7 +78,7 @@ For a deeper dive into how this engine stacks up against industry standards, rea
 | **False clears, everywhere above** | **0** |
 | Confidence calibration, 180 scenarios, in-sample (`calibration.py` default) | ECE **0.1567** · MCE 0.3087 · Brier 0.1808 — not a good number; see below |
 | Confidence calibration, ReconRiver, out-of-sample (`calibration_out_of_sample.py`) | ECE 0.0766 · MCE 0.46 · Brier 0.0616, 74 predictions |
-| Tests | **625** backend · **97** frontend |
+| Tests | **646** backend · **97** frontend |
 
 Every figure in that table except the two calibration rows is re-measured by
 `python scripts/generate_benchmarks.py`, which writes
@@ -178,7 +178,7 @@ engine/        Python engine
   src/                       one module per agent — see docs/ARCHITECTURE.md
   src/api/                   the HTTP surface: models, presentation, route groups
   scripts/                   benchmarks, calibration, stress runs, data fetch
-  tests/                     625 tests
+  tests/                     646 tests
   benchmarks/                measurement snapshots
   data/                      Sanctions lists, test ledgers
 design/                    Design canvases the UI is ported from
@@ -314,6 +314,19 @@ trail a reviewer reads afterwards.
   balance is refused with the arithmetic shown, never partly used; a scanned
   PDF is refused as a scan. Samples of one account in all four formats are in
   `public/sample-data/statements/`.
+- **Exceptions filed the way a finance team routes them**
+  (`exception_taxonomy.py`): in transit, missing in books, unidentified
+  receipt, booked but not at the gateway, duplicate, split or partial, amount
+  mismatch, compliance hold — each exception carries its category, whose desk
+  it goes to and the first thing to do, and the summary counts them with the
+  money at stake. Fixed rules, so a misfiled break can be read and corrected.
+- **The approved posting, as a Tally import file**
+  (`POST /settlement/{batch_id}/export/tally`). Tally XML (ENVELOPE → VOUCHER),
+  debits deemed positive with negative amounts as Tally expects, ledger names
+  from the company's own chart of accounts. Produced only for a balanced
+  journal a person approved — and separation of duties means the approver is
+  not whoever accepted the match — and recorded in the audit trail with who
+  exported it. The engine still posts nothing; Tally does, on import.
 - **A tamper-evident audit trail.** Every entry carries the SHA-256 of the
   entry before it; edit a word, delete a line or reorder two and
   `GET /audit/{batch_id}/verify` names the first entry that no longer checks
