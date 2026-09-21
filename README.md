@@ -78,7 +78,7 @@ For a deeper dive into how this engine stacks up against industry standards, rea
 | **False clears, everywhere above** | **0** |
 | Confidence calibration, 180 scenarios, in-sample (`calibration.py` default) | ECE **0.1567** · MCE 0.3087 · Brier 0.1808 — not a good number; see below |
 | Confidence calibration, ReconRiver, out-of-sample (`calibration_out_of_sample.py`) | ECE 0.0766 · MCE 0.46 · Brier 0.0616, 74 predictions |
-| Tests | **455** backend · **97** frontend |
+| Tests | **481** backend · **97** frontend |
 
 Every figure in that table except the two calibration rows is re-measured by
 `python scripts/generate_benchmarks.py`, which writes
@@ -178,7 +178,7 @@ engine/        Python engine
   src/                       one module per agent — see docs/ARCHITECTURE.md
   src/api/                   the HTTP surface: models, presentation, route groups
   scripts/                   benchmarks, calibration, stress runs, data fetch
-  tests/                     455 tests
+  tests/                     481 tests
   benchmarks/                measurement snapshots
   data/                      Sanctions lists, test ledgers
 design/                    Design canvases the UI is ported from
@@ -239,6 +239,34 @@ trail a reviewer reads afterwards.
   rupees at stake, the list is sorted largest first, and the results screen
   states the total value waiting on review and its share of the settlement —
   a payment named by two exceptions is counted once in that total.
+- **Fees and tax are audited per payment method** (`fee_audit.py`): UPI,
+  cards, netbanking and wallets against a contract rate card, GST at 18% on
+  the fee rather than the principal, and a Section 194-O TDS check. The TDS
+  default is 0.1% — the rate since 1 October 2024 — and rate, threshold and
+  the check itself are configurable, because whether 194-O applies depends on
+  the merchant's arrangement. The rate card shipped is a starting point, not
+  anyone's contract.
+- **Separation of duties on posting approvals.** Whoever accepted a match —
+  by confirming the batch or accepting the oldest-first convention — cannot
+  approve the posting that rests on it; the attempt is refused and recorded.
+  The rule reads the audit trail, so it holds across instances. Identity is
+  the name a reviewer types, so it stops the accident and the habit, not a
+  determined person; with real user identity it keys on a user id instead.
+- **Chargebacks add a row; they never edit a closed settlement.** Filing one
+  (`POST /chargebacks`) emits a negative reversal that waits until a later
+  payout absorbs it — opt-in per reconciliation, and only reversals filed
+  inside that settlement's window are taken, so one the payout could not
+  absorb is never dropped from the queue.
+- **What linkage buys, measured** (`scripts/baseline_comparison.py`). The same
+  engine with linkage disabled identifies the true set in 0% of 120 benchmark
+  scenarios; with it, 65%, with zero wrong approvals in both arms. This is
+  deterministic entity resolution, not AI — the script says so, because it
+  was first written claiming otherwise.
+- **Scale.** 200,000 records in one settlement: the exact 55-transaction
+  true set, precision and recall 1.0, no exceptions
+  (`scripts/run_scale_proof.py`). Throughput measured 13,700–26,900
+  records/second across two runs on the same laptop — load on the machine
+  moves it by 2x, so the range is the honest figure.
 
 ## Where it goes next
 

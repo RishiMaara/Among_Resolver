@@ -198,3 +198,76 @@ Observed repeatedly against live keys:
 The engine retries transient failures and falls back to rule-based header
 mapping (Agent 0) and deterministic summary (Agent 9). The reconciliation
 result is identical with or without the LLM.
+
+---
+
+## 12. An enterprise layer that nothing called
+
+Severity: High (to credibility), none (to results)
+Fails safe: Yes — no request reached it, which was the problem
+
+An "enterprise" pass added RBAC with maker/checker roles, a central
+database module, Kafka ingestion and reconciliation workers, a revenue
+leakage engine and Prometheus telemetry. Checked by import: no endpoint or
+pipeline reached any of it. `kafka` and `prometheus_client` were not in
+`requirements.txt`, so the workers could not even import on CI or Vercel.
+The RBAC module held the current user in a module-level global — in a web
+server, a race that can attribute one person's approval to another.
+
+Mitigation: removed. The two ideas worth having were rebuilt on what the
+engine already runs — separation of duties on posting approvals, read from
+the audit trail (`four_eyes.py`), and chargebacks as new reversal rows taken
+in by a later settlement (`routes_chargebacks.py`) — each with tests on the
+endpoint a reviewer actually calls. The streaming design is written up in
+ARCHITECTURE.md as design, not left in `src/` as a claim.
+
+---
+
+## 13. A benchmark labelled AI that measured none
+
+Severity: High (to credibility)
+Fails safe: Yes — the numbers were right; the label was not
+
+`baseline_comparison.py` reported "AI-augmented vs rules-only" and asked
+"what does the AI actually buy you?". Its two arms were linkage on and
+linkage off. Linkage is deterministic, and the one model on the matching
+side (the LLM header mapper) never runs in that benchmark, because the
+scenarios are built as objects rather than parsed from files.
+
+Mitigation: relabelled to what it measures — linkage — with the correction
+recorded in the script's docstring. The result stands and is strong: 0% to
+65% truth identified, zero wrong approvals in both arms.
+
+---
+
+## 14. A tax rate two years out of date
+
+Severity: Medium
+Fails safe: No — it would raise false findings against correct merchants
+
+The fee audit's Section 194-O TDS default was 1%. The Finance (No. 2) Act
+2024 cut it to 0.1% from 1 October 2024, so the check expected ten times the
+correct withholding and would flag merchants who had been charged correctly.
+
+Mitigation: default is 10 bps, with a test that fails if it drifts back.
+Rate, threshold and the check are configurable, and the docstring says this
+is arithmetic against configured numbers, not tax advice.
+
+---
+
+## 15. A chargeback marked taken that never took part
+
+Severity: High (money owed back could be lost)
+Fails safe: No — found before release, by its own test
+
+The first chargeback wiring added every pending reversal to a settlement's
+pool and then marked them all taken. The settlement-window filter dropped
+any reversal outside the window a moment later, so one filed after the
+settlement closed was silently removed from the queue — lost from that batch
+and every later one. Reversals were also stamped with the time the API was
+called rather than when the dispute was filed.
+
+Mitigation: reversals carry their filing time, and only those inside the
+settlement's window join the pool or leave the queue. The test that caught
+it (`test_a_reversal_outside_the_window_is_not_taken_and_not_lost`) stays.
+

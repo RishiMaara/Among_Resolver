@@ -6,8 +6,13 @@ WHY THIS EXISTS
 Indian payment gateways charge per-method fees: UPI near 0%, cards around 2%,
 netbanking often a flat fee, wallets somewhere in between. On top of the fee,
 GST at 18% (CGST 9% + SGST 9%) applies to the FEE, not the principal. And
-Section 194-O of the Income Tax Act requires TDS at 1% on the gross amount
-above a configurable annual threshold for e-commerce operators.
+Section 194-O of the Income Tax Act requires an e-commerce operator to
+deduct TDS on the gross amount it credits to a seller — 0.1% since 1 October
+2024, reduced from 1% by the Finance (No. 2) Act 2024 — above an annual
+threshold. Whether it applies to a given merchant at all is a question about
+that merchant's arrangement, not about this engine, so the rate, the
+threshold and the check itself are all configurable and the defaults are
+starting points rather than advice.
 
 The reconciliation engine currently reconstructs a gross target from a single
 blended rate card per batch. That is the limitation the README calls "most
@@ -91,10 +96,17 @@ class MethodRateCard:
 
     gst_rate_bps: int = 1800         # 18% GST on gateway fee (CGST 9% + SGST 9%)
 
-    # Section 194-O TDS: 1% on gross above annual threshold
-    # Threshold varies: Rs 5 lakh for individuals, Rs 5 lakh for others
-    # Set to 0 to disable TDS checking entirely
-    tds_rate_bps: int = 100          # 1%
+    # Section 194-O TDS on gross credited above an annual threshold.
+    #
+    # 10 bps, not 100. The rate was 1% until the Finance (No. 2) Act 2024 cut
+    # it to 0.1% with effect from 1 October 2024; a default still reading 1%
+    # would over-expect TDS by a factor of ten on every settlement and raise a
+    # withholding finding on merchants who were charged correctly.
+    #
+    # Rates and thresholds move, and whether 194-O applies at all depends on
+    # the merchant's arrangement rather than on anything this engine can see.
+    # Both are configurable; set either to 0 to switch the check off.
+    tds_rate_bps: int = 10           # 0.1% (since 2024-10-01)
     tds_annual_threshold_cents: int = 500_000_00  # Rs 5,00,000
 
     # How far actual can deviate from expected before it is flagged (in bps of txn amount)
@@ -364,14 +376,21 @@ def audit_tds_194o(
 ) -> list[FeeAuditFinding]:
     """Check TDS under Section 194-O for e-commerce operators.
 
-    Section 194-O requires e-commerce operators to deduct TDS at 1% on the
-    gross amount of sale of goods/services at the time of credit to the
-    seller's account. The threshold is Rs 5 lakh per financial year.
+    Section 194-O requires an e-commerce operator to deduct TDS on the gross
+    amount of sales it facilitates, at the time it credits the seller. The
+    rate is 0.1% from 1 October 2024 (1% before that), over a Rs 5 lakh
+    annual threshold for individual and HUF sellers.
 
-    This check is configurable because:
-    - The threshold varies (Rs 5L for individuals/HUFs)
-    - Not all merchants are sellers on e-commerce platforms
-    - The rate can change (it was 0.75% during COVID relief)
+    Configurable, and deliberately so:
+    - the rate has changed twice in recent years (1%, 0.75% as COVID relief,
+      now 0.1%), so a hardcoded figure is a future wrong answer;
+    - the threshold depends on who the seller is;
+    - a payment gateway is not automatically the e-commerce operator for
+      194-O purposes. Whether this check should run at all is the merchant's
+      call, which is why setting the rate to 0 turns it off.
+
+    None of this is tax advice — it is arithmetic against numbers the
+    merchant configures.
     """
     if rate_card is None:
         rate_card = MethodRateCard()

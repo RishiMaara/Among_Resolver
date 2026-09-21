@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 
 from schema import SourceType
 import audit
+import four_eyes
 import auto_disposition
 import compliance_agent
 import compliance_rulebook as compliance_rulebook_mod
@@ -107,6 +108,7 @@ def accept_fifo(batch_id: str, body: AcceptFifo):
         batch_id=batch_id,
         agent="human_reviewer",
         detail=(
+            four_eyes.marker(reviewer, four_eyes.ACT_FIFO_ACCEPTANCE).strip() + " "
             f"{reviewer} ACCEPTED the oldest-first convention covering "
             f"{len(txn_ids)} payment(s), drawn from {proposal.get('pool_size')} "
             f"indistinguishable ones between {proposal.get('earliest')} and "
@@ -185,7 +187,8 @@ def record_decision(batch_id: str, body: ReviewDecision):
     entry = audit.log_decision(
         batch_id=batch_id,
         agent="human_reviewer",
-        detail=(f"{reviewer} {decision.upper()} this batch{covered}."
+        detail=(four_eyes.marker(reviewer, four_eyes.ACT_BATCH_DECISION).strip() + " "
+                f"{reviewer} {decision.upper()} this batch{covered}."
                 f"{note} This is the reviewer's decision and does not alter "
                 f"the engine's own verdict."),
     )
@@ -239,12 +242,29 @@ def record_journal_decision(batch_id: str, body: JournalDecision):
                       "before approving a posting proposal."),
         })
 
+    # Separation of duties. Only approvals are gated: refusing your own
+    # proposal needs no second pair of eyes, and blocking that would just
+    # teach people to route rejections through someone else.
+    if decision == "approved":
+        clash = four_eyes.conflict(batch_id, reviewer)
+        if clash:
+            audit.log_decision(
+                batch_id=batch_id, agent="human_reviewer",
+                detail=(f"REFUSED {reviewer}'s posting approval: separation of "
+                        f"duties — the same person accepted the match."),
+            )
+            raise HTTPException(status_code=409, detail={
+                "message": "separation of duties: approver accepted the match",
+                "plain": clash,
+            })
+
     ref = f" (entry {body.entry_id})" if (body.entry_id or "").strip() else ""
     note = f" Note: {body.note.strip()}" if (body.note or "").strip() else ""
     entry = audit.log_decision(
         batch_id=batch_id,
         agent="human_reviewer",
-        detail=(f"{reviewer} {decision.upper()} the posting proposal{ref}."
+        detail=(four_eyes.marker(reviewer, four_eyes.ACT_JOURNAL_APPROVAL).strip() + " "
+                f"{reviewer} {decision.upper()} the posting proposal{ref}."
                 f"{note} Nothing has been posted to any ledger — this records "
                 f"the approval, not the posting."),
     )

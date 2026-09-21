@@ -458,6 +458,41 @@ look where they will write it.
 
 ---
 
+## How this scales beyond one process — a design, not shipped code
+
+A streaming version of this engine was prototyped: Kafka topics for raw and
+normalised transactions, reconciliation workers holding a Redis lock per
+settlement, Prometheus counters for solver latency and auto-clear rate. None
+of it is in this repository, and the reason is worth recording.
+
+It was never wired to anything. No endpoint started a consumer, nothing
+imported the workers, `kafka` and `prometheus_client` were missing from
+`requirements.txt`, and the live deployment is serverless, which cannot run a
+long-lived consumer or a metrics server at all. Code in `src/` that no request
+can reach is not a feature — it is a claim, and this project's first
+submission already paid for one of those (a webhook the README described and
+the code did not contain). So the prototype was removed and the design is
+written down here instead.
+
+What already carries over to a multi-instance deployment, because it was
+built for Vercel:
+
+- **Shared state.** Audit trail, run history, webhook replay memory and the
+  chargeback queue all live in Redis when `REDIS_URL`/`KV_URL` is set, so
+  consecutive requests landing on different instances agree.
+- **Idempotent ingest.** Webhook deliveries are de-duplicated with an atomic
+  `SET NX`, so a retry reaching a second instance is still recognised.
+- **Stateless reconciliation.** Every request carries its own inputs; no
+  worker holds a settlement between calls.
+
+What a streaming deployment would add, and what each piece is for:
+
+| Piece | Why it would exist | Not needed yet because |
+|---|---|---|
+| Ingest topic | absorb bursts of gateway files | uploads are per request |
+| Lock per settlement | stop two workers solving one batch | one request solves one batch |
+| Metrics endpoint | alert on solver timeouts, clear-rate drift | `/health` + the audit trail |
+
 ## Known limitations
 
 - **The confidence score is well calibrated at and above the gate, and not
@@ -514,7 +549,7 @@ python scripts/run_reconriver.py          # accuracy, third-party data
 python scripts/pull_razorpay.py --month YYYY-MM   # live Razorpay settlements
 python scripts/close_batch.py --generate  # batch close: match rate + exceptions
 python scripts/calibration.py             # is the confidence real
-python -m pytest tests/ -q                # 455 tests
+python -m pytest tests/ -q                # 481 tests
 ```
 
 Frontend: `npm run dev` (port 8080).
@@ -576,7 +611,7 @@ The suite is honest about which of the two it ran against. A fresh clone
 now carries a real list — `engine/data/sanctions/un_consolidated.txt` is
 tracked so a deployed engine, which is built from git, screens against the UN
 Consolidated List instead of silently dropping to four demo names — so the
-run is **455 passed** with or without a fetch. If neither list is present,
+run is **481 passed** with or without a fetch. If neither list is present,
 `test_compliance.py` skips its real-list assertion and names itself, rather
 than passing quietly against the demo set. A fresh fetch into `data/sanctions/`
 at the repo root takes priority over the tracked snapshot, and CI does one.

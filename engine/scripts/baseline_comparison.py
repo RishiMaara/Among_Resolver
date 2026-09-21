@@ -1,14 +1,25 @@
 """
-AI vs Rules-Only baseline comparison.
+What linkage buys, measured against the same engine without it.
 
-Runs the benchmark suite twice — once with the full AI-augmented pipeline
-(linkage, fuzzy tiebreak, LLM header mapping), once with linkage disabled
-(AMONGRESOLVER_NO_LINKAGE=1) — and produces a side-by-side comparison.
+Runs the benchmark suite twice — once with linkage on, once with it disabled
+(AMONGRESOLVER_NO_LINKAGE=1) — and puts the two side by side. The disabled
+arm is the engine as it was before the entity-resolution reframe: subset-sum
+against the whole pool, with no identity signal at all.
 
-The rules-only baseline is the engine as it was before the entity-resolution
-reframe: subset-sum against the whole pool, no identity signal. It answers
-the question "what does the AI actually buy you?" with measured numbers
-instead of a claim.
+WHAT THIS IS NOT
+----------------
+It is not a measurement of AI, and it was first written as though it were
+("AI-augmented vs rules-only", answering "what does the AI actually buy
+you?"). That label was wrong in a way worth recording rather than quietly
+correcting: linkage is deterministic — reference tokens, prefix clusters,
+cross-source amount peers — and the one model on the matching side, the LLM
+header mapper, never runs here at all, because these scenarios are built as
+objects in code rather than parsed from files. Every point of the difference
+below is arithmetic and entity resolution.
+
+What it does measure is the central architectural claim of this project:
+that identifying WHICH transactions compose a settlement is entity
+resolution first and arithmetic second.
 
 Run:
     cd engine && python scripts/baseline_comparison.py
@@ -49,7 +60,7 @@ def _run_benchmark(scenarios: int, seed: int, no_linkage: bool, declare_source: 
     else:
         env.pop("AMONGRESOLVER_NO_LINKAGE", None)
 
-    print(f"  Running {'rules-only baseline' if no_linkage else 'full AI-augmented'}…")
+    print(f"  Running {'without linkage (baseline)' if no_linkage else 'with linkage'}…")
     t0 = time.time()
     proc = subprocess.run(cmd, env=env, capture_output=True, text=True, cwd=str(ENGINE_DIR))
     elapsed = time.time() - t0
@@ -87,7 +98,8 @@ def _extract_metrics(data: dict) -> dict:
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Compare AI-augmented vs rules-only baseline")
+    ap = argparse.ArgumentParser(
+        description="Compare the engine with linkage against the same engine without it")
     ap.add_argument("--scenarios", type=int, default=120)
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--declare-source", action="store_true")
@@ -110,8 +122,8 @@ def main():
         "scenarios": args.scenarios,
         "seed": args.seed,
         "declare_source": args.declare_source,
-        "baseline_rules_only": baseline,
-        "ai_augmented": augmented,
+        "baseline_no_linkage": baseline,
+        "with_linkage": augmented,
         "improvement": {},
     }
 
@@ -127,9 +139,9 @@ def main():
 
     # Print results
     print("\n" + "=" * 76)
-    print("AI vs RULES-ONLY BASELINE COMPARISON")
+    print("WHAT LINKAGE BUYS  (same engine, linkage disabled vs enabled)")
     print("=" * 76)
-    print(f"{'Metric':<30} {'Rules-Only':>15} {'AI-Augmented':>15} {'Delta':>12}")
+    print(f"{'Metric':<30} {'No linkage':>15} {'With linkage':>15} {'Delta':>12}")
     print("-" * 76)
 
     labels = {
@@ -168,7 +180,7 @@ def main():
     ti_a = augmented["truth_identified_pct"]
 
     print("Key findings:")
-    print(f"  False clears:      {fc_b} (baseline) vs {fc_a} (augmented) — "
+    print(f"  False clears:      {fc_b} (no linkage) vs {fc_a} (with linkage) — "
           f"{'BOTH ZERO' if fc_b == 0 and fc_a == 0 else 'REGRESSION' if fc_a > fc_b else 'IMPROVED'}")
     print(f"  Auto-clear rate:   {ac_b}% -> {ac_a}%  ({'+' if ac_a > ac_b else ''}{ac_a - ac_b}pp)")
     print(f"  Truth identified:  {ti_b}% -> {ti_a}%  ({'+' if ti_a > ti_b else ''}{ti_a - ti_b}pp)")

@@ -20,7 +20,7 @@ import time
 import logging
 from pathlib import Path
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import dateutil.parser as dp
@@ -69,6 +69,7 @@ import erp_sync
 import settlement_qa
 import history
 import webhook
+import chargeback_engine
 from plain_summary import plain_summary
 import re
 import auto_disposition
@@ -362,6 +363,10 @@ async def reconcile_upload(
     # Sent by the UI from the signed-in session; optional, because the engine
     # is usable without the UI and must not require it.
     reviewer: Optional[str] = Form(None),
+    # Chargeback reversals wait until a settlement takes them in. Opt-in,
+    # because which payout absorbs a clawback is a fact about the processor's
+    # timing rather than something the engine should assume.
+    include_chargebacks: bool = Form(False),
     gateway_file: Optional[UploadFile] = File(None),
     bank_file: Optional[UploadFile] = File(None),
     erp_file: Optional[UploadFile] = File(None),
@@ -502,6 +507,29 @@ async def reconcile_upload(
     if not candidates:
         raise HTTPException(status_code=400, detail="No valid transactions extracted from the uploaded files.")
 
+    taken_reversals: list[str] = []
+    if include_chargebacks:
+        # Only reversals this settlement could actually absorb: filed inside
+        # its window. Taking one outside it would add a row the window filter
+        # drops a moment later — and then mark it taken, removing money owed
+        # back from this batch AND every later one. That is what the first
+        # version did; the test that caught it is in test_chargebacks.py.
+        settled = _settlement_instant(settled_at)
+        window_start = settled - timedelta(days=settlement_window_days)
+        waiting = chargeback_engine.pending()
+        reversals = [t for t in waiting if window_start <= t.timestamp_utc <= settled]
+        candidates.extend(reversals)
+        taken_reversals = [t.source_txn_id for t in reversals]
+        audit.log_decision(
+            batch_id=batch_id, agent="chargeback_engine",
+            detail=(f"{len(reversals)} of {len(waiting)} pending chargeback "
+                    f"reversal(s) fall inside this settlement's window and were "
+                    f"added to its pool, totalling "
+                    f"{sum(t.amount_cents for t in reversals)}c. The rest stay "
+                    f"pending. The settlements the originals cleared in are "
+                    f"untouched."),
+        )
+
     # member_source and declared_deductions are the two facts a production
     # reconciliation knows and the engine cannot infer. Leaving them off the
     # upload form meant the UI ran systematically weaker than the CLI: on the
@@ -542,7 +570,14 @@ async def reconcile_upload(
         # (see _rate_card_is_assumed — the note is added below)
     )
     formatted = _format_report(report, batch=batch, candidates=candidates)
-    
+
+    # Only now — the batch reconciled with them in the pool, so they are
+    # accounted for. Dropping them from pending any earlier would lose money
+    # owed back from every future batch as well as this one.
+    if taken_reversals:
+        chargeback_engine.mark_taken(taken_reversals, batch_id)
+        formatted["chargeback_reversals_included"] = taken_reversals
+
     inputs = {
         "batch_id": batch_id,
         "net_amount": net_amount,
@@ -902,10 +937,12 @@ async def reconcile_queue(
 from api.routes_decisions import router as _decisions_router  # noqa: E402
 from api.routes_reports import router as _reports_router      # noqa: E402
 from api.routes_webhook import router as _webhook_router      # noqa: E402
+from api.routes_chargebacks import router as _chargeback_router  # noqa: E402
 
 app.include_router(_decisions_router)
 app.include_router(_reports_router)
 app.include_router(_webhook_router)
+app.include_router(_chargeback_router)
 
 
 @app.get("/audit/{batch_id}", summary="Retrieve full audit trail for a batch")

@@ -259,3 +259,35 @@ class TestRunFeeAudit:
         if high and len(findings) > 1:
             # HIGH severity findings should come first
             assert findings[0].severity == FeeAuditSeverity.HIGH
+
+
+class TestTheDefaultTDSRateIsCurrent:
+    """
+    The Finance (No. 2) Act 2024 cut 194-O TDS from 1% to 0.1% with effect
+    from 1 October 2024. This module shipped with a 1% default, which
+    over-expects TDS tenfold and would raise a withholding finding against a
+    merchant who was charged correctly. The tests above pass 100 bps
+    explicitly — configurability is their point — so only this one notices
+    the default drifting back.
+    """
+
+    def test_the_default_is_ten_basis_points(self):
+        assert MethodRateCard().tds_rate_bps == 10
+
+    def test_the_default_expects_a_tenth_of_what_one_percent_expects(self):
+        txns = [_Txn("TDS-DEF", 1_000_000, extra={})]
+        at_default = audit_tds_194o(txns, annual_gross_cents=499_000_00,
+                                    rate_card=MethodRateCard())
+        at_one_percent = audit_tds_194o(txns, annual_gross_cents=499_000_00,
+                                        rate_card=MethodRateCard(tds_rate_bps=100))
+        assert at_default and at_one_percent, "both rates should flag missing TDS"
+        # Rs 5,09,000 gross - Rs 5,00,000 threshold = Rs 9,000 taxable.
+        # At 0.1% that is Rs 9; at the superseded 1% it was Rs 90.
+        assert at_default[0].expected_cents == 900
+        assert at_one_percent[0].expected_cents == 9_000
+        assert at_one_percent[0].expected_cents == 10 * at_default[0].expected_cents
+
+    def test_setting_the_rate_to_zero_turns_the_check_off(self):
+        txns = [_Txn("TDS-OFF", 1_000_000, extra={})]
+        assert audit_tds_194o(txns, annual_gross_cents=499_000_00,
+                              rate_card=MethodRateCard(tds_rate_bps=0)) == []
