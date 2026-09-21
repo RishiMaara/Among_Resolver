@@ -173,7 +173,7 @@ contested by 49,999 of them:
 | Exact set match | **True** (by ID) |
 | Precision / recall | **1.0000 / 1.0000** |
 | Matched | 55 of 55, ₹8,16,863.41 |
-| Reconciliation | **2.0–2.3s** (was 25–49s with sharding) |
+| Reconciliation | **3.1–3.2s** (was 25–49s with sharding) |
 | Pool narrowing | 50,000 → 55 |
 
 **Batch close** — 738 records, 60 settlements, every one attempted:
@@ -183,7 +183,7 @@ contested by 49,999 of them:
 | Match rate | **95.0%** (57 of 60) |
 | False clears | **0** |
 | Declined without a planted problem | **0** |
-| Throughput | ~400 records/sec |
+| Throughput | 190–250 records/sec (3–4 s for all 60) |
 
 Run it with `scripts/close_batch.py --generate`. The fixture seeds problems on
 purpose — a batch that reconciles completely measures the happy path, which was
@@ -203,8 +203,8 @@ In a system that books money against invoices this is the metric that matters:
 an unresolved batch is an inconvenience, a confidently wrong one is a loss
 nobody notices until a customer calls.
 
-**~11–36× faster.** The solver works over tens of candidates, not tens of
-thousands. 2.0–2.3s versus 25–72s.
+**~8–23× faster.** The solver works over tens of candidates, not tens of
+thousands. 3.1–3.2s versus 25–72s.
 
 **It explains itself.** Every match reports *how* it was found — anchored,
 clustered, or arithmetic-only — and confidence is graded accordingly (0.95
@@ -374,7 +374,7 @@ time. Linkage removes the need for the guess, and the guess was not free:
   target.
 - It halted on the first ambiguous chunk, ending the search before the chunk
   holding the real members was examined.
-- 25–72s versus 2.0–2.3s.
+- 25–72s versus 3.1–3.2s.
 - Its ranking heuristic had no evidence behind it.
 
 The implementation is preserved on the **`archive/time-based-sharding`**

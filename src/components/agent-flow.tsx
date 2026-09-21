@@ -1,5 +1,5 @@
 /**
- * The agent flow canvas — a port of engine/Agent Flow.dc.html.
+ * The agent flow canvas.
  *
  * Node states are DERIVED from the live audit trail, never authored. A node
  * lights up because that agent wrote a decision to GET /audit/{batch_id}

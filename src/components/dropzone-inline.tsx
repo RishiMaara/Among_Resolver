@@ -2,9 +2,8 @@
  * The design's inline dropzone — a compact card that lives in the Data Sources
  * strip rather than a full-width panel.
  *
- * Ported from design/Agent Flow.dc.html. Drag state, the filled state with a
- * clear button, and the per-file error line all come from there; only the
- * template syntax changed.
+ * Drag state, the filled state with a clear button, and the per-file error
+ * line.
  */
 
 import { useRef, useState } from "react";

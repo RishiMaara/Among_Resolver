@@ -1,8 +1,8 @@
 /**
  * The scroll-linked narrative under the canvas.
  *
- * Ported from design/Agent Flow.dc.html. Four lane sections plus a closing
- * argument, each rising into view as it is scrolled to.
+ * Four lane sections plus a closing argument, each rising into view as it is
+ * scrolled to.
  *
  * The headings and body copy are the product's argument and are fixed. The
  * FIGURES are not: where a run has happened they are read out of that run's

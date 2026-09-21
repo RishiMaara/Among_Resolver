@@ -119,8 +119,8 @@ do that they do: **[Industry Comparison](docs/INDUSTRY_COMPARISON.md)**.
 
 | | |
 |---|---|
-| **Batch close, 738 records / 60 settlements** | **95.0%** match rate, **0** false clears, 0 false alarms, ~400 records/sec — `scripts/close_batch.py` |
-| 50,000-record stress run | exact 55/55 set by ID, precision **1.0**, recall **1.0**, **2.0–2.3s** to reconcile (3.0–3.5s including load and parse) |
+| **Batch close, 738 records / 60 settlements** | **95.0%** match rate, **0** false clears, 0 false alarms, 3–4 s for all 60 (about 190–250 records/sec) — `scripts/close_batch.py` |
+| 50,000-record stress run | exact 55/55 set by ID, precision **1.0**, recall **1.0**, **3.1–3.2s** to reconcile (about 4.0s including load and parse) |
 | ReconRiver corpus (references intact) | **94.59%** exact set identified, 91.89% auto-cleared and correct |
 | ReconRiver corpus (references stripped) | 24.32% exact, **56.76%** once the payout cycle is learned from earlier payouts; 21.62% auto-cleared, the rest withheld, none wrong |
 | Own benchmark, 120 scenarios (`benchmark.py` default) | 62% auto-clear, 65% truth identified, 0 false clears |
@@ -135,8 +135,9 @@ Every figure in that table except the two calibration rows is re-measured by
 commit and time it ran; it has no fallback values — if it cannot read a figure
 out of a tool's output it fails and says which one, rather than recording a
 plausible-looking constant. The two timing figures are wall-clock on whatever
-machine ran it, under whatever else it was doing at the time; four runs
-spanned 2.0–2.3s to reconcile. The band is the observed spread, not a target.
+machine ran it, under whatever else it was doing at the time; three runs on
+21 September spanned 3.1–3.2s to reconcile (earlier passes measured
+2.0–2.3s). The band is the observed spread, not a target.
 The rest should be deterministic and not drift on their own; a test fails if
 the test count here stops matching what pytest collects.
 
@@ -206,6 +207,9 @@ Then open <http://localhost:8080>. The demo sign-in — its account is printed
 on the screen — exists so decisions carry a name. `/judge` needs no sign-in;
 `/payouts` checks Razorpay payouts and lists what is still waiting.
 
+Or run both in containers: `docker compose up --build` (engine on 8001, app
+on 8080).
+
 **If you are here to evaluate this, start at `/judge`**: live checks against the
 engine, and every measured figure with the file it came from. Then
 [docs/FINAL_PITCH_SCRIPT.md](docs/FINAL_PITCH_SCRIPT.md) has the five-minute
@@ -235,7 +239,6 @@ engine/        Python engine
   tests/                     701 tests
   benchmarks/                measurement snapshots
   data/                      Sanctions lists, test ledgers
-design/                    Design canvases the UI is ported from
 docs/                      ARCHITECTURE.md · FINAL_PITCH_SCRIPT.md · FINAL_TEST_REPORT.md · INDUSTRY_COMPARISON.md
 sample-data/               a settlement you can drop into the form
 ```

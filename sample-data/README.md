@@ -86,3 +86,13 @@ what is printed above. An earlier revision of this page claimed run 2 returned
 16 matches at 0.19 confidence; it returned 13 at 0.54, and nothing caught it
 until a reviewer typed the numbers in. The behaviour was right and the page
 was wrong, which is the more embarrassing way round.
+
+## Many settlements at once
+
+`queue_settlements.csv` lists 8 payouts and `queue_gateway.csv` the 100
+gateway payments behind them. Upload both in the queue mode on the main
+screen (member feed: gateway), or send them to `POST /reconcile/queue`. The
+engine reconciles all 8 in one run, about four seconds on a laptop: 6 clear
+and 2 go to review. A queue is also the only place the engine can see one
+payment claimed by two payouts, because only a run that holds every payout
+at once can ask that.

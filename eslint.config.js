@@ -6,16 +6,11 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  // `design` holds the design-tool export and its generated runtime, whose
-  // first line reads "GENERATED ... do not edit". Linting it produced 247
-  // Prettier errors in one vendored file, which is why `npm run lint` failed
-  // while `eslint src` was clean — the project's own lint command was red and
-  // nobody was running it.
   // .tmp-* are local scratch directories (a fresh clone made to reproduce a
   // CI failure, tooling temp dirs). They are gitignored, so CI never saw them,
   // but locally they put 247 prettier errors from vendored code in front of a
   // clean lint and made it look like the app was broken.
-  { ignores: ["dist", ".output", ".vercel", ".vinxi", "design", ".tmp-*/**"] },
+  { ignores: ["dist", ".output", ".vercel", ".vinxi", ".tmp-*/**"] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],

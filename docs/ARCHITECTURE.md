@@ -266,7 +266,7 @@ hazards seeded at one settlement in sixteen:
 
 | records | settlements | match rate | false clears | false alarms | throughput |
 |---|---|---|---|---|---|
-| 738 | 60 | **95.0%** | **0** | **0** | ~400 rec/sec |
+| 738 | 60 | **95.0%** | **0** | **0** | 190–250 rec/sec (3–4 s) |
 
 Every unresolved settlement returns a reason carrying an amount and a
 direction — `scripts/close_batch.py`.

@@ -7,9 +7,8 @@
  * that animates on a timer would look identical and prove nothing, so the
  * mapping from audit key to node is the whole contract.
  *
- * Ported from the design canvas at engine/Agent Flow.dc.html.
- * Lane/row coordinates, copy and state palette are kept as designed; the mock
- * trail is replaced by the real endpoint.
+ * Lane/row coordinates, copy and state palette are fixed here; nothing on the
+ * canvas is mocked — every state comes from the real endpoint.
  */
 
 export type NodeState = "idle" | "running" | "done" | "withheld" | "blocked" | "skipped";
@@ -45,7 +44,7 @@ export const LANES = [
   { id: "report", label: "Lane 4 · Report", x: 872 },
 ] as const;
 
-// Geometry taken verbatim from the design canvas.
+// Canvas geometry. The React components read these; do not re-derive them.
 export const GRAPH_W = 1098;
 export const GRAPH_H = 446;
 export const NODE_W = 206;

@@ -107,14 +107,17 @@ def main() -> int:
 
     # Read from source rather than run anything: the guard's value IS the fact.
     limit = None
-    with open("engine/src/orchestrator.py", encoding="utf-8") as f:
+    # It lives in recon_gates.py since the gates left the orchestrator; this
+    # still read orchestrator.py, failed as designed, and latest.json stayed
+    # frozen at 10 September until someone ran it again.
+    with open("engine/src/recon_gates.py", encoding="utf-8") as f:
         for line in f:
             if "UNANCHORED_AUTOCLEAR_LIMIT" in line and "environ" in line:
                 m = re.search(r'"(\d+)"', line)
                 if m:
                     limit = int(m.group(1))
     if limit is None:
-        raise SystemExit("Could not read UNANCHORED_AUTOCLEAR_LIMIT from orchestrator.py")
+        raise SystemExit("Could not read UNANCHORED_AUTOCLEAR_LIMIT from recon_gates.py")
     b["unanchored_autoclear_limit"] = limit
 
     b["measured_at_utc"] = datetime.now(timezone.utc).isoformat(timespec="seconds")

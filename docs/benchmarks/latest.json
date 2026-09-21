@@ -1,13 +1,13 @@
 {
-  "backend_tests": 358,
-  "frontend_tests": 96,
-  "stress_50k_reconcile_s": 2.0,
-  "stress_50k_wall_clock_s": 3.01,
-  "calibration_ece": 0.1567,
-  "calibration_mce": 0.3087,
-  "calibration_brier": 0.1808,
+  "backend_tests": 701,
+  "frontend_tests": 129,
+  "stress_50k_reconcile_s": 3.17,
+  "stress_50k_wall_clock_s": 4.03,
+  "calibration_ece": 0.0538,
+  "calibration_mce": 0.2,
+  "calibration_brier": 0.0439,
   "calibration_scenarios": 180,
   "unanchored_autoclear_limit": 20,
-  "measured_at_utc": "2026-09-10T07:01:28+00:00",
-  "commit": "70cc42a"
+  "measured_at_utc": "2026-09-21T17:12:33+00:00",
+  "commit": "dba4ae4"
 }
