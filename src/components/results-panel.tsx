@@ -741,6 +741,13 @@ export function ResultsPanel({ results }: { results: ReconcileResult }) {
           . The clearing gate reads the engine's score, never the calibrated one.
         </p>
       )}
+      {results.ai && (results.ai.model_calls > 0 || results.ai.skipped) && (
+        <p className="-mt-2 text-xs text-muted-foreground">
+          {results.ai.model_calls > 0
+            ? `${results.ai.model} was asked ${results.ai.model_calls} time(s) for this result; every answer was checked in code before it was shown.`
+            : `A model answer was skipped — ${results.ai.skipped}. Fixed rules answered instead.`}
+        </p>
+      )}
 
       {/* Which payments, not just how many. This was the number "6 / 45" and
           nothing else — a reviewer asked to confirm a set they could not see. */}

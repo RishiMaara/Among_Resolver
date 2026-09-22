@@ -225,4 +225,7 @@ export interface ReconcileResult {
   audit_head?: string | null;
   investigation?: Investigation;
   open_items?: { opened: number; closed: number; not_tracked: number; error?: string };
+  // Whether a model answered anything in this response, and if one was
+  // skipped (over budget, no key), why.
+  ai?: { model: string | null; model_calls: number; skipped: string | null };
 }

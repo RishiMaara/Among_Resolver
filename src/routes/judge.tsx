@@ -14,6 +14,8 @@ import { Play, CheckCircle2, AlertTriangle, ExternalLink } from "lucide-react";
 import { engineFetch, ENGINE_HOST } from "@/lib/api";
 import { MEASURED } from "@/lib/measured";
 import { inr } from "@/lib/utils";
+import { readScan } from "@/lib/scan-ocr";
+import { aiStatus, useAiStatus } from "@/lib/ai";
 import { Wordmark } from "@/components/wordmark";
 import { PayoutsLink } from "@/components/payouts-link";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -61,6 +63,8 @@ async function reconcileSample(memberSource: string | null) {
   }))
     fd.append(k, v);
   if (memberSource) fd.append("member_source", memberSource);
+  // The model proposes only where the server has one; metered per visitor.
+  if ((await aiStatus())?.live) fd.append("investigate_with_model", "true");
   return json("reconcile/upload", { method: "POST", body: fd });
 }
 
@@ -162,6 +166,26 @@ async function statementProof(): Promise<Line[]> {
   ];
 }
 
+async function scannedStatement(): Promise<Line[]> {
+  const blob = await sample("/sample-data/statements/statement_scanned.pdf");
+  const file = new File([blob], "statement_scanned.pdf", { type: "application/pdf" });
+  const text = await readScan(file);
+  const fd = new FormData();
+  fd.append("file", file, file.name);
+  fd.append("scan_text", text);
+  const res = await json("statements/parse", { method: "POST", body: fd });
+  return [
+    {
+      tone: res.check?.holds ? "good" : "bad",
+      text: `Read by ${res.read_by}: ${res.lines?.length} line(s). ${res.check?.plain ?? ""}`,
+    },
+    {
+      tone: "muted",
+      text: "Used only because every line's running balance follows from the one before — a misread digit is refused with the line named, not repaired.",
+    },
+  ];
+}
+
 async function taxByDate(): Promise<Line[]> {
   const before = await json("tax/provisions?on=2026-03-31");
   const after = await json("tax/provisions?on=2026-04-01");
@@ -229,6 +253,13 @@ const CHECKS: { title: string; proves: string; endpoint: string; run: () => Prom
       "A text PDF statement, parsed and checked: opening + credits − debits = closing, and every line's running balance.",
     endpoint: "POST /statements/parse",
     run: statementProof,
+  },
+  {
+    title: "A scanned statement, read in your browser",
+    proves:
+      "An image-only PDF with no text layer. Tesseract.js reads it here in your browser — free, no key, nothing sent anywhere to be read — and the engine uses the reading only if every line's running balance holds.",
+    endpoint: "Tesseract.js in the browser · POST /statements/parse",
+    run: scannedStatement,
   },
   {
     title: "Tax under the law on the payment's date",
@@ -474,11 +505,34 @@ const AI_USES: { use: string; model: string; check: string }[] = [
 
 const LIMITS = [
   "Not yet run against a live Razorpay account — the path is built to Razorpay's published contract and needs a merchant's test keys.",
-  "Scanned PDF statements are refused as scans; this engine does no OCR.",
+  "Scans are read by OCR in the browser, then Gemini where a key is set. On 24 deliberately noisy scans the browser alone read 11 right; what does not balance is refused, never guessed.",
   "Every accuracy corpus is synthetic — ours or ReconRiver's. The figures say what the engine does on them, not on your data.",
   "The investigator was measured with reference and memo text removed, because the benchmark's labels live there; reading real narrations is not measured.",
   "The learned settlement cycle assumes one merchant per deployment.",
 ];
+
+/** Whether a model answers on this server — said before anything runs. */
+function AiLine() {
+  const ai = useAiStatus();
+  if (!ai) return null;
+  return (
+    <p className="mt-1 text-[12px]">
+      <span
+        className={
+          ai.live
+            ? "mr-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-700 dark:text-emerald-400"
+            : "mr-1.5 rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground"
+        }
+      >
+        {ai.live ? `AI live · ${ai.model}` : "AI not configured"}
+      </span>
+      <span className="text-muted-foreground">
+        {ai.plain}
+        {ai.live && ` ${ai.budget.left_today} of ${ai.budget.per_day} model calls left today.`}
+      </span>
+    </p>
+  );
+}
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -534,6 +588,7 @@ function Judge() {
         <p className="mt-2 text-[12px] text-muted-foreground">
           Live checks below call the engine at <span className="font-mono">{ENGINE_HOST}</span>.
         </p>
+        <AiLine />
 
         <Section title="Run it">
           <div className="grid gap-3">

@@ -18,6 +18,14 @@ vi.mock("@tanstack/react-router", async (orig) => ({
   ),
 }));
 
+// OCR runs in a real browser (WebAssembly); here it is stood in for, so the
+// test is about what the page does with a reading, not about Tesseract.
+vi.mock("@/lib/scan-ocr", () => ({
+  readScan: vi.fn(async () => "31/08/2026 NEFT DR VENDOR 85,000.00 11,69,320.00"),
+  isScan: vi.fn(async () => true),
+  BANK_FILE_TYPES: ".pdf",
+}));
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Judge = (Route as any).options.component as React.ComponentType;
 
@@ -117,6 +125,34 @@ describe("the judge page", () => {
     expect(lines.some((l) => /Audit receipt fc172d071420…: All 20/.test(l))).toBe(true);
     expect(lines.some((l) => /^Member feed undeclared — Withheld: 13/.test(l))).toBe(true);
     expect(uploads).toBe(2);
+  });
+
+  it("reads a scan in the browser and shows what the engine made of it", async () => {
+    let sent: FormData | undefined;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (String(url).includes("/sample-data/")) {
+          return { ok: true, status: 200, blob: async () => new Blob(["%PDF"]) } as Response;
+        }
+        sent = init?.body as FormData;
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            read_by: "OCR in the browser (Tesseract.js)",
+            lines: [{}, {}, {}, {}, {}, {}],
+            check: { holds: true, plain: "Opening + credits − debits = closing — it balances." },
+          }),
+        } as Response;
+      }),
+    );
+    render(<Judge />);
+    const c = card("A scanned statement, read in your browser");
+    await userEvent.click(within(c).getByRole("button", { name: /run/i }));
+    await waitFor(() => expect(within(c).getByText(/Read by OCR in the browser/)).toBeTruthy());
+    expect(sent?.get("scan_text")).toMatch(/85,000.00/);
+    expect(within(c).getByText(/6 line\(s\)/)).toBeTruthy();
   });
 
   it("shows an engine failure as a failure", async () => {

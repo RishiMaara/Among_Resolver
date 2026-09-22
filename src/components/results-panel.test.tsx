@@ -479,3 +479,29 @@ describe("the Tally export", () => {
     expect(await screen.findByRole("button", { name: /Export for Tally/ })).toBeInTheDocument();
   });
 });
+
+describe("saying which answers came from a model", () => {
+  it("names the model and how often it was asked", () => {
+    render(
+      <ResultsPanel
+        results={base({ ai: { model: "gemini-flash-latest", model_calls: 1, skipped: null } })}
+      />,
+    );
+    expect(screen.getByText(/gemini-flash-latest was asked 1 time/)).toBeInTheDocument();
+  });
+
+  it("says when a model answer was skipped and rules answered", () => {
+    render(
+      <ResultsPanel
+        results={base({
+          ai: {
+            model: "gemini-flash-latest",
+            model_calls: 0,
+            skipped: "this visitor's model budget for the hour (20 calls) is spent",
+          },
+        })}
+      />,
+    );
+    expect(screen.getByText(/skipped — this visitor's model budget/)).toBeInTheDocument();
+  });
+});

@@ -30,8 +30,11 @@ It never writes to a ledger. It proposes; a person approves.
   reaches the same set; the bank credit carries the UTR and exact amount;
   every order is in the books; fees, GST, TDS and TCS are right for their
   dates.
-- **Reads bank statements as banks send them** — MT940, CAMT.053, OFX, PDF —
-  and proves each read: opening + credits − debits = closing, line by line.
+- **Reads bank statements as banks send them** — MT940, CAMT.053, OFX, PDF,
+  and scans: a scan is read by OCR in your browser (Tesseract.js, free, the
+  file never leaves your machine to be read) or by Gemini where a key is set.
+  Every read proves itself: opening + credits − debits = closing, line by
+  line, and a misread digit is refused with the line named.
 - **Finds the members when nothing names them.** Linkage (anchors, and a
   Fellegi-Sunter model that learns the processor's payout cycle) narrows
   the pool; exact CP-SAT subset-sum verifies it; four refusal gates stop
@@ -68,8 +71,9 @@ You can run that yourself — `AMONGRESOLVER_NO_LINKAGE=1 python
 scripts/benchmark.py`, about forty seconds.
 
 This is an AI system that had to decide where AI belongs. Language models
-read language here — column headers, bank narrations, questions about a
-result — and propose an action for a settlement the engine withheld; every
+read language here — column headers, bank narrations, scanned statements,
+questions about a result — and propose an action for a settlement the engine
+withheld; every
 one of those outputs is checked in code before it counts. None of them
 decides which payments compose a settlement, because that is a money problem
 with millions of arithmetically valid answers, and the number above is what
@@ -127,7 +131,8 @@ do that they do: **[Industry Comparison](docs/INDUSTRY_COMPARISON.md)**.
 | **False clears, everywhere above** | **0** |
 | Confidence calibration, 180 scenarios, in-sample (`calibration.py` default) | ECE 0.0538 · MCE 0.20 · Brier 0.0439 — 103 of 103 correct at or above the 0.85 gate |
 | Confidence calibration, ReconRiver, out-of-sample (`calibration_out_of_sample.py`) | ECE 0.0901 raw, **0.026** calibrated (`fit_calibration.py`) · 42 of 42 correct above the gate, 74 predictions |
-| Tests | **701** backend · **129** frontend |
+| Scanned bank statements, 24 noisy scans (`ocr_eval.py`) | 11 read exactly right by OCR in the browser, **23** with Gemini on the rest, **0** wrong readings accepted |
+| Tests | **724** backend · **133** frontend |
 
 Every figure in that table except the two calibration rows is re-measured by
 `python scripts/generate_benchmarks.py`, which writes
@@ -210,6 +215,18 @@ on the screen — exists so decisions carry a name. `/judge` needs no sign-in;
 Or run both in containers: `docker compose up --build` (engine on 8001, app
 on 8080).
 
+**A model key on a public site.** Set `GEMINI_API_KEY` in the engine's
+environment (on Vercel: the engine project → Settings → Environment
+Variables), from a Google AI Studio project **without billing**, so it can
+only ever use the free daily quota. Every model call made while serving a web
+request is metered first — `MODEL_CALLS_PER_CLIENT_PER_HOUR` (default 20),
+`MODEL_CALLS_PER_DAY` (default 200), `MODEL_MAX_PROMPT_CHARS` (default
+60,000), counted across instances when Redis is configured. Over budget, the
+fixed-rule fallbacks answer and the response says so. `GET /ai/status` reports
+what is live, and never returns the key. Scans need no key at all: the app
+reads them with Tesseract.js in the browser, which loads its engine and
+English data from jsDelivr the first time.
+
 **If you are here to evaluate this, start at `/judge`**: live checks against the
 engine, and every measured figure with the file it came from. Then
 [docs/FINAL_PITCH_SCRIPT.md](docs/FINAL_PITCH_SCRIPT.md) has the five-minute
@@ -236,7 +253,7 @@ engine/        Python engine
   src/                       one module per agent — see docs/ARCHITECTURE.md
   src/api/                   the HTTP surface: models, presentation, route groups
   scripts/                   benchmarks, calibration, stress runs, data fetch
-  tests/                     701 tests
+  tests/                     724 tests
   benchmarks/                measurement snapshots
   data/                      Sanctions lists, test ledgers
 docs/                      ARCHITECTURE.md · FINAL_PITCH_SCRIPT.md · FINAL_TEST_REPORT.md · INDUSTRY_COMPARISON.md
@@ -369,8 +386,14 @@ trail a reviewer reads afterwards.
   Golden Rule of the open-source `bankstatementparser`, whose approach this
   follows without its lxml/pandas<3 dependencies). On a PDF the running balance
   also decides which column an amount was in. A statement that does not
-  balance is refused with the arithmetic shown, never partly used; a scanned
-  PDF is refused as a scan. Samples of one account in all four formats are in
+  balance is refused with the arithmetic shown, never partly used. A scanned
+  PDF or a photo is read by Tesseract.js in the browser (`src/lib/scan-ocr.ts`,
+  pdf.js to render the page) and the text goes through the same parser; if
+  it does not balance, Gemini reads the file itself (`statement_ocr.py`) and
+  is held to the same check. On 24 deliberately noisy scans the browser read
+  11 exactly right and Gemini 12 of the other 13; no wrong reading was ever
+  accepted (`scripts/ocr_eval.py`, `docs/benchmarks/ocr_eval.json`). Samples of
+  one account in all four formats, and as a scan, are in
   `public/sample-data/statements/`.
 - **Exceptions filed the way a finance team routes them**
   (`exception_taxonomy.py`): in transit, missing in books, unidentified

@@ -75,6 +75,7 @@ def generate(
     max_output_tokens: int = 4000,
     temperature: float = 0.0,
     thinking_budget: int | None = 0,
+    attachments: list[tuple[bytes, str]] | None = None,
 ) -> str | None:
     """
     Ask the model. Returns the response text, or None if unavailable.
@@ -86,8 +87,20 @@ def generate(
     results should not produce a different answer each time it is asked. A
     reviewer comparing two runs is entitled to read a difference as the DATA
     having changed.
+
+    attachments are (bytes, mime type) pairs sent ahead of the prompt — a
+    scanned statement, for one. The model reads them; nothing it returns
+    about them is used until code has checked it.
     """
     if not is_configured():
+        return None
+
+    # A public demo carries a key, so every call from a web request is
+    # metered first; over budget, the caller's deterministic path answers.
+    import model_budget  # pylint: disable=import-outside-toplevel
+    refused = model_budget.take(len(prompt or "") + len(system or ""))
+    if refused:
+        logger.info("Model call not made: %s. Deterministic path continues.", refused)
         return None
 
     try:
@@ -143,7 +156,9 @@ def generate(
         try:
             response = client.models.generate_content(
                 model=model or DEFAULT_MODEL,
-                contents=prompt,
+                contents=([types.Part.from_bytes(data=data, mime_type=mime)
+                           for data, mime in attachments] + [prompt]
+                          if attachments else prompt),
                 config=types.GenerateContentConfig(**config_kwargs),
             )
             text = (getattr(response, "text", None) or "").strip()

@@ -10,10 +10,11 @@ reading can be checked on its own, before anything depends on it.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 
 import llm_provider
+import model_budget
 import narration_reader
 import statement_parsers
 
@@ -21,11 +22,17 @@ router = APIRouter()
 
 
 @router.post("/statements/parse", summary="Parse a bank statement and check that it balances")
-async def parse_statement(file: UploadFile = File(...)):
+async def parse_statement(file: UploadFile = File(...),
+                          scan_text: str = Form("", max_length=200_000)):
+    """
+    scan_text: what OCR in the visitor's browser read, when the file is a
+    scan. The engine reads it with the same parser as a text PDF and uses it
+    only if it balances; otherwise the model reads the scan, where configured.
+    """
     from main import read_upload_capped  # pylint: disable=import-outside-toplevel
     content = await read_upload_capped(file)
     try:
-        st, check = statement_parsers.parse(content, file.filename or "")
+        st, check = statement_parsers.parse(content, file.filename or "", scan_text=scan_text)
     except statement_parsers.StatementUnreadable as exc:
         raise HTTPException(status_code=422, detail={
             "message": "statement unreadable", "plain": str(exc)})
@@ -40,6 +47,11 @@ async def parse_statement(file: UploadFile = File(...)):
                    "balance_cents": ln.balance_cents} for ln in st.lines],
         "check": check,
         "notes": st.notes,
+        # Who read it. A scan's reading is shown as a reading, never as the file.
+        "read_by": {"scan_ocr": "OCR in the browser (Tesseract.js)",
+                    "scan": f"{llm_provider.DEFAULT_MODEL}, from the scan"}.get(
+                        st.format, "the engine's parser, from the file's text"),
+        "ai": model_budget.report(),
     }
 
 
@@ -66,4 +78,5 @@ def read_narrations(req: NarrationRequest):
         "model_requested_but_unavailable": req.use_model and not use,
         "ungrounded_values_dropped": stats.get("ungrounded", 0),
         "results": [{"narration": t, **r} for t, r in zip(req.narrations, rows)],
+        "ai": model_budget.report(),
     }

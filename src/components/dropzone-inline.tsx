@@ -16,6 +16,8 @@ interface Props {
   onPick: (f: File | null) => void;
   error?: string | null;
   disabled?: boolean;
+  /** File types the Browse dialog offers. */
+  accept?: string;
 }
 
 function humanSize(bytes: number) {
@@ -24,7 +26,15 @@ function humanSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function DropzoneInline({ label, requirement, file, onPick, error, disabled }: Props) {
+export function DropzoneInline({
+  label,
+  requirement,
+  file,
+  onPick,
+  error,
+  disabled,
+  accept = ".csv,.json",
+}: Props) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [over, setOver] = useState(false);
   const [preview, setPreview] = useState(false);
@@ -130,7 +140,7 @@ export function DropzoneInline({ label, requirement, file, onPick, error, disabl
         <input
           ref={inputRef}
           type="file"
-          accept=".csv,.json"
+          accept={accept}
           className="hidden"
           onChange={(e) => onPick(e.target.files?.[0] ?? null)}
         />

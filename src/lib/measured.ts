@@ -88,6 +88,13 @@ export const MEASURED: Measured[] = [
     },
   },
   {
+    label: "Scanned statements read exactly right (of 24 noisy scans)",
+    before: "11",
+    after: "23",
+    note: "OCR in the browser (Tesseract.js) alone, then with Gemini reading what it could not prove; 0 wrong readings accepted in either.",
+    source: { file: "ocr_eval.json", beforePath: "right", path: "with_model.right", digits: 0 },
+  },
+  {
     label: "Settlement Q&A: fact questions answered from the record (of 29)",
     after: "29",
     note: "and 15 of 15 declined where the record cannot answer — a small set, not proof.",

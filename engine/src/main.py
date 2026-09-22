@@ -77,6 +77,7 @@ import settled_ledger
 import open_items
 import investigation_agent
 import llm_provider
+import model_budget
 import settlement_cycle
 import india_calendar
 
@@ -202,6 +203,21 @@ if CORS_ORIGINS == ["*"]:
         "engine's settlement data and audit trails. Acceptable for a local "
         "demo; never for a deployment holding real settlements."
     )
+
+@app.middleware("http")
+async def _meter_model_calls(request, call_next):
+    """
+    Name the visitor, so model calls made while serving them can be metered.
+
+    Vercel sets x-real-ip and the first x-forwarded-for hop from the connection
+    it received; elsewhere the socket's address is the best there is.
+    """
+    ip = (request.headers.get("x-real-ip")
+          or request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+          or (request.client.host if request.client else ""))
+    model_budget.begin_request(ip)
+    return await call_next(request)
+
 
 @app.middleware("http")
 async def _require_api_key(request, call_next):
@@ -378,6 +394,9 @@ async def reconcile_upload(
     # AND configured; otherwise fixed rules propose.
     investigate: bool = Form(False),
     investigate_with_model: bool = Form(False),
+    # What OCR in the browser read off a scanned bank statement. Used only if
+    # bank_file is a scan, and only if the reading balances line by line.
+    bank_scan_text: str = Form("", max_length=200_000),
     gateway_file: Optional[UploadFile] = File(None),
     bank_file: Optional[UploadFile] = File(None),
     erp_file: Optional[UploadFile] = File(None),
@@ -403,7 +422,8 @@ async def reconcile_upload(
         try:
             header_warnings: list[str] = []
             parsed_rows = file_agent.parse_file_content(
-                content, upload_file.filename or "", header_warnings
+                content, upload_file.filename or "", header_warnings,
+                scan_text=bank_scan_text if source_type == SourceType.BANK else ""
             )
             # Agent 0's header decisions were logged and never shown. The one
             # that matters most is a column it had to choose between, or a
@@ -693,6 +713,9 @@ async def reconcile_upload(
     formatted["plain_summary"] = plain_summary(
         formatted.get("summary") or {}, formatted.get("reasoning") or "",
         formatted.get("interchangeable"))
+    # Which answers in this response came from a model, and if one was
+    # skipped, why — so a rules answer is never read as a model one.
+    formatted["ai"] = model_budget.report()
 
     if (reviewer or "").strip():
         audit.log_decision(
@@ -989,6 +1012,7 @@ from api.routes_open_items import router as _open_items_router  # noqa: E402
 from api.routes_razorpay import router as _razorpay_router    # noqa: E402
 from api.routes_statements import router as _statements_router  # noqa: E402
 from api.routes_exports import router as _exports_router      # noqa: E402
+from api.routes_ai import router as _ai_router                # noqa: E402
 
 app.include_router(_decisions_router)
 app.include_router(_reports_router)
@@ -999,6 +1023,7 @@ app.include_router(_open_items_router)
 app.include_router(_razorpay_router)
 app.include_router(_statements_router)
 app.include_router(_exports_router)
+app.include_router(_ai_router)
 
 
 @app.get("/audit/{batch_id}/verify", summary="Check a batch's audit trail has not been altered")

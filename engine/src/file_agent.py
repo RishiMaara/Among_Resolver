@@ -1508,11 +1508,15 @@ def parse_settlements(content: bytes, filename: str,
 
 
 def parse_file_content(content: bytes, filename: str,
-                       warnings_out: list[str] | None = None) -> list[dict[str, Any]]:
-    """Determine file type and parse accordingly."""
+                       warnings_out: list[str] | None = None,
+                       scan_text: str = "") -> list[dict[str, Any]]:
+    """Determine file type and parse accordingly.
+
+    scan_text: what OCR in the browser read, if the file is a scanned statement.
+    """
     import statement_parsers  # pylint: disable=import-outside-toplevel
     if statement_parsers.detect(content, filename):
-        return _parse_statement(content, filename, warnings_out)
+        return _parse_statement(content, filename, warnings_out, scan_text)
     try:
         text = content.decode("utf-8")
     except UnicodeDecodeError:
@@ -1527,7 +1531,8 @@ def parse_file_content(content: bytes, filename: str,
 
 
 def _parse_statement(content: bytes, filename: str,
-                     warnings_out: list[str] | None) -> list[dict[str, Any]]:
+                     warnings_out: list[str] | None,
+                     scan_text: str = "") -> list[dict[str, Any]]:
     """
     MT940, CAMT.053, OFX or PDF, read and then proved.
 
@@ -1536,7 +1541,7 @@ def _parse_statement(content: bytes, filename: str,
     """
     import statement_parsers  # pylint: disable=import-outside-toplevel
     try:
-        st, check = statement_parsers.parse(content, filename)
+        st, check = statement_parsers.parse(content, filename, scan_text=scan_text)
     except statement_parsers.StatementUnreadable as exc:
         raise FileRejected(filename, [str(exc)], plain=(
             f"'{filename}' looks like a bank statement but could not be read: {exc}"))

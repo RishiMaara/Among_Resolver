@@ -602,3 +602,49 @@ exceptions telling a reviewer to delete correct ledger entries.
 Mitigation: one record in each of two feeds is filed as "Booked, not in this
 payout" and owned by nobody yet. Two in the same feed is still a duplicate.
 A test pins both.
+
+---
+
+## 33. The test suite could spend a real model key
+
+Severity: Medium (a user's quota spent by tests; nondeterministic results)
+Fails safe: Yes — the calls only read, but they were real and paid for
+
+main.py loads engine/.env, so on a machine with a Gemini key every test that
+reached a model path made a real call. Found when a scanned-statement test
+failed because Gemini answered "no rows" instead of the test's expected
+refusal. How many earlier runs spent quota this way is not known.
+
+Mitigation: an autouse fixture in tests/conftest.py blanks the key for every
+test. Tests that need a model fake one explicitly.
+
+---
+
+## 34. The bank upload refused bank statements
+
+Severity: Medium (a shipped feature unreachable from the main screen)
+Fails safe: Yes — nothing was misread; files could not be chosen
+
+MT940, CAMT.053, OFX and PDF statements were supported by the engine and
+listed in the README, but the upload box's file picker offered only .csv and
+.json, so they could be dragged in but not chosen.
+
+Mitigation: the bank box accepts statement formats and scans (PNG, JPEG,
+image-only PDF), and says so.
+
+---
+
+## 35. A Dr/Cr column broke the text-statement parser
+
+Severity: Low (a common layout refused, not misread)
+Fails safe: Yes — the rows were not recognised, so nothing was used
+
+Statements with one amount column and a Dr/Cr marker column print the
+marker between the amount and the balance ("2,80,368.48 Cr 18,51,778.47").
+The row pattern allowed a marker only at the end of the line, so every row of
+that layout was unrecognised — found when OCR of such scans returned "no
+rows" on all eight in the evaluation, with the text itself read correctly.
+
+Mitigation: a marker may follow the amount. The sign still comes from the
+running balance, as it did; the marker is only skipped. Browser OCR then read
+3 of the 8 right, and the rest were real misreads, refused.

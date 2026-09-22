@@ -9,6 +9,8 @@ import { SessionMenu } from "@/components/session-menu";
 import { DropzoneInline } from "@/components/dropzone-inline";
 import { loadRateCards, saveRateCard, type RateCard } from "@/lib/rate-cards";
 import { SAMPLE_PRESETS, loadSampleFiles, type SamplePreset } from "@/lib/sample-preset";
+import { BANK_FILE_TYPES, isScan, readScan } from "@/lib/scan-ocr";
+import { aiStatus } from "@/lib/ai";
 import { currentSession } from "@/lib/session";
 import { ResultsPanel, ResultsSkeleton } from "@/components/results-panel";
 import { AgentFlow } from "@/components/agent-flow";
@@ -502,13 +504,27 @@ function Index() {
         formData.append("tax_withholding_bps", taxWithholdingBps.trim());
       if (flatFeeCents.trim()) formData.append("flat_fee_cents", flatFeeCents.trim());
       // A settlement the engine withholds gets a proposed next step, checked in
-      // code before it is shown. Fixed rules propose it here; the model
-      // proposer is a separate opt-in (investigate_with_model) and spends quota.
+      // code before it is shown. The model proposes it where the server has
+      // one (metered per visitor); fixed rules otherwise.
       formData.append("investigate", "true");
+      if ((await aiStatus())?.live) formData.append("investigate_with_model", "true");
 
       if (gatewayFile) formData.append("gateway_file", gatewayFile);
       if (bankFile) formData.append("bank_file", bankFile);
       if (erpFile) formData.append("erp_file", erpFile);
+
+      // A scanned statement has no text to send. The browser reads it
+      // (Tesseract.js), and the engine uses that reading only if every line's
+      // running balance holds — otherwise the model reads the scan, where one
+      // is configured, and failing both the file is refused with the reason.
+      if (bankFile && (await isScan(bankFile).catch(() => false))) {
+        try {
+          toast.info("The bank statement is a scan — reading it in your browser…");
+          formData.append("bank_scan_text", await readScan(bankFile));
+        } catch {
+          toast.warning("The scan could not be read in this browser; the engine will try.");
+        }
+      }
 
       const response = await engineFetch("reconcile/upload", {
         method: "POST",
@@ -1080,10 +1096,11 @@ function Index() {
                     />
                     <DropzoneInline
                       label="Bank Statement"
-                      requirement="the independent record"
+                      requirement="CSV, MT940, CAMT.053, OFX, PDF — or a scan"
                       file={bankFile}
                       onPick={onBankPicked}
                       disabled={status === "running"}
+                      accept={BANK_FILE_TYPES}
                     />
                     <DropzoneInline
                       label="ERP Ledger"

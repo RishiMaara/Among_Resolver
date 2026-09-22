@@ -32,7 +32,9 @@ defusedxml for XML from outside and pypdf for PDF text.
 
 WHAT IS NOT HANDLED
 -------------------
-Scanned PDFs, which have no text layer; they are refused with that reason.
+Scanned PDFs and photographed statements have no text layer. They are read
+by the model (statement_ocr) and used only if the reading balances line by
+line; with no model configured they are refused with that reason.
 PDF layouts vary by bank: the reader here handles the common single-line
 table (date, narration, reference, withdrawal, deposit, balance), and the
 balance check is what stops a layout it does not understand from getting
@@ -114,6 +116,12 @@ def detect(content: bytes, filename: str = "") -> str | None:
     head = content[:4096]
     if head.startswith(b"%PDF"):
         return "pdf"
+    # A photographed or scanned statement. Read by the model, then held to
+    # the same balance check as every other format (statement_ocr).
+    if head.startswith(b"\x89PNG"):
+        return "image/png"
+    if head.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
     text = head.decode("utf-8", errors="ignore")
     if "camt.053" in text or "BkToCstmrStmt" in text:
         return "camt053"
@@ -283,7 +291,11 @@ def parse_ofx(text: str) -> ParsedStatement:
 
 _DATE = (r"(\d{2}[/-]\d{2}[/-]\d{2,4}|\d{2}\s+[A-Za-z]{3}\s+\d{2,4}|\d{2}-[A-Za-z]{3}-\d{2,4})")
 _AMT = r"(-?\d{1,3}(?:,\d{2,3})*(?:\.\d{2})|-?\d+\.\d{2})"
-_ROW = re.compile(rf"^\s*{_DATE}\s+(.+?)\s+{_AMT}(?:\s+{_AMT})?(?:\s+{_AMT})?\s*(Cr|Dr|CR|DR)?\s*$")
+# A Dr/Cr marker may follow the amount as well as the balance: statements with
+# one amount column and a marker column print "2,80,368.48 Cr 18,51,778.47".
+# The sign still comes from the running balance; the marker is only skipped.
+_MARK = r"(?:\s*(?:Cr|Dr|CR|DR))?"
+_ROW = re.compile(rf"^\s*{_DATE}\s+(.+?)\s+{_AMT}{_MARK}(?:\s+{_AMT})?(?:\s+{_AMT})?\s*(Cr|Dr|CR|DR)?\s*$")
 _OPENING = re.compile(rf"opening\s+balance[^\d-]*{_AMT}", re.I)
 _CLOSING = re.compile(rf"closing\s+balance[^\d-]*{_AMT}", re.I)
 
@@ -312,10 +324,19 @@ def parse_pdf(content: bytes) -> ParsedStatement:
     text = pdf_text(content)
     if len(text.strip()) < 20:
         raise StatementUnreadable(
-            "this PDF has no text layer — it is a scan. Download the statement again as "
-            "a text PDF, MT940 or CAMT.053 from net banking; a scanned image needs OCR, "
-            "which this engine does not do on its own.")
-    st = ParsedStatement("pdf")
+            "this PDF has no text layer — it is a scan, which goes to the scan reader "
+            "(statement_ocr) instead.")
+    return parse_text(text)
+
+
+def parse_text(text: str, fmt: str = "pdf") -> ParsedStatement:
+    """
+    A statement's text, one table row per line — a PDF's text layer, or what
+    OCR read off a scan. The column a movement sat in is not in the text, so
+    each line's sign comes from the running balance, and a line whose amount
+    does not move the balance either way is refused on the spot.
+    """
+    st = ParsedStatement(fmt)
     m = _OPENING.search(text)
     if m:
         st.opening_cents = _paise(m.group(1))
@@ -368,7 +389,7 @@ def parse_pdf(content: bytes) -> ParsedStatement:
         st.closing_cents = st.lines[-1].balance_cents
         st.notes.append("No closing balance printed; the last line's balance is used.")
     if not st.lines:
-        raise StatementUnreadable("no transaction lines recognised in the PDF's text")
+        raise StatementUnreadable("no transaction lines recognised in the statement's text")
     return st
 
 
@@ -413,18 +434,68 @@ def verify(st: ParsedStatement) -> dict:
     return {"golden_rule": rule, "running_balance": running, "holds": holds, "plain": plain}
 
 
-def parse(content: bytes, filename: str = "") -> tuple[ParsedStatement, dict]:
+def parse(content: bytes, filename: str = "",
+          scan_text: str = "") -> tuple[ParsedStatement, dict]:
+    """
+    scan_text is what OCR in the visitor's browser (Tesseract.js) read off a
+    scanned statement. It is only consulted when the file is a scan.
+    """
     kind = detect(content, filename)
     if kind is None:
         raise StatementUnreadable("not an MT940, CAMT.053, OFX or PDF statement")
+    if kind.startswith("image/"):
+        return _scan(content, kind, scan_text)
     if kind == "pdf":
-        st = parse_pdf(content)
+        try:
+            st = parse_pdf(content)
+        except StatementUnreadable as exc:
+            if "no text layer" not in str(exc):
+                raise
+            return _scan(content, "application/pdf", scan_text)
     elif kind == "camt053":
         st = parse_camt053(content)
     else:
         text = content.decode("utf-8", errors="replace")
         st = parse_mt940(text) if kind == "mt940" else parse_ofx(text)
     return st, verify(st)
+
+
+def _scan(content: bytes, mime: str, scan_text: str = "") -> tuple[ParsedStatement, dict]:
+    """
+    A scan, read two ways and used only if the reading proves itself.
+
+    First what OCR in the browser read, if it sent anything: free, and the
+    statement never left the visitor's machine to be read. Tesseract misreads
+    noisy scans, and the balance check refuses those — then the model reads
+    the file itself, where one is configured. Either reading is held to the
+    same line-by-line balance before a single figure is used.
+    """
+    import statement_ocr  # pylint: disable=import-outside-toplevel  (it imports this module)
+    first_refusal = None
+    if (scan_text or "").strip():
+        try:
+            st = parse_text(scan_text, "scan_ocr")
+            check = verify(st)
+            statement_ocr.accept(st, check)
+            st.notes.append(
+                "Read from a scan by OCR in the browser (Tesseract.js). Used only because "
+                "every line's running balance follows from the one before and opening "
+                "plus credits minus debits equals closing.")
+            return st, check
+        except StatementUnreadable as exc:
+            first_refusal = exc
+    try:
+        st = statement_ocr.read(content, mime)
+    except StatementUnreadable as exc:
+        if first_refusal is not None:
+            raise StatementUnreadable(
+                f"OCR in the browser read the scan, but {first_refusal}; and {exc}") from exc
+        raise
+    check = verify(st)
+    statement_ocr.accept(st, check)
+    if first_refusal is not None:
+        st.notes.append(f"OCR in the browser was refused first: {first_refusal}.")
+    return st, check
 
 
 def to_rows(st: ParsedStatement, credits_only: bool = True) -> list[dict]:

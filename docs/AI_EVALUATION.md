@@ -10,6 +10,7 @@ differences below are noise.
 | Use | Without the model | With it | The check in code |
 |---|---|---|---|
 | Reading bank narrations | regex: 88.5% / 82.7% | 97.7% / 97.5% | every value must appear in the narration |
+| Reading scanned statements | browser OCR: 11 of 24 right | 23 of 24 | every line's running balance, and the total |
 | Investigating withheld settlements | rules: 2 of 58 right and verified | 14 of 58 | a verifier: arithmetic, ledger, calendar, evidence, grounding |
 | Answering questions about a result | — | 44 of 44 | every figure and id must trace to the recorded result |
 | Linkage where references are gone | 24.3% of sets found | 56.8% | the solver: exact sums only, 0 false clears |
@@ -39,6 +40,37 @@ order that ships is the one that measured best, which is not the order first
 written: a regex that returns the *wrong* payer leaves no gap for the model
 to fill (FAILURE_LOG 24). Ingestion stays regex-only and deterministic. The
 model reads only when `POST /narrations/read` asks it to.
+
+## Reading scanned statements — `scan-ocr.ts`, `statement_ocr.py`
+
+A scan has no text layer. The app reads it in the visitor's browser first:
+pdf.js renders each page and Tesseract.js reads it — both open source, free,
+no key, and the statement is not sent anywhere to be read. The text goes
+through the parser that reads text PDFs, and it is used only if every line's
+running balance follows from the one before and opening + credits − debits
+= closing. If it does not, Gemini reads the file itself, and its reading is
+held to the same check. A misread digit breaks the arithmetic at the line
+where it happened, so the check refuses it with the line named rather than
+repairing it.
+
+`scripts/ocr_eval.py` draws 24 scans in three layouts Indian banks print
+(split debit/credit columns, a single amount column with a Dr/Cr marker, and
+a combined description), then rotates, blurs and noises them.
+
+| | browser OCR alone | then Gemini on what it refused |
+|---|---:|---:|
+| read exactly right | 11 | **23** |
+| refused, nothing used | 13 | 1 |
+| accepted with a wrong figure | **0** | **0** |
+
+Three settings decided whether Tesseract read a table at all, and all three
+were found by measuring: the page at 3,400 pixels wide (at 1x it misread 5 as
+6), one uniform block (automatic layout split the table into columns), and
+pdf.js's print rendering (the display path waits for animation frames, which
+a background tab pauses). The 13 browser refusals are real OCR misreads — 5
+as 6, 9 as 0, a digit doubled, a comma read as a point — and every one was
+caught at the line where it happened. The scans are generated, so this
+measures reading a statement's table under noise, not every bank's layout.
 
 ## Investigating withheld settlements — `investigation_agent.py`
 

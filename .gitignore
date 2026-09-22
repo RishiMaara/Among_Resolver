@@ -162,3 +162,6 @@ engine/data/batch_close/
 
 # Vercel: build output and project link metadata. Never source.
 .vercel
+
+# Tesseract language data, cached when OCR runs outside the browser
+*.traineddata

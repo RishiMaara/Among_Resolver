@@ -50,3 +50,16 @@ def _fresh_settlement_cycle():
     import settlement_cycle
     settlement_cycle.reset()
     yield
+
+
+@pytest.fixture(autouse=True)
+def _no_real_model(monkeypatch):
+    """
+    No test reaches a real model. main.py loads engine/.env, so on a machine
+    with a key every test that touched a model path made a real, paid-for,
+    nondeterministic call — found when a scan test got an answer from Gemini.
+    Tests that need a model fake one explicitly.
+    """
+    monkeypatch.setenv("GEMINI_API_KEY", "")
+    monkeypatch.setenv("GOOGLE_API_KEY", "")
+    yield

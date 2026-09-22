@@ -2,3 +2,7 @@
 #   pip install -r requirements.txt -r requirements-dev.txt
 -r requirements.txt
 pytest==8.3.3
+
+# Draws the scanned-statement samples and the OCR evaluation set
+# (scripts/make_scanned_statements.py, scripts/ocr_eval.py). Not a runtime need.
+pillow>=11.0
