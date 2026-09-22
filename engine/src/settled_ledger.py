@@ -49,6 +49,21 @@ import audit
 logger = logging.getLogger(__name__)
 _lock = threading.Lock()
 _memory: dict[str, str] = {}          # txn_id -> batch_id, when no DB exists
+_REDIS_KEY = "settled:payments"
+
+
+def _redis():
+    """
+    The shared store, when one is configured (the audit trail's Redis).
+
+    On serverless there is no writable disk, so without this the ledger was
+    per-instance memory: a payment one instance recorded as paid out was
+    unknown to the next, and the double-payment check could not see it.
+    """
+    try:
+        return audit._get_redis() if audit.redis_url() else None  # pylint: disable=protected-access
+    except Exception:
+        return None
 
 
 def _db():
@@ -78,6 +93,16 @@ def record_settled(batch_id: str, txn_ids: Iterable[str], when: str = "") -> int
     ids = [t for t in (txn_ids or []) if t]
     if not batch_id or not ids:
         return 0
+    client = _redis()
+    if client is not None:
+        try:
+            pipe = client.pipeline()
+            for t in ids:
+                pipe.hsetnx(_REDIS_KEY, t, batch_id)
+            pipe.execute()
+            return len(ids)
+        except Exception as e:
+            logger.warning("Could not record settled payments in Redis: %s", e)
     conn = _db()
     with _lock:
         if conn is None:
@@ -103,6 +128,18 @@ def owners(txn_ids: Iterable[str]) -> dict[str, str]:
     if not ids:
         return {}
     found: dict[str, str] = {}
+    client = _redis()
+    if client is not None:
+        try:
+            for i in range(0, len(ids), 500):
+                chunk = ids[i:i + 500]
+                for t, owner in zip(chunk, client.hmget(_REDIS_KEY, chunk)):
+                    if owner:
+                        found[t] = owner.decode() if isinstance(owner, bytes) else owner
+            return found
+        except Exception as e:
+            logger.warning("Could not read settled payments from Redis: %s", e)
+            found = {}
     conn = _db()
     if conn is None:
         for t in ids:

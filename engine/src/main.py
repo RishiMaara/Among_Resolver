@@ -27,6 +27,7 @@ import dateutil.parser as dp
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
 from schema import SourceType, SettlementBatch, NormalizedTxn, TzConfidence
@@ -599,10 +600,12 @@ async def reconcile_upload(
         ),
     )
     
-    report = reconcile_settlement(
-        batch, candidates, settlement_window_days=settlement_window_days,
+    # Off the event loop. The solve is CPU-bound, and an async handler that
+    # runs it inline stalls every other request on this worker until it ends.
+    report = await run_in_threadpool(
+        reconcile_settlement, batch, candidates,
+        settlement_window_days=settlement_window_days,
         rate_card=_rate_card(gateway_fee_bps, tax_withholding_bps, flat_fee_cents),
-        # (see _rate_card_is_assumed — the note is added below)
     )
     formatted = _format_report(report, batch=batch, candidates=candidates)
 
@@ -626,11 +629,8 @@ async def reconcile_upload(
         "rate_card_assumed": _rate_card_is_assumed(
             gateway_fee_bps, tax_withholding_bps, flat_fee_cents),
     }
-    # Recording history must never fail the reconciliation. The work is
-    # already done and the caller is entitled to the result; a full disk or a
-    # permissions problem on an audit convenience is not a reason to throw it
-    # away.
-    if _rate_card_is_assumed(gateway_fee_bps, tax_withholding_bps, flat_fee_cents)             and not declared_deductions:
+    if (_rate_card_is_assumed(gateway_fee_bps, tax_withholding_bps, flat_fee_cents)
+            and not declared_deductions):
         ingestion_notes.append(
             "No deductions were declared and no rate card was supplied, so "
             f"the gross target was reconstructed from the DEFAULT card "
@@ -646,7 +646,9 @@ async def reconcile_upload(
     # happens — last week's cleared payments still sitting in this week's
     # pool. Checked before recording, so a batch never trips over itself.
     matched_ids = formatted.get("matched_txn_ids") or []
-    prior = settled_ledger.check_claims(report.batch_id, matched_ids)
+    # The ledger is keyed by txn_key: two feeds' "1001" are two payments.
+    ledger_keys = report.match_result.matched_keys or matched_ids
+    prior = settled_ledger.check_claims(report.batch_id, ledger_keys)
     if prior.get("count"):
         formatted["already_settled_elsewhere"] = prior
         audit.log_decision(
@@ -668,8 +670,13 @@ async def reconcile_upload(
         # this week's invisibly. Refusing to clear is visible; rewriting the
         # sum is not.
         summ = formatted.get("summary") or {}
-        share = prior["count"] / max(1, len(matched_ids))
-        if summ.get("cleared") and share >= 0.5:
+        # Any payment, not most of them. This waited until half the set was
+        # already paid out, so a batch with a third of its payments spent by
+        # an earlier settlement still cleared (FAILURE_LOG 40). A payment
+        # cannot fund two settlements — the rule the cross-batch check
+        # already applies inside one run.
+        if summ.get("cleared"):
+            summ["requires_human_approval"] = True
             summ["cleared"] = False
             summ["ambiguous"] = True
             summ["withheld_reason"] = "already_settled_elsewhere"
@@ -686,7 +693,7 @@ async def reconcile_upload(
     # writing proposals here would make this a record of guesses.
     if (formatted.get("summary") or {}).get("cleared") and matched_ids:
         settled_ledger.record_settled(
-            report.batch_id, matched_ids,
+            report.batch_id, ledger_keys,
             when=(formatted.get("summary") or {}).get("as_of_utc") or "")
 
     # A verified clear teaches the processor's settlement cycle. After the
@@ -695,8 +702,8 @@ async def reconcile_upload(
         settlement_cycle.learn_from(batch, candidates, matched_ids)
 
     if investigate and not (formatted.get("summary") or {}).get("cleared"):
-        found = investigation_agent.investigate(
-            batch, candidates, report,
+        found = await run_in_threadpool(
+            investigation_agent.investigate, batch, candidates, report,
             use_model=investigate_with_model and llm_provider.is_configured())
         if found:
             formatted["investigation"] = found
@@ -750,6 +757,10 @@ async def reconcile_upload(
     if ingestion_notes:
         formatted["ingestion_notes"] = ingestion_notes
 
+    # Recording history must never fail the reconciliation. The work is
+    # already done and the caller is entitled to the result; a full disk or a
+    # permissions problem on an audit convenience is not a reason to throw it
+    # away.
     try:
         history.record_run(batch_id, inputs, formatted)
     except Exception as exc:
@@ -917,6 +928,13 @@ async def reconcile_queue(
                 "message": str(e), "source": source_type.value,
                 "filename": upload.filename, "rejected": True, **e.to_dict(),
             })
+        except Exception as e:
+            # As on the single upload: a file that cannot be parsed is the
+            # caller's to fix, reported as such rather than as a 500.
+            raise HTTPException(
+                status_code=400,
+                detail=f"Failed to parse {source_type.value} file '{upload.filename}': {e}",
+            ) from e
 
     await load(gateway_file, SourceType.GATEWAY)
     await load(bank_file, SourceType.BANK)
@@ -949,11 +967,17 @@ async def reconcile_queue(
                     if row.get("declared_deductions") not in (None, "") else None
                 ),
             )
-            report = reconcile_settlement(
-                batch, candidates, settlement_window_days=settlement_window_days,
+            report = await run_in_threadpool(
+                reconcile_settlement, batch, candidates,
+                settlement_window_days=settlement_window_days,
                 rate_card=_rate_card(gateway_fee_bps, tax_withholding_bps, flat_fee_cents),
             )
             summary = report.summary()
+            matched_keys = (report.match_result.matched_keys
+                            or report.match_result.matched_txn_ids)
+            # Before the status is read: a payment an earlier settlement paid
+            # out withholds this one (FAILURE_LOG 40).
+            already = _check_then_record(bid, summary, matched_keys)
             queue_outcomes.append((batch, report.match_result.matched_txn_ids,
                                    bool(summary["cleared"])))
             # Learned as the queue goes: a payout with references that clears
@@ -971,8 +995,8 @@ async def reconcile_queue(
                 "matched_transactions": matched_rows(report.match_result, candidates),
                 "interchangeable": interchangeable_note(report.match_result, candidates),
                 "compliance_review": compliance_review(candidates, bid),
-                "already_settled_elsewhere": _check_then_record(
-                    bid, summary, report.match_result.matched_txn_ids),
+                "already_settled_elsewhere": already,
+                "matched_keys": matched_keys,
                 "exception_count": len(report.exceptions),
                 # Plain first, technical second. A reviewer meets the
                 # statement they can act on; the engine's own wording stays
@@ -1072,6 +1096,11 @@ def demo():
     improvement — naive DP at Rs 60,000 settlement scale takes ~108s;
     CP-SAT solves the same problem in <2s.
     """
+    # A 10,000-record solve on every call, reachable without a key, is a way
+    # to spend a public deployment's compute. Off on Vercel unless asked for.
+    if os.environ.get("VERCEL") and os.environ.get("ENABLE_DEMO_ENDPOINT", "").strip() != "1":
+        raise HTTPException(status_code=404, detail=(
+            "/demo is off on this deployment; set ENABLE_DEMO_ENDPOINT=1 to run it."))
     import random
     from datetime import timedelta
     from schema import TzConfidence

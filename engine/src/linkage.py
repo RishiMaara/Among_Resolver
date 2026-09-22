@@ -75,6 +75,24 @@ def txn_key(t: NormalizedTxn) -> str:
     return f"{t.source.value}:{t.source_txn_id}"
 
 
+def members_of(result, pool: list[NormalizedTxn]) -> list[NormalizedTxn]:
+    """
+    The records a MatchResult names, found in `pool`.
+
+    By txn_key when the result carries keys, which every solve now does: a
+    gateway payment "1001" and an ERP line "1001" are two records, and a
+    bare-id lookup returned both. Measured: a correct clear reported "does
+    not tie" by the other record's amount, and its fee audit read that
+    record (FAILURE_LOG 38). Falls back to bare ids only for a result built
+    without keys.
+    """
+    keys = set(getattr(result, "matched_keys", None) or [])
+    if keys:
+        return [t for t in pool if txn_key(t) in keys]
+    ids = set(getattr(result, "matched_txn_ids", None) or [])
+    return [t for t in pool if t.source_txn_id in ids]
+
+
 # Linkage weights.
 #
 # Named constants rather than literals inside link_score() because a number

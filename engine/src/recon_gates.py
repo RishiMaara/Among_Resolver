@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     from orchestrator import ReconciliationReport
 
 from schema import MatchResult, SettlementBatch, NormalizedTxn, ExceptionRecord
-from linkage import LinkageResult, link_confidence, txn_key
+from linkage import LinkageResult, link_confidence, txn_key, members_of
 import audit
 
 
@@ -116,6 +116,7 @@ assert FUZZY_RECOVERY_CONFIDENCE < MIN_AUTOCLEAR_CONFIDENCE, (
     "similarity is evidence of association, not of arithmetic."
 )
 
+
 def _withhold_if_unevidenced(
     batch: SettlementBatch,
     result: MatchResult,
@@ -175,10 +176,7 @@ def _withhold_if_unevidenced(
     # anchors present AND the true answer absent from the pool — which is what
     # a late leg does in production every day.
     matched_id_set = set(result.matched_txn_ids)
-    matched_keys = {
-        txn_key(t) for t in solver_candidates
-        if t.source_txn_id in matched_id_set
-    }
+    matched_keys = {txn_key(t) for t in members_of(result, solver_candidates)}
     matched_anchored = bool(anchor_keys & matched_keys)
 
     # Two distinct situations, and the small-pool exemption is only sound in
@@ -304,8 +302,6 @@ def _withhold_if_unevidenced(
         )
 
 
-
-
 def _apply_confidence_gate(
     batch: SettlementBatch,
     result: MatchResult,
@@ -319,10 +315,7 @@ def _apply_confidence_gate(
     # Keys, not bare ids: a matched id that collides across feeds must not
     # borrow another transaction's linkage score. See linkage.txn_key and
     # link_confidence's docstring.
-    matched_id_set = set(result.matched_txn_ids)
-    matched_keys = {
-        txn_key(t) for t in solver_candidates if t.source_txn_id in matched_id_set
-    }
+    matched_keys = {txn_key(t) for t in members_of(result, solver_candidates)}
     structural = link_confidence(link_result, matched_keys)
     result.confidence = min(result.confidence, structural)
     result.reasoning += (
@@ -367,9 +360,6 @@ def _apply_confidence_gate(
         )
 
 
-
-
-
 def _withhold_cross_batch_double_claims(
     reports: list[ReconciliationReport],
 ) -> None:
@@ -397,7 +387,9 @@ def _withhold_cross_batch_double_claims(
         result = report.match_result
         if not result.cleared:
             continue
-        for txn_id in result.matched_txn_ids:
+        # Keys where the result carries them: two feeds' "1001" are two
+        # payments, and only the same payment claimed twice is a conflict.
+        for txn_id in (result.matched_keys or result.matched_txn_ids):
             claimed_by.setdefault(txn_id, []).append(result)
 
     conflicted: dict[int, set[str]] = {}

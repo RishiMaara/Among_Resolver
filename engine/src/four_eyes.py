@@ -72,7 +72,9 @@ def marker(actor: str, act: str) -> str:
 def _normalise(name: str) -> str:
     # Case and surrounding space are not identity. "Rishi " and "rishi" are
     # one person typing the same name twice.
-    return " ".join((name or "").split()).lower()
+    # Brackets and bars are the marker's own syntax. A name carrying them
+    # could close one marker and open a forged one inside the same line.
+    return " ".join(re.sub(r"[\[\]|]", " ", name or "").split()).lower()
 
 
 def actors(batch_id: str, acts: tuple[str, ...]) -> set[str]:

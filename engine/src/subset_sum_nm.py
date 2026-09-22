@@ -126,6 +126,7 @@ def _solve(
     num_search_workers: int = 1,
     forced_per_target: List[set[str]] | None = None,
     forbidden_solutions: List[List[set[str]]] | None = None,
+    status_out: list | None = None,
 ) -> NMSolveResult | None:
     """
     Core joint CP-SAT solve. include[(c, t)] exists ONLY when candidate c is
@@ -219,6 +220,9 @@ def _solve(
     solver.parameters.max_time_in_seconds = time_limit_s
     solver.parameters.num_search_workers = num_search_workers
     status = solver.Solve(model)
+    # See subset_sum._solve_cpsat: UNKNOWN is "out of time", not "none".
+    if status_out is not None:
+        status_out.append(solver.StatusName(status))
 
     if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
         return None
@@ -260,6 +264,7 @@ def probe_for_alternate_nm_assignment(
     probe_limit: int,
     num_search_workers: int = 1,
     forced_per_target: List[set[str]] | None = None,
+    outcome: dict | None = None,
 ) -> List[bool]:
     """
     Bounded PER-TARGET ambiguity check for the joint solve. Returns one
@@ -283,6 +288,7 @@ def probe_for_alternate_nm_assignment(
     baseline_keys = [{txn_key(t) for t in group} for group in baseline.matched]
     forbidden = [baseline_keys]
     varied = [False] * len(target_cents_list)
+    statuses: list = []
 
     for _ in range(probe_limit):
         alt = _solve(
@@ -290,8 +296,11 @@ def probe_for_alternate_nm_assignment(
             num_search_workers=num_search_workers,
             forced_per_target=forced_per_target,
             forbidden_solutions=forbidden,
+            status_out=statuses,
         )
         if alt is None:
+            if statuses and statuses[-1] == "UNKNOWN" and outcome is not None:
+                outcome["timed_out"] = True
             break  # no further alternates found within budget
         alt_keys = [{txn_key(t) for t in group} for group in alt.matched]
         for i, (b, a) in enumerate(zip(baseline_keys, alt_keys)):

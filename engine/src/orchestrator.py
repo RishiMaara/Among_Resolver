@@ -32,6 +32,8 @@ from subset_sum import (
     match_batch,
     filter_candidates_by_settlement_window,
     _anchored_negatives,
+    UNPROVEN_UNIQUE_CONFIDENCE,
+    UNPROVEN_UNIQUE_NOTE,
 )
 from subset_sum_nm import build_union_pool, exact_subset_sum_nm, probe_for_alternate_nm_assignment
 from fuzzy_match import (
@@ -40,15 +42,13 @@ from fuzzy_match import (
 )
 import compliance_agent
 from exception_diagnosis import diagnose_batch_exceptions
-from linkage import LinkageResult, build_candidate_links, link_confidence, txn_key
+from linkage import (
+    LinkageResult, build_candidate_links, link_confidence, txn_key, members_of,
+)
 import audit
 from fee_audit import run_fee_audit, MethodRateCard, FeeAuditFinding
 from india_tax import ist_date
 import calibration_map
-
-
-
-
 
 # The refusal gates moved to recon_gates.py — one concern, and this file
 # was not it. Re-exported because callers and tests reach for them here.
@@ -76,8 +76,7 @@ class ReconciliationReport:
     Estimated cost if the matched subset is incorrect (a false positive).
     Computed as: matched_sum_cents * false_positive_rate (conservative 5%
     for ambiguous matches, 0 for high-confidence exact matches).
-    Judges explicitly score this metric — it's the financial materiality
-    of getting the match wrong.
+    It is the financial materiality of getting the match wrong.
     """
 
     # ── target preservation ───────────────────────────────────────────────
@@ -527,8 +526,7 @@ def _solve_in_tiers(
             # versa) below. Same class of bug as link_confidence's, see
             # linkage.txn_key.
             tier_ids = {txn_key(t) for t in tier_txns}
-            matched_set = set(tier_result.matched_txn_ids)
-            matched_txns = [t for t in tier_txns if t.source_txn_id in matched_set]
+            matched_txns = members_of(tier_result, tier_txns)
 
             # An ANCHORED member is safe: it names the settlement, so even
             # though a copy of it exists in another feed, we know which
@@ -640,8 +638,8 @@ def _solve_in_tiers(
             # Check if the fallback match left anchors unused. If it did, the
             # fallback is evidence-contradicting and should be withheld.
             if anchor_keys:
-                fallback_matched_keys = {txn_key(t) for t in windowed_candidates
-                                        if t.source_txn_id in set(fallback.matched_txn_ids)}
+                fallback_matched_keys = {txn_key(t) for t in
+                                         members_of(fallback, windowed_candidates)}
                 anchors_in_pool = anchor_keys & {txn_key(t) for t in windowed_candidates}
                 unused_anchors = anchors_in_pool - fallback_matched_keys
                 
@@ -755,7 +753,8 @@ def _collect_unmatched(
         # semantic noise on top of arithmetic ambiguity. Route directly to human.
         # The matched txns are the tiebreak's best guess; the rest are unmatched.
         matched_ids = set(result.matched_txn_ids)
-        unmatched = [t for t in windowed_candidates if t.source_txn_id not in matched_ids]
+        member_keys = {txn_key(t) for t in members_of(result, windowed_candidates)}
+        unmatched = [t for t in windowed_candidates if txn_key(t) not in member_keys]
         audit.log_decision(
             batch_id=batch.batch_id,
             agent="orchestrator",
@@ -799,6 +798,8 @@ def _collect_unmatched(
             unmatched = [t for t in unmatched if t.source_txn_id not in recovered_set]
             # Update result to reflect fuzzy recovery
             result.matched_txn_ids = list(recovered_set)
+            result.matched_keys = [txn_key(t) for t in windowed_candidates
+                                   if t.source_txn_id in recovered_set]
             result.matched_sum_cents = sum(
                 t.amount_cents for t in windowed_candidates
                 if t.source_txn_id in recovered_set
@@ -844,6 +845,8 @@ def _collect_unmatched(
             )
 
     return exceptions, unmatched
+
+
 def _tiebreak_if_ambiguous(
     batch: SettlementBatch,
     result: MatchResult,
@@ -855,7 +858,7 @@ def _tiebreak_if_ambiguous(
 ) -> None:
     """Agent 3b: tiebreak ambiguous matches via fuzzy plausibility scoring."""
     if result.ambiguous and enable_tiebreak and result.matched_txn_ids:
-        matched_pool = [t for t in windowed_candidates if t.source_txn_id in set(result.matched_txn_ids)]
+        matched_pool = members_of(result, windowed_candidates)
         # A proposal drawn entirely from the learned cohort is withheld because
         # its confidence is below the gate — "a person should confirm this" —
         # not because a better set exists. The tiebreak scores reference and
@@ -865,12 +868,9 @@ def _tiebreak_if_ambiguous(
         # preference between equal sums, so the evidenced proposal stands.
         if learned_keys and {txn_key(t) for t in matched_pool} <= learned_keys:
             return
-        primary_ids = set(result.matched_txn_ids)
         # txn_key, not the bare matched_txn_ids: candidates here is fed by
-        # _solve_cpsat, which now compares by txn_key (see its docstring).
-        # primary_ids stays around too — chosen_ids below is compared against
-        # it in bare-id form, since result.matched_txn_ids is bare-id by
-        # schema (see MatchResult) and that comparison never reaches the solver.
+        # _solve_cpsat, which compares by txn_key (see its docstring), and the
+        # chosen set below is compared in the same form.
         primary_keys = {txn_key(t) for t in matched_pool}
         # Recomputed rather than threaded through MatchResult: it's a cheap,
         # pure filter over windowed_candidates (same inputs match_batch used
@@ -893,9 +893,10 @@ def _tiebreak_if_ambiguous(
             time_limit_s=cfg.probe_time_limit_s,
         )
         if chosen is not None:
-            chosen_ids = {t.source_txn_id for t in chosen}
-            if chosen_ids != primary_ids:
-                result.matched_txn_ids = list(chosen_ids)
+            chosen_keys = {txn_key(t) for t in chosen}
+            if chosen_keys != primary_keys:
+                result.matched_txn_ids = [t.source_txn_id for t in chosen]
+                result.matched_keys = sorted(chosen_keys)
                 result.matched_sum_cents = sum(t.amount_cents for t in chosen)
                 result.confidence = min(result.confidence, 0.25)
                 result.reasoning += (
@@ -903,6 +904,7 @@ def _tiebreak_if_ambiguous(
                     "plausibility scoring — a preference between equally valid "
                     "arithmetic, not evidence. Confidence reflects that."
                 )
+
 
 def _build_report_and_tie_out(
     batch: SettlementBatch,
@@ -918,9 +920,10 @@ def _build_report_and_tie_out(
     fee_findings = []
     fee_summary = None
 
-    if result and result.matched_txn_ids:
-        # Resolve matched IDs back to objects for the audit
-        matched_txns = [t for t in windowed_candidates if t.source_txn_id in set(result.matched_txn_ids)]
+    # By txn_key: a bare id can also name another feed's record, which put
+    # that record's amount into the tie-out and its fees into the audit.
+    matched_txns = members_of(result, windowed_candidates) if result else []
+    if matched_txns:
         fee_findings, fee_summary = run_fee_audit(
             matched_txns,
             batch_deduction_cents=batch.declared_deductions_cents,
@@ -929,10 +932,7 @@ def _build_report_and_tie_out(
             as_of=ist_date(batch.settled_at_utc),
         )
 
-    matched_gross = sum(
-        t.amount_cents for t in windowed_candidates
-        if t.source_txn_id in set(result.matched_txn_ids)
-    )
+    matched_gross = sum(t.amount_cents for t in matched_txns)
     report = ReconciliationReport(
         batch_id=batch.batch_id,
         total_candidates=len(windowed_candidates),
@@ -1130,12 +1130,15 @@ def reconcile_many(
     reports: list[ReconciliationReport] = []
 
     if joint is not None:
+        nm_probe: dict = {}
         ambiguous_flags = probe_for_alternate_nm_assignment(
             union, eligible, joint, target_cents_list,
             cfg.tolerance_cents, cfg.probe_time_limit_s, cfg.ambiguity_probe_limit,
             num_search_workers=cfg.num_search_workers,
             forced_per_target=forced_per_target,
+            outcome=nm_probe,
         )
+        probe_timed_out = bool(nm_probe.get("timed_out"))
         for i, p in enumerate(prep):
             matched_txns = joint.matched[i]
             achieved_sum = joint.achieved_sums[i]
@@ -1145,6 +1148,7 @@ def reconcile_many(
             result = MatchResult(
                 batch_id=p.batch.batch_id,
                 matched_txn_ids=[t.source_txn_id for t in matched_txns],
+                matched_keys=[txn_key(t) for t in matched_txns],
                 method=MatchMethod.EXACT_SUBSET_SUM,
                 # Same 0.36/1.0 split as subset_sum.match_batch's arithmetic
                 # confidence, and the same meaning: 1.0 is not a guess, the
@@ -1154,7 +1158,8 @@ def reconcile_many(
                 # benchmark exists yet to measure it against, unlike the
                 # 1:N bands above, so this borrows the 1:N number honestly
                 # rather than inventing an untested one of its own.
-                confidence=0.36 if ambiguous else 1.0,
+                confidence=(0.36 if ambiguous else
+                            UNPROVEN_UNIQUE_CONFIDENCE if probe_timed_out else 1.0),
                 matched_sum_cents=achieved_sum,
                 target_cents=p.gross_target,
                 cleared=not ambiguous,
@@ -1175,6 +1180,9 @@ def reconcile_many(
                     )
                 ),
             )
+
+            if probe_timed_out and not ambiguous:
+                result.reasoning += UNPROVEN_UNIQUE_NOTE
 
             _withhold_if_unevidenced(
                 p.batch, result, p.narrowed, p.link_result, p.link_result.anchor_keys
@@ -1293,10 +1301,7 @@ def reconcile_batch(
     )
 
     candidates = _filter_to_settlement_currency(batch, candidates)
-
-
     candidates = _filter_out_non_settling(batch, candidates)
-
 
     windowed_candidates = filter_candidates_by_settlement_window(
         candidates, batch.settled_at_utc, settlement_window_days

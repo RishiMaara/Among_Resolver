@@ -700,3 +700,60 @@ Re-measured: fixed rules 16 right and verified of 58 (was 2), 0 wrong through
 (was 3); the investigator as deployed 22 (was 14), 3 wrong through (was 4).
 Of the 22, 20 are cases missing a member; on the 38 solvable cases it finds
 the exact set twice. The gain is safe escalation, not better matching.
+
+## 38. A payment id shared by two feeds joined the matched set
+
+Severity: Medium (a correct clear reported as not tying; fees audited on the wrong record)
+Fails safe: Partly — the set cleared was right; what was reported about it was not
+
+Found by reading the code for a review, then reproduced. The solver
+identifies records by feed and id (linkage.txn_key), but a result
+carried only the bare ids, and everything after the solve — the tie-out, the
+fee audit, the cash position, the rows a reviewer sees, the paid-out ledger —
+found its records again by bare id. A gateway payment "1001" and an unrelated
+ERP line "1001" were then both "matched": a settlement that cleared exactly
+reported that it did not tie, by the ERP line's Rs 77.77.
+
+Mitigation: a result carries `matched_keys` ("gateway:1001") beside its ids,
+every reader resolves through `linkage.members_of`, and the paid-out ledger
+and the cross-batch check key on them. Test: test_review_fixes.py.
+
+## 39. A uniqueness check that ran out of time was reported as proof
+
+Severity: Low (confidence overstated; the evidence gates still applied)
+Fails safe: Mostly — linkage confidence still gated the clear
+
+CP-SAT answers INFEASIBLE when it proves no second subset exists and UNKNOWN
+when its time runs out first. The probe treated both as "no alternate", so a
+check that never finished reported the arithmetic at 1.0 — a uniqueness no
+one had established. It now records which it was; a timed-out probe reports
+the arithmetic at 0.90 and says so, in the 1:N and the joint solve alike.
+
+## 40. A batch cleared while a third of its payments were already paid out
+
+Severity: Medium (a payment could be counted into two settlements)
+Fails safe: No — the clear stood, with a warning under it
+
+The paid-out check withheld a batch only when at least half its payments had
+been cleared into an earlier settlement. Below that it cleared and printed a
+warning — the arrangement its own comment warned against. A payment cannot
+fund two settlements, which is the rule the cross-batch check already applied
+inside one run. Now any such payment withholds the clear, on the single
+upload and in the queue.
+
+## 41. What the review found around the edges
+
+Severity: Low
+Fails safe: Yes
+
+- The paid-out ledger had no shared store: on serverless it was per-instance
+  memory even with Redis configured. It now uses Redis when one is set.
+- The audit trail wrote to Redis first but read SQLite first, so a batch with
+  older local rows came back stale. Reads now follow the write order.
+- `/reconcile/upload` and `/reconcile/queue` ran the CPU-bound solve on the
+  event loop, stalling every other request on the worker. They run it in the
+  thread pool now; a parse failure in the queue is a 400, as on the upload.
+- `/demo` ran a 10,000-record solve for anyone. It is off on Vercel unless
+  ENABLE_DEMO_ENDPOINT=1.
+- A reviewer's name could carry the separation-of-duties marker's own
+  brackets and bars. They are stripped from names now.

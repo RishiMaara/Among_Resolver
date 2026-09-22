@@ -104,6 +104,7 @@ def _solve_cpsat(
     forbidden_solutions: list[set[str]] | None = None,
     num_search_workers: int = 1,
     forced_ids: set[str] | None = None,
+    status_out: list | None = None,
 ) -> tuple[list[NormalizedTxn], int] | None:
     """
     Core CP-SAT solve: find a subset of `candidates` summing to
@@ -172,6 +173,11 @@ def _solve_cpsat(
     solver.parameters.max_time_in_seconds = time_limit_s
     solver.parameters.num_search_workers = num_search_workers
     status = solver.Solve(model)
+    # INFEASIBLE proves no such subset exists; UNKNOWN only says the time ran
+    # out first. Callers that read "none" as "none exists" need to tell them
+    # apart, so the status is handed back when asked for.
+    if status_out is not None:
+        status_out.append(solver.StatusName(status))
 
     if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
         return None
@@ -206,6 +212,7 @@ def _probe_for_alternate_subset(
     probe_limit: int,
     num_search_workers: int = 1,
     forced_ids: set[str] | None = None,
+    outcome: dict | None = None,
 ) -> str | None:
     """
     Bounded ambiguity check: ask CP-SAT for up to `probe_limit` DIFFERENT
@@ -233,6 +240,7 @@ def _probe_for_alternate_subset(
     matched_keys = {txn_key(t) for t in matched_txns}
     forbidden = [matched_keys]
     found: list[tuple[set[str], int]] = []
+    statuses: list = []
 
     for _ in range(probe_limit):
         # The probe has to solve under the SAME constraints as the real
@@ -245,8 +253,12 @@ def _probe_for_alternate_subset(
             forbidden_solutions=forbidden,
             num_search_workers=num_search_workers,
             forced_ids=forced_ids,
+            status_out=statuses,
         )
         if alt is None:
+            # Out of time is not the same as out of alternates: say which.
+            if statuses and statuses[-1] == "UNKNOWN" and outcome is not None:
+                outcome["timed_out"] = True
             break  # no further alternates found within budget
         alt_txns, alt_sum = alt
         alt_keys = {txn_key(t) for t in alt_txns}
@@ -327,6 +339,21 @@ def _anchored_negatives(batch_id: str, candidates: list[NormalizedTxn]) -> set[s
     return forced
 
 
+# What the arithmetic is worth when the check for a second subset ran out of
+# time before it could prove there is none. 1.0 means "the probe found no
+# alternate"; a probe that never finished has not shown that, and reporting
+# 1.0 for it claimed a uniqueness nobody established (FAILURE_LOG 39). Set
+# above the auto-clear gate on purpose: evidence that names the settlement
+# can still carry a clear, the report just stops claiming the arithmetic
+# alone settled it.
+UNPROVEN_UNIQUE_CONFIDENCE = 0.90
+UNPROVEN_UNIQUE_NOTE = (
+    " Uniqueness not established: the check for a second subset ran out of "
+    "time before it could prove none exists, so the arithmetic is reported "
+    f"at {UNPROVEN_UNIQUE_CONFIDENCE:.2f} rather than 1.0."
+)
+
+
 def match_batch(
     batch_id: str,
     candidates: list[NormalizedTxn],
@@ -354,6 +381,7 @@ def match_batch(
             return MatchResult(
                 batch_id=batch_id,
                 matched_txn_ids=[t.source_txn_id for t in approx_txns],
+                matched_keys=[txn_key(t) for t in approx_txns],
                 method=MatchMethod.FUZZY_SEMANTIC,
                 confidence=0.4,
                 matched_sum_cents=approx_sum,
@@ -379,11 +407,13 @@ def match_batch(
     ambiguous = False
     withheld_reason: str | None = None
     ambiguity_note = ""
+    probe: dict = {}
     alt_description = _probe_for_alternate_subset(
         matched_txns, candidates, target_cents, config.tolerance_cents,
         config.probe_time_limit_s, config.ambiguity_probe_limit,
         num_search_workers=config.num_search_workers,
         forced_ids=forced_ids,
+        outcome=probe,
     )
     if alt_description is not None:
         ambiguous = True
@@ -413,10 +443,14 @@ def match_batch(
     # identifies the right transactions, which is why linkage confidence is
     # applied on top of this downstream rather than instead of it.
     confidence = 0.36 if ambiguous else 1.0
+    if not ambiguous and probe.get("timed_out"):
+        confidence = UNPROVEN_UNIQUE_CONFIDENCE
+        ambiguity_note = UNPROVEN_UNIQUE_NOTE
 
     return MatchResult(
         batch_id=batch_id,
         matched_txn_ids=[t.source_txn_id for t in matched_txns],
+        matched_keys=[txn_key(t) for t in matched_txns],
         method=MatchMethod.EXACT_SUBSET_SUM,
         confidence=confidence,
         matched_sum_cents=achieved_sum,

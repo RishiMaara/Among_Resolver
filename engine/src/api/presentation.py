@@ -22,6 +22,7 @@ from schema import SourceType, SettlementBatch, NormalizedTxn, TzConfidence
 from ingestion import normalize_amount_to_cents
 from fee_decomposition import DEFAULT_RATE_CARD, FeeRateCard
 from cash_position import build_cash_position
+from linkage import members_of
 from plain_summary import plain_summary
 import compliance_agent
 import auto_disposition
@@ -47,6 +48,7 @@ def _format_report(report, audit_trail=None, batch=None, candidates=None) -> dic
             batch,
             candidates,
             matched_txn_ids=report.match_result.matched_txn_ids,
+            matched_keys=report.match_result.matched_keys,
             exceptions=report.exceptions,
             cleared=report.match_result.cleared,
         )
@@ -179,6 +181,14 @@ def _check_then_record(batch_id: str, summary: dict, matched_ids: list[str]) -> 
     single path: a withheld batch has consumed nothing.
     """
     prior = settled_ledger.check_claims(batch_id, matched_ids)
+    if prior.get("count") and summary.get("cleared"):
+        # A payment an earlier settlement already paid out cannot fund this
+        # one as well, so the clear is withheld for a person rather than
+        # recorded beside a warning (FAILURE_LOG 40).
+        summary["cleared"] = False
+        summary["ambiguous"] = True
+        summary["withheld_reason"] = "already_settled_elsewhere"
+        summary["requires_human_approval"] = True
     if summary.get("cleared") and matched_ids:
         settled_ledger.record_settled(batch_id, matched_ids)
     return prior
@@ -215,7 +225,7 @@ def contested_payments(results: list[dict]) -> dict:
     for r in results:
         bid = r.get("batch_id") or "?"
         is_cleared = r.get("status") == "cleared"
-        for tid in (r.get("matched_txn_ids") or []):
+        for tid in (r.get("matched_keys") or r.get("matched_txn_ids") or []):
             owners[tid].append(bid)
             if is_cleared:
                 cleared_owners[tid].append(bid)
@@ -408,7 +418,7 @@ def interchangeable_note(match_result, pool) -> dict | None:
 
     from collections import Counter
     pool_sigs = Counter(signature(t) for t in pool)
-    picked = [t for t in pool if t.source_txn_id in wanted]
+    picked = members_of(match_result, pool)
     picked_sigs = Counter(signature(t) for t in picked)
 
     groups = []
@@ -507,8 +517,7 @@ def matched_rows(match_result, pool) -> list[dict]:
             "reference": t.ref_id_canonical or "",
             "memo": (t.memo_raw or "")[:80],
         }
-        for t in pool
-        if t.source_txn_id in wanted
+        for t in members_of(match_result, pool)
     ]
     rows.sort(key=lambda r: r["amount_cents"], reverse=True)
     return rows

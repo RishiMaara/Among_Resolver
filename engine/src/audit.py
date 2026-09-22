@@ -691,9 +691,10 @@ def get_audit_trail(batch_id: str) -> list[dict]:
     """
     Return all recorded decisions for batch_id, in insertion order.
 
-    Reads from whichever backend was used for writes. If Redis is available
-    it is the source of truth; otherwise the file is read; otherwise the
-    in-memory list is searched.
+    Reads in the order log_decision writes: Redis when it is configured and
+    holds this batch, then SQLite, then the file, then memory. This read
+    SQLite first, so with Redis configured a batch that also had older local
+    rows came back as those rows instead of what was written since.
 
     NOTE: if Redis became unavailable mid-session, some entries may be in
     Redis and some in the file. This implementation does not merge them —
@@ -701,20 +702,21 @@ def get_audit_trail(batch_id: str) -> list[dict]:
     production deployment should keep Redis healthy rather than relying on
     partial fallback merging.
     """
-    rows = _db_read(batch_id)
-    if rows:
-        return rows
-
     client = _get_redis()
     if client:
         try:
             raw = client.lrange(f"audit:{batch_id}", 0, -1)
-            return [json.loads(e) for e in raw]
+            if raw:
+                return [json.loads(e) for e in raw]
         except Exception as exc:
             logger.warning(
-                "Audit: Redis read failed (%s: %s). Falling back to file.",
+                "Audit: Redis read failed (%s: %s). Falling back to local.",
                 type(exc).__name__, exc,
             )
+
+    rows = _db_read(batch_id)
+    if rows:
+        return rows
 
     # Redis unavailable — check file first (cross-process), then memory.
     file_entries = _file_read(batch_id)

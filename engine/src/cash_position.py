@@ -38,6 +38,8 @@ being quietly rounded into shape.
 
 from __future__ import annotations
 
+from linkage import txn_key
+
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
@@ -245,6 +247,7 @@ def build_cash_position(
     candidates: list[NormalizedTxn],
     matched_txn_ids: list[str],
     exceptions: list | None = None,
+    matched_keys: list[str] | None = None,
     cleared: bool = False,
     rate_card: FeeRateCard = DEFAULT_RATE_CARD,
     as_of: datetime | None = None,
@@ -259,7 +262,12 @@ def build_cash_position(
     """
     as_of = as_of or datetime.now(timezone.utc)
     matched_ids = set(matched_txn_ids)
-    matched = [t for t in candidates if t.source_txn_id in matched_ids]
+    # By txn_key when the result carries keys: a bare id can also name a
+    # record in another feed (FAILURE_LOG 38).
+    keys = set(matched_keys or [])
+    matched = ([t for t in candidates if txn_key(t) in keys] if keys
+               else [t for t in candidates if t.source_txn_id in matched_ids])
+    matched_key_set = {txn_key(t) for t in matched}
 
     blocked = [t for t in candidates if t.compliance_status is ComplianceStatus.BLOCKED]
     blocked_ids = {t.source_txn_id for t in blocked}
@@ -267,13 +275,13 @@ def build_cash_position(
     bank_unmatched = [
         t for t in candidates
         if t.source is SourceType.BANK
-        and t.source_txn_id not in matched_ids
+        and txn_key(t) not in matched_key_set
         and t.source_txn_id not in blocked_ids
     ]
     gateway_unsettled = [
         t for t in candidates
         if t.source is SourceType.GATEWAY
-        and t.source_txn_id not in matched_ids
+        and txn_key(t) not in matched_key_set
         and t.source_txn_id not in blocked_ids
     ]
 

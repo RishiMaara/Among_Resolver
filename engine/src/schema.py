@@ -220,6 +220,14 @@ class MatchResult:
     #   below_confidence_gate   - cleared on arithmetic, under the threshold
     withheld_reason: str | None = None
 
+    # The same members as matched_txn_ids, as collision-safe identities
+    # ("{source}:{id}", linkage.txn_key). A bare id is unique within a feed,
+    # not across feeds, so resolving a result to its records by bare id also
+    # picked up another feed's record carrying the same number (FAILURE_LOG
+    # 38). Empty on a result built without its records in hand; readers then
+    # fall back to the ids (linkage.members_of).
+    matched_keys: list[str] = field(default_factory=list)
+
 
 @dataclass
 class ExceptionRecord:
