@@ -49,7 +49,7 @@ async def parse_statement(file: UploadFile = File(...),
         "notes": st.notes,
         # Who read it. A scan's reading is shown as a reading, never as the file.
         "read_by": {"scan_ocr": "OCR in the browser (Tesseract.js)",
-                    "scan": f"{llm_provider.DEFAULT_MODEL}, from the scan"}.get(
+                    "scan": f"{llm_provider.answered_model()}, from the scan"}.get(
                         st.format, "the engine's parser, from the file's text"),
         "ai": model_budget.report(),
     }

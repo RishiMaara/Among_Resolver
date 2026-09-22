@@ -127,6 +127,63 @@ describe("the judge page", () => {
     expect(uploads).toBe(2);
   });
 
+  it("shows the model's attempt, and says when it found the set the engine cleared", async () => {
+    let uploads = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        const u = String(url);
+        if (u.includes("/sample-data/")) {
+          return { ok: true, status: 200, blob: async () => new Blob(["x"]) } as Response;
+        }
+        let body: unknown = {};
+        if (u.includes("/verify?receipt=")) {
+          body = { intact: true, plain: "All 20 chained entries check out." };
+        } else if (u.includes("ai/status")) {
+          body = { live: true };
+        } else if (u.includes("reconcile/upload")) {
+          uploads += 1;
+          body =
+            uploads === 1
+              ? {
+                  summary: { cleared: true, matched_count: 2, confidence: 0.95 },
+                  matched_txn_ids: ["pay_1", "pay_2"],
+                }
+              : {
+                  summary: { cleared: false, matched_count: 2, confidence: 0.36 },
+                  ai: { model: "gemini-2.5-flash" },
+                  investigation: {
+                    attempts: [
+                      { proposer: "rules", action: "MATCH_PROPOSAL", valid: false },
+                      { proposer: "model", action: "MATCH_PROPOSAL", valid: true, failed: [] },
+                    ],
+                    proposal: {
+                      proposer: "model",
+                      action: "MATCH_PROPOSAL",
+                      reason: "the gateway set sums exactly",
+                      txn_ids: ["pay_2", "pay_1"],
+                    },
+                    verification: { valid: true, plain: "Checked: consistent with the data." },
+                  },
+                };
+        }
+        return { ok: true, status: 200, json: async () => body } as Response;
+      }),
+    );
+    render(<Judge />);
+    const c = card("Reconcile a payout; investigate one it will not clear");
+    await userEvent.click(within(c).getByRole("button", { name: /run/i }));
+    await waitFor(() => expect(within(c).getByText(/found here without being told/)).toBeTruthy());
+    const lines = within(c)
+      .getAllByRole("listitem")
+      .map((li) => li.textContent ?? "");
+    expect(lines).toContain(
+      "Model (gemini-2.5-flash) proposed MATCH_PROPOSAL: passed every check.",
+    );
+    expect(lines.some((l) => /^Investigator \(model, gemini-2.5-flash\)/.test(l))).toBe(true);
+    expect(lines.some((l) => /^The same 2 payments/.test(l))).toBe(true);
+  });
+
   it("reads a scan in the browser and shows what the engine made of it", async () => {
     let sent: FormData | undefined;
     vi.stubGlobal(

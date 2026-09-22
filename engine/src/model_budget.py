@@ -113,7 +113,8 @@ def report() -> dict:
     import llm_provider  # pylint: disable=import-outside-toplevel
     state = REQUEST.get() or {}
     return {
-        "model": llm_provider.DEFAULT_MODEL if llm_provider.is_configured() else None,
+        "model": ((state.get("model") or llm_provider.DEFAULT_MODEL)
+                  if llm_provider.is_configured() else None),
         "model_calls": state.get("calls", 0),
         "skipped": state.get("skipped") or None,
     }

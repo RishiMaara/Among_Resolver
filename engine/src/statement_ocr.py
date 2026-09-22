@@ -110,7 +110,7 @@ def read(content: bytes, mime: str) -> ParsedStatement:
     if not st.lines:
         raise StatementUnreadable("the model found no transaction rows in the scan")
     st.notes.append(
-        f"Read from a scan by {llm_provider.DEFAULT_MODEL}. Used only because its "
+        f"Read from a scan by {llm_provider.answered_model()}. Used only because its "
         f"figures balance: opening plus credits minus debits equals closing, and every "
         f"line's running balance follows from the one before. Dates and descriptions "
         f"are not covered by that check.")

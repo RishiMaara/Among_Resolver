@@ -22,9 +22,30 @@ logger = logging.getLogger(__name__)
 # disable these features silently at exactly the wrong moment.
 DEFAULT_MODEL = os.environ.get("GEMINI_MODEL", "gemini-flash-latest")
 
+# Tried in order when the model before is overloaded or rate-limited (503,
+# 429). The free tier's `-latest` aliases return "high demand" for minutes at a
+# time, and every model use then fell back to rules in silence; a second model
+# answering now beats three backed-off retries of one that will not.
+FALLBACK_MODELS = [m.strip() for m in os.environ.get(
+    "GEMINI_FALLBACK_MODELS", "gemini-2.5-flash,gemini-flash-lite-latest").split(",") if m.strip()]
+
 MAX_ATTEMPTS = 3
 BASE_BACKOFF_S = 1.5
 RETRYABLE_STATUS = (429, 503, 500, 502, 504)
+
+
+def answered_model() -> str:
+    """The model that answered in this request, else the configured primary."""
+    import model_budget  # pylint: disable=import-outside-toplevel
+    return (model_budget.REQUEST.get() or {}).get("model") or DEFAULT_MODEL
+
+
+def _answered_by(name: str) -> None:
+    """Record which model answered, so a response never names the wrong one."""
+    import model_budget  # pylint: disable=import-outside-toplevel
+    state = model_budget.REQUEST.get()
+    if state is not None:
+        state["model"] = name
 
 
 def api_key() -> str | None:
@@ -125,60 +146,69 @@ def generate(
     client = genai.Client(api_key=api_key())
     last: Exception | None = None
 
-    for attempt in range(1, MAX_ATTEMPTS + 1):
-        try:
-            response = client.models.generate_content(
-                model=model or DEFAULT_MODEL,
-                contents=([types.Part.from_bytes(data=data, mime_type=mime)
-                           for data, mime in attachments] + [prompt]
-                          if attachments else prompt),
-                config=types.GenerateContentConfig(**config_kwargs),
-            )
-            text = (getattr(response, "text", None) or "").strip()
-
-            # A truncated answer must not be returned as if it were whole.
-            # finish_reason MAX_TOKENS means the model was cut off, and the
-            # caller has no other way to tell a complete short answer from a
-            # sentence that stops halfway.
+    primary = model or DEFAULT_MODEL
+    chain = [primary] + [m for m in FALLBACK_MODELS if m != primary]
+    for i, name in enumerate(chain):
+        for attempt in range(1, MAX_ATTEMPTS + 1):
             try:
-                reason = str(response.candidates[0].finish_reason or "")
-            except Exception:
-                reason = ""
-            if text and "MAX_TOKENS" in reason:
-                logger.warning(
-                    "LLM hit max_output_tokens (%d) and the answer is cut off. "
-                    "Returning it flagged rather than silently truncated.",
-                    max_output_tokens,
+                response = client.models.generate_content(
+                    model=name,
+                    contents=([types.Part.from_bytes(data=data, mime_type=mime)
+                               for data, mime in attachments] + [prompt]
+                              if attachments else prompt),
+                    config=types.GenerateContentConfig(**config_kwargs),
                 )
-                return text.rstrip() + " […answer truncated]"
+                text = (getattr(response, "text", None) or "").strip()
 
-            if text:
-                return text
-            logger.warning("LLM returned an empty response; treating as unavailable.")
-            return None
+                # A truncated answer must not be returned as if it were whole.
+                # finish_reason MAX_TOKENS means the model was cut off, and the
+                # caller has no other way to tell a complete short answer from a
+                # sentence that stops halfway.
+                try:
+                    reason = str(response.candidates[0].finish_reason or "")
+                except Exception:
+                    reason = ""
+                if text and "MAX_TOKENS" in reason:
+                    _answered_by(name)
+                    logger.warning(
+                        "LLM hit max_output_tokens (%d) and the answer is cut off. "
+                        "Returning it flagged rather than silently truncated.",
+                        max_output_tokens,
+                    )
+                    return text.rstrip() + " […answer truncated]"
 
-        except Exception as exc:
-            last = exc
-            status = _status_of(exc)
-
-            if status not in RETRYABLE_STATUS or attempt == MAX_ATTEMPTS:
-                # A 400 is our bug and will fail identically forever — retrying
-                # it burns quota and delays the caller for nothing.
-                logger.warning(
-                    "LLM call failed (%s, status=%s) after %d attempt(s): %s. "
-                    "Deterministic path continues.",
-                    type(exc).__name__, status, attempt, str(exc)[:200],
-                )
+                if text:
+                    _answered_by(name)
+                    return text
+                logger.warning("LLM returned an empty response; treating as unavailable.")
                 return None
 
-            # Jittered backoff so concurrent workers do not retry in lockstep
-            # and re-trigger the same rate limit together.
-            delay = BASE_BACKOFF_S * (2 ** (attempt - 1)) + random.uniform(0, 0.4)
-            logger.info(
-                "LLM transient failure (status=%s), retrying in %.1fs "
-                "(attempt %d/%d).", status, delay, attempt, MAX_ATTEMPTS,
-            )
-            time.sleep(delay)
+            except Exception as exc:
+                last = exc
+                status = _status_of(exc)
+                if status in (429, 503) and i + 1 < len(chain):
+                    logger.info("LLM %s unavailable (status=%s); trying %s.",
+                                name, status, chain[i + 1])
+                    break
+
+                if status not in RETRYABLE_STATUS or attempt == MAX_ATTEMPTS:
+                    # A 400 is our bug and will fail identically forever — retrying
+                    # it burns quota and delays the caller for nothing.
+                    logger.warning(
+                        "LLM call failed (%s, status=%s) after %d attempt(s): %s. "
+                        "Deterministic path continues.",
+                        type(exc).__name__, status, attempt, str(exc)[:200],
+                    )
+                    return None
+
+                # Jittered backoff so concurrent workers do not retry in lockstep
+                # and re-trigger the same rate limit together.
+                delay = BASE_BACKOFF_S * (2 ** (attempt - 1)) + random.uniform(0, 0.4)
+                logger.info(
+                    "LLM transient failure (status=%s), retrying in %.1fs "
+                    "(attempt %d/%d).", status, delay, attempt, MAX_ATTEMPTS,
+                )
+                time.sleep(delay)
 
     logger.warning("LLM exhausted retries: %s", str(last)[:200])
     return None

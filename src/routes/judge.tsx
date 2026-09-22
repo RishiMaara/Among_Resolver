@@ -91,6 +91,7 @@ async function reconcileAndInvestigate(): Promise<Line[]> {
   // 1. The payout, with its member feed declared: it clears, and its audit
   //    receipt is checked against the trail.
   const res = await reconcileSample("gateway");
+  const declared: string[] = res.matched_txn_ids ?? [];
   const out: Line[] = [verdictLine(res.summary ?? {})];
   if (res.plain_summary) out.push({ tone: "muted", text: String(res.plain_summary) });
   if (res.audit_head) {
@@ -110,10 +111,37 @@ async function reconcileAndInvestigate(): Promise<Line[]> {
   });
   const inv = res2.investigation;
   if (inv) {
+    const model: string | undefined = res2.ai?.model;
+    // Every model attempt, so a proposal the checks turned down is seen being
+    // turned down rather than disappearing into the final answer.
+    for (const a of inv.attempts ?? []) {
+      if (a.proposer !== "model") continue;
+      out.push({
+        tone: a.valid ? "good" : "bad",
+        text: `Model (${model ?? "model"}) proposed ${a.action}: ${
+          a.valid ? "passed every check" : `rejected — ${(a.failed ?? []).join("; ")}`
+        }.`,
+      });
+    }
+    const who =
+      inv.proposal.proposer === "model" && model ? `model, ${model}` : inv.proposal.proposer;
     out.push({
-      text: `Investigator (${inv.proposal.proposer}) proposes ${inv.proposal.action}: ${inv.proposal.reason}`,
+      text: `Investigator (${who}) proposes ${inv.proposal.action}: ${inv.proposal.reason}`,
     });
     out.push({ tone: inv.verification.valid ? "good" : "bad", text: inv.verification.plain });
+    const ids: string[] = inv.proposal.txn_ids ?? [];
+    if (
+      inv.proposal.action === "MATCH_PROPOSAL" &&
+      inv.verification.valid &&
+      ids.length > 0 &&
+      ids.length === declared.length &&
+      ids.every((i) => declared.includes(i))
+    ) {
+      out.push({
+        tone: "good",
+        text: `The same ${ids.length} payments the engine cleared when it was told which feed to trust — found here without being told.`,
+      });
+    }
   }
   return out;
 }
@@ -236,7 +264,7 @@ const CHECKS: { title: string; proves: string; endpoint: string; run: () => Prom
   {
     title: "Reconcile a payout; investigate one it will not clear",
     proves:
-      "The sample payout reconciled, and its audit receipt checked against the trail. Then the same payout with its member feed undeclared, which the engine withholds: the investigator proposes a next step, and code checks the proposal before a reviewer would see it.",
+      "The sample payout reconciled, and its audit receipt checked against the trail. Then the same payout with its member feed undeclared, which the engine withholds. The agent reads the withheld case with read-only tools, proposes one of five actions, and code verifies the proposal before a person sees it.",
     endpoint: "POST /reconcile/upload · GET /audit/{batch}/verify",
     run: reconcileAndInvestigate,
   },
@@ -248,18 +276,18 @@ const CHECKS: { title: string; proves: string; endpoint: string; run: () => Prom
     run: razorpayChecks,
   },
   {
-    title: "A bank statement that proves it was read right",
-    proves:
-      "A text PDF statement, parsed and checked: opening + credits − debits = closing, and every line's running balance.",
-    endpoint: "POST /statements/parse",
-    run: statementProof,
-  },
-  {
     title: "A scanned statement, read in your browser",
     proves:
       "An image-only PDF with no text layer. Tesseract.js reads it here in your browser — free, no key, nothing sent anywhere to be read — and the engine uses the reading only if every line's running balance holds.",
     endpoint: "Tesseract.js in the browser · POST /statements/parse",
     run: scannedStatement,
+  },
+  {
+    title: "A bank statement that proves it was read right",
+    proves:
+      "A text PDF statement, parsed and checked: opening + credits − debits = closing, and every line's running balance.",
+    endpoint: "POST /statements/parse",
+    run: statementProof,
   },
   {
     title: "Tax under the law on the payment's date",
@@ -589,6 +617,24 @@ function Judge() {
           Live checks below call the engine at <span className="font-mono">{ENGINE_HOST}</span>.
         </p>
         <AiLine />
+
+        <div className="surface-card mt-5 p-4">
+          <p className="m-0 text-[13.5px] font-semibold">
+            Razorpay's Settlement Recon report names each payout's payments. It cannot check on its
+            own:
+          </p>
+          <ul className="m-0 mt-2 grid list-none gap-1.5 p-0 text-[13px] leading-[1.5] sm:grid-cols-2">
+            <li>• that the bank received the payout — by UTR and amount</li>
+            <li>• that every payment is in your books</li>
+            <li>• that fee, GST, TDS and TCS were right, under the law on each date</li>
+            <li>
+              • what to do when it does not tie — it refuses, and an agent proposes the next step
+            </li>
+          </ul>
+          <p className="m-0 mt-2 text-[12px] text-muted-foreground">
+            That is what this adds. The first three runs below show it, in that order.
+          </p>
+        </div>
 
         <Section title="Run it">
           <div className="grid gap-3">
