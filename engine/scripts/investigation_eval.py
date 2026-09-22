@@ -22,10 +22,11 @@ checks never reaches a reviewer (it is shown as rejected); without it, every
 proposal does. The difference in harmful proposals reaching a reviewer is
 what the verifier is worth.
 
-"model" scores only the cases the model answered. "investigator" is what is
-deployed and the figure to quote: every withheld case, the model's proposal
-where it gave one and the rules' where it did not, as investigate() falls
-back in production.
+"model" scores the model's first answer on the cases it answered.
+"investigator" is what is deployed and the figure to quote: every withheld
+case through investigation_agent.decide — the rules' evidence leader with no
+model call; otherwise the model, told why and asked once more if the
+verifier rejects it; otherwise the rules' safe answer.
 
 THE CASE THE MODEL SEES IS REDACTED
 -----------------------------------
@@ -131,7 +132,7 @@ def main():
             cache = json.load(f)
 
     rule_rows, model_rows, deployed_rows, detail = [], [], [], []
-    calls = 0
+    state = {"calls": 0}
     for sc in scenarios(args.scenarios, args.seed):
         report = reconcile_batch(sc.batch, sc.candidates, subset_config=CFG, settlement_window_days=5)
         if report.match_result.cleared:
@@ -145,33 +146,38 @@ def main():
                "alternatives": len(case["alternatives"]),
                "rules": {"action": rp.action, **rule_rows[-1]}}
         if args.llm:
-            # Keyed by what the model is shown, not only the scenario: when the
-            # case changes (FAILURE_LOG 30 changed what it contains), an answer
-            # to the old case must not be scored against the new one.
-            shown = json.dumps(inv._aliased(case, True)[0], sort_keys=True, default=str)
-            key = f"{sc.scenario_id}:" + hashlib.sha256(
-                (shown + inv._SYSTEM).encode("utf-8")).hexdigest()[:16]
-            if cache.get(key):
-                mp = inv.Proposal(**cache[key])
-            elif args.offline:
-                mp = None
-            else:
-                # A missing or failed answer is asked for again; only answers
-                # are cached, so a rate-limited call does not become "no answer".
-                if calls:
+            # Every model answer is keyed by exactly what the model was shown,
+            # including a retry's rejection reasons, so an answer to one case
+            # is never scored against another.
+            def ask(case, redact_text=True, rejected=None, _sid=sc.scenario_id):
+                prompt, _ = inv.prompt_for(case, redact_text, rejected)
+                key = f"{_sid}:" + hashlib.sha256(
+                    (prompt + inv._SYSTEM).encode("utf-8")).hexdigest()[:16]
+                if cache.get(key):
+                    return inv.Proposal(**cache[key])
+                if args.offline:
+                    return None
+                # Only answers are cached, so a failed call is asked again.
+                if state["calls"]:
                     time.sleep(args.pace)       # stay under a free tier's per-minute limit
-                mp = inv.propose_model(case, redact_text=True)
-                calls += 1
+                mp = inv.propose_model(case, redact_text=redact_text, rejected=rejected)
+                state["calls"] += 1
                 cache[key] = mp.__dict__ if mp else None
-            if mp is not None:
-                mv = inv.verify(mp, case)
-                model_rows.append(judge(mp.__dict__, mv, sc))
-                row["model"] = {"action": mp.action, **model_rows[-1],
+                return mp
+
+            first = ask(case)
+            if first is not None:
+                mv = inv.verify(first, case)
+                model_rows.append(judge(first.__dict__, mv, sc))
+                row["model"] = {"action": first.action, **model_rows[-1],
                                 "failed": mv["failed"][:3]}
-            # As deployed: investigate() falls back to the rules when the model
-            # gives no usable answer, so an unanswered case is scored as the
-            # rules scored it, not dropped.
-            deployed_rows.append(model_rows[-1] if mp is not None else rule_rows[-1])
+            # As deployed (investigation_agent.decide): the rules' evidence
+            # leader with no call, else the model, told why and asked once more
+            # if rejected, else the rules' safe answer.
+            final, fv, attempts = inv.decide(case, use_model=True, redact_text=True, ask=ask)
+            deployed_rows.append(judge(final.__dict__, fv, sc))
+            row["investigator"] = {"action": final.action, "proposer": final.proposer,
+                                   **deployed_rows[-1], "attempts": attempts}
         detail.append(row)
 
     if args.cache and args.llm:
@@ -188,7 +194,10 @@ def main():
         # The figure to quote: every withheld case, the model where it
         # answered and the rules where it did not — what a reviewer receives.
         result["investigator"] = summarise(deployed_rows)
-        result["model_calls_this_run"] = calls
+        result["model_calls_this_run"] = state["calls"]
+        result["investigator_by_kind"] = {
+            kind: summarise([r for r, d in zip(deployed_rows, detail) if d["solvable"] == want])
+            for kind, want in (("solvable", True), ("unsolvable", False))}
         result["model_name"] = inv.llm_provider.DEFAULT_MODEL
     print(json.dumps(result, indent=1))
     if args.json:

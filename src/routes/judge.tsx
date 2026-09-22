@@ -508,7 +508,7 @@ const LIMITS = [
   "Scans are read by OCR in the browser, then Gemini where a key is set. On 24 deliberately noisy scans the browser alone read 11 right; what does not balance is refused, never guessed.",
   "Two corpora are real — public government checkbooks, with the answer recorded by their own systems; the rest are generated. No card or UPI processor publishes settlement data, so none of them is a payment gateway's.",
   "The investigator was measured with reference and memo text removed, because the benchmark's labels live there; reading real narrations is not measured.",
-  "The learned settlement cycle assumes one merchant per deployment.",
+  "The learned settlement cycle is kept per merchant when an upload names one (merchant_id); unnamed uploads share the deployment's single cycle.",
 ];
 
 /** Whether a model answers on this server — said before anything runs. */
@@ -675,10 +675,12 @@ function Judge() {
           <div className="flex flex-wrap gap-2 text-[12.5px]">
             {[
               ["README", `${REPO}/README.md`],
+              ["Every part, and what measured it", `${REPO}/docs/CAPABILITIES.md`],
               ["What went wrong, and what changed", `${REPO}/FAILURE_LOG.md`],
               ["AI evaluation", `${REPO}/docs/AI_EVALUATION.md`],
               ["Linkage", `${REPO}/docs/LINKAGE.md`],
               ["Architecture", `${REPO}/docs/ARCHITECTURE.md`],
+              ["Where it goes next", `${REPO}/docs/ROADMAP.md`],
             ].map(([label, href]) => (
               <a
                 key={label}

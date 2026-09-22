@@ -72,6 +72,7 @@ PARTIES = ("gateway", "bank", "ledger owner", "customer")
 MAX_WRITE_OFF_CENTS = 100
 MAX_WAIT_WORKING_DAYS = 10
 MAX_ALTERNATIVES = 3
+MAX_ANCHORED_ALTERNATIVES = 2
 
 
 @dataclass
@@ -148,6 +149,27 @@ def build_case(batch, candidates: list, report, window_days: int = 5,
     except Exception:  # pragma: no cover - a case must build even if linkage fails
         named = set()
 
+    # Sets that keep every record naming the settlement. An anchor is
+    # evidence, and a set that leaves one out contradicts it — yet the sets
+    # above are whatever the solver reached first, and on the benchmark's 38
+    # solvable withheld cases the true set was among them in only 5. So the
+    # case also lists up to two sets with every anchor forced in.
+    anchored = {txn_key(t) for t in pool if txn_key(t) in named}
+    if anchored and len(pool) <= 800:
+        seen = [set(a) for a in alternatives] + ([set(engine_ids)] if engine_ids else [])
+        forbid = [{txn_key(by_id[i]) for i in a if i in by_id} for a in seen]
+        for _ in range(MAX_ANCHORED_ALTERNATIVES):
+            alt = _solve_cpsat(pool, target, tol, alt_time_limit_s,
+                               forbidden_solutions=[f for f in forbid if f] or None,
+                               forced_ids=anchored, num_search_workers=workers)
+            if alt is None:
+                break
+            ids = sorted(t.source_txn_id for t in alt[0])
+            if set(ids) not in seen:
+                alternatives.insert(0, ids)
+                seen.append(set(ids))
+            forbid.append({txn_key(t) for t in alt[0]})
+
     def describe(ids):
         return [{"id": i, "amount_cents": known[i].amount_cents,
                  "date": known[i].timestamp_utc.date().isoformat(),
@@ -194,26 +216,58 @@ def _public(case: dict) -> dict:
 
 # ── the proposers ─────────────────────────────────────────────────────────
 
+def _best_on_evidence(case: dict) -> tuple[list[str] | None, int, int]:
+    """
+    The one listed set, inside the member feed, carrying strictly the most
+    records that name the settlement — or None when no set leads. Returns
+    (ids, its evidence, how many sets were compared).
+    """
+    feed = case.get("member_feed")
+    listed = [case["engine_proposal"]] + list(case["alternatives"])
+    admissible: dict[frozenset, int] = {}
+    for rows in listed:
+        if rows and all(not feed or r.get("feed", feed) == feed for r in rows):
+            admissible[frozenset(r["id"] for r in rows)] = sum(
+                1 for r in rows if r.get("names_settlement"))
+    if not admissible:
+        return None, 0, 0
+    best = max(admissible.values())
+    top = [ids for ids, n in admissible.items() if n == best]
+    if best == 0 or len(top) != 1:
+        return None, best, len(admissible)
+    return sorted(top[0]), best, len(admissible)
+
+
 def propose_rules(case: dict) -> Proposal:
-    """The fixed-logic baseline."""
+    """
+    The fixed-logic baseline, and the fallback when the model gives no
+    usable answer. It chooses between sets on evidence, never on arithmetic
+    alone: the one set carrying the most records that name the settlement,
+    or an escalation with the sets listed. Proposing the engine's own set
+    whatever its evidence — as this did — put a set that had tied on
+    arithmetic in front of the verifier, which rejected it 53 times in 58.
+    """
     reason = case["withheld_reason"]
     if case["tolerance_cents"] < abs(case["residual_cents"]) <= MAX_WRITE_OFF_CENTS \
             and case["engine_proposal"]:
         return Proposal("WRITE_OFF_ROUNDING", amount_cents=case["residual_cents"],
                         reason=f"Residual of {case['residual_cents']} paise is rounding.")
-    if case["engine_proposal"]:
-        n = len(case["alternatives"])
-        return Proposal("MATCH_PROPOSAL", txn_ids=[r["id"] for r in case["engine_proposal"]],
-                        reason=(f"The engine's own set sums to the target; {n} other set(s) "
-                                f"also do, so a person should confirm."))
+    ids, evidence, compared = _best_on_evidence(case)
+    if ids:
+        return Proposal("MATCH_PROPOSAL", txn_ids=ids,
+                        reason=(f"Of the {compared} listed set(s) that reach the target, only "
+                                f"this one has {evidence} record(s) whose reference names "
+                                f"the settlement."))
     if any(e["reason"] == "timing_lag" for e in case["exceptions"]):
         return Proposal("WAIT_FOR_DATA", until_date=case["next_working_day"],
                         reason="A counterpart looks in transit; re-run after the next working day.")
-    if reason == "unmatched":
+    if reason == "unmatched" or not (case["engine_proposal"] or case["alternatives"]):
         return Proposal("REQUEST_SOURCE", party="gateway",
                         request="the settlement report listing this payout's transactions",
                         reason="Nothing in the pool sums to the payout.")
-    return Proposal("ESCALATE", reason=f"Withheld as {reason}; no rule applies.")
+    return Proposal("ESCALATE", reason=(
+        "Several sets reach the target and none carries more evidence than the rest; "
+        "a person should choose between the sets listed."))
 
 
 _SYSTEM = (
@@ -282,13 +336,34 @@ def _aliased(case: dict, redact_text: bool) -> tuple[dict, dict[str, str]]:
     return pub, {v: k for k, v in alias.items()}
 
 
-def propose_model(case: dict, redact_text: bool = False) -> Proposal | None:
+def prompt_for(case: dict, redact_text: bool = False,
+               rejected: list[str] | None = None) -> tuple[str, dict[str, str]]:
+    """
+    What the model is shown, and the alias map back to real ids. With
+    `rejected`, the verifier's reasons for turning down its first answer are
+    appended — in aliases too, so a retry cannot read a real id off them.
+    """
+    shown, back = _aliased(case, redact_text)
+    prompt = json.dumps(shown, default=str)
+    if rejected:
+        fwd = {v: k for k, v in back.items()}
+        said = "; ".join(rejected)
+        for real, alias in sorted(fwd.items(), key=lambda kv: -len(kv[0])):
+            said = said.replace(real, alias)
+        said = said.replace(case["batch_id"], "SETTLEMENT")
+        prompt += ("\n\nYour previous proposal was rejected by the code that checks it: "
+                   f"{said}. Propose again — a different action if no set is supported "
+                   "by the evidence.")
+    return prompt, back
+
+
+def propose_model(case: dict, redact_text: bool = False,
+                  rejected: list[str] | None = None) -> Proposal | None:
     """The model's proposal, or None when no model is available or it fails."""
     if not llm_provider.is_configured():
         return None
-    shown, back = _aliased(case, redact_text)
-    raw = llm_provider.generate(json.dumps(shown, default=str), system=_SYSTEM,
-                                schema=_SCHEMA, max_output_tokens=1500)
+    prompt, back = prompt_for(case, redact_text, rejected)
+    raw = llm_provider.generate(prompt, system=_SYSTEM, schema=_SCHEMA, max_output_tokens=1500)
     if not raw:
         return None
     try:
@@ -441,15 +516,55 @@ def verify(p: Proposal, case: dict) -> dict:
                       "REJECTED before reaching a reviewer: " + "; ".join(failed) + ".")}
 
 
+def decide(case: dict, use_model: bool = False, redact_text: bool = False,
+           ask=None) -> tuple[Proposal, dict, list[dict]]:
+    """
+    The investigator's loop, bounded: at most two model calls.
+
+      1. The rules first. A set that alone leads on evidence is proposed with
+         no model call — deterministic evidence needs no opinion.
+      2. Otherwise the model proposes, and the verifier checks it.
+      3. Rejected, the model is told why and answers once more.
+      4. Still rejected, the rules' answer stands if it verified, and an
+         escalation with the sets listed if it did not — never a proposal the
+         checks turned down.
+
+    `ask` stands in for propose_model (the evaluation passes a cached one).
+    Returns the proposal used, its verdict, and every attempt on the way.
+    """
+    ask = ask or propose_model
+    rules = propose_rules(case)
+    rules_verdict = verify(rules, case)
+    attempts = [{"proposer": "rules", "action": rules.action, "valid": rules_verdict["valid"]}]
+    if rules.action == "MATCH_PROPOSAL" and rules_verdict["valid"]:
+        return rules, rules_verdict, attempts
+    if use_model:
+        rejected: list[str] | None = None
+        for _ in range(2):
+            proposal = ask(case, redact_text=redact_text, rejected=rejected)
+            if proposal is None:
+                break
+            verdict = verify(proposal, case)
+            attempts.append({"proposer": "model", "action": proposal.action,
+                             "valid": verdict["valid"], "failed": verdict["failed"][:3]})
+            if verdict["valid"]:
+                return proposal, verdict, attempts
+            rejected = verdict["failed"]
+    if rules_verdict["valid"]:
+        return rules, rules_verdict, attempts
+    # Nothing verified — not the rules' pick, not the model's. A proposal the
+    # checks turned down is never the answer; a person is asked instead.
+    escalate = Proposal("ESCALATE", reason=(
+        "No proposed set passed the checks; a person should choose between the "
+        "sets listed."))
+    return escalate, verify(escalate, case), attempts
+
+
 def investigate(batch, candidates: list, report, use_model: bool = False) -> dict | None:
     """Case, proposal and verdict for a settlement that did not clear."""
     if report.match_result.cleared:
         return None
     case = build_case(batch, candidates, report)
-    proposal = None
-    if use_model:
-        proposal = propose_model(case)
-    if proposal is None:
-        proposal = propose_rules(case)
-    verdict = verify(proposal, case)
-    return {"case": _public(case), "proposal": proposal.__dict__, "verification": verdict}
+    proposal, verdict, attempts = decide(case, use_model=use_model)
+    return {"case": _public(case), "proposal": proposal.__dict__, "verification": verdict,
+            "attempts": attempts}

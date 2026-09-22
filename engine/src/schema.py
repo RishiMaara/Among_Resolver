@@ -144,6 +144,13 @@ class SettlementBatch:
     Left as None when unknown, in which case the engine falls back to
     inferring the member feed from whichever records name the settlement.
     """
+    merchant: str = ""
+    """
+    Whose settlement this is, for a deployment serving several merchants.
+    What the engine learns from one merchant's payouts — the processor's
+    settlement cycle — is kept under this key, so it never teaches another's.
+    Empty means the deployment's single merchant.
+    """
 
 
 @dataclass

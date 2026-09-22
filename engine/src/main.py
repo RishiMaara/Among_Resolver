@@ -374,6 +374,9 @@ async def reconcile_upload(
     settled_at: str = Form(...),
     settlement_window_days: int = Form(5),
     member_source: Optional[str] = Form(None),
+    # Whose settlement: keeps what one merchant's payouts teach (the settlement
+    # cycle) from teaching another's. Empty for a single-merchant deployment.
+    merchant_id: str = Form("", max_length=64),
     declared_deductions: Optional[float] = Form(None),
     gateway_fee_bps: Optional[int] = Form(None),
     tax_withholding_bps: Optional[int] = Form(None),
@@ -586,6 +589,7 @@ async def reconcile_upload(
         currency=currency,
         settled_at_utc=_settlement_instant(settled_at),
         member_source=parsed_member_source,
+        merchant=merchant_id,
         # Declared deductions make the gross target a fact rather than a
         # rate-card estimate, so the tolerance band is not being spent
         # absorbing fee drift.
@@ -841,6 +845,9 @@ async def reconcile_queue(
     settlements_file: UploadFile = File(...),
     settlement_window_days: int = Form(5),
     member_source: Optional[str] = Form(None),
+    # Whose settlement: keeps what one merchant's payouts teach (the settlement
+    # cycle) from teaching another's. Empty for a single-merchant deployment.
+    merchant_id: str = Form("", max_length=64),
     gateway_fee_bps: Optional[int] = Form(None),
     tax_withholding_bps: Optional[int] = Form(None),
     flat_fee_cents: Optional[int] = Form(None),
@@ -936,6 +943,7 @@ async def reconcile_queue(
                 currency=str(row.get("currency") or "INR"),
                 settled_at_utc=_settlement_instant(str(row["settled_at"])),
                 member_source=parsed_member_source,
+                merchant=merchant_id,
                 declared_deductions_cents=(
                     normalize_amount_to_cents(row["declared_deductions"])
                     if row.get("declared_deductions") not in (None, "") else None

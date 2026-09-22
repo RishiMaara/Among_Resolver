@@ -613,7 +613,8 @@ def _learned_posteriors(batch: SettlementBatch, pool: list[NormalizedTxn],
 
     import settlement_cycle  # pylint: disable=import-outside-toplevel
     member_feed = (batch.member_source.value if batch.member_source else "gateway")
-    cycle = settlement_cycle.profile(member_feed, batch.currency)
+    cycle = settlement_cycle.profile(member_feed, batch.currency,
+                                     merchant=getattr(batch, "merchant", ""))
     model = linkage_em.fit(list(vectors.values()), expected_members=expected,
                            lag_m=cycle["m"] if cycle else None)
     if model is None:

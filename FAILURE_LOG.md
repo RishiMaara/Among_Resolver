@@ -676,3 +676,27 @@ settlement: ReconRiver's "references stripped" rose from 24% to 95%. A raw
 reference is now used only while it still canonicalises to the stored one,
 and the stripping drops it; every ReconRiver figure then matched its
 committed value exactly.
+
+## 37. The investigator's rules proposed sets bound to lose
+
+Severity: Medium (withheld settlements left with no usable proposal)
+Fails safe: Yes — the verifier stopped them; none reached a reviewer
+
+The rules behind the investigator proposed the engine's own set, the one the
+engine had just withheld, and the verifier stopped nearly all of them: fixed
+rules put 2 right answers of 58 in front of a reviewer. The cases showed why
+the model did little better: the true set was among the listed alternatives
+in only 5 of the 38 solvable ones, so neither could choose it.
+
+Mitigation: a case now lists up to two more alternatives built around the
+records the evidence ties to the settlement. The rules match only a set the
+evidence singles out, wait on a timing gap, ask for the source where nothing
+reaches the target, and otherwise escalate. The model gets one retry, told
+which checks failed in the same aliases it sees; then the rules' answer
+stands if it verifies, or the case is escalated. A rejected proposal never
+reaches a reviewer.
+
+Re-measured: fixed rules 16 right and verified of 58 (was 2), 0 wrong through
+(was 3); the investigator as deployed 22 (was 14), 3 wrong through (was 4).
+Of the 22, 20 are cases missing a member; on the 38 solvable cases it finds
+the exact set twice. The gain is safe escalation, not better matching.

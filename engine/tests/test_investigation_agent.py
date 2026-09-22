@@ -73,8 +73,11 @@ class TestTheCase:
 
 class TestTheVerifier:
     def test_the_true_set_passes(self, withheld):
+        # Arithmetic, pool and currency: a true set never fails those. Whether
+        # its evidence beats the listed rivals is a separate question, tested
+        # below — here one anchor is shared by several sets, so it does not.
         sc, _, case = withheld
-        assert inv.verify(match(sorted(sc.truth_ids)), case)["valid"]
+        assert inv.verify(match(sorted(sc.truth_ids)), dict(case, _sets=[]))["valid"]
 
     def test_an_id_outside_the_pool_is_rejected(self, withheld):
         sc, _, case = withheld
@@ -179,9 +182,20 @@ class TestTheProposers:
         monkeypatch.setattr(llm_provider, "generate", lambda *a, **k: json.dumps(
             {"action": "MATCH_PROPOSAL", "txn_ids": ["INVENTED-9"], "reason": "Looks right."}))
         out = inv.investigate(sc.batch, sc.candidates, report, use_model=True)
-        assert out["proposal"]["proposer"] == "model"
-        assert not out["verification"]["valid"]
-        assert out["verification"]["plain"].startswith("REJECTED")
+        # Rejected twice — the retry is told why — and never shown as advice:
+        # the rules' safe answer stands, and the attempts are on the record.
+        models = [a for a in out["attempts"] if a["proposer"] == "model"]
+        assert len(models) == 2 and not any(a["valid"] for a in models)
+        assert "not in this settlement's pool" in models[0]["failed"][0]
+        assert out["proposal"]["proposer"] == "rules" and out["verification"]["valid"]
+
+    def test_a_retry_is_told_why_in_aliases_only(self, withheld):
+        _, _, case = withheld
+        real = next(iter(case["_pool"]))
+        prompt, back = inv.prompt_for(case, redact_text=True,
+                                      rejected=[f"1 id(s) are not in this pool: {real}"])
+        assert "rejected by the code that checks it" in prompt
+        assert real not in prompt and case["batch_id"] not in prompt
 
     def test_a_malformed_model_answer_falls_back_to_rules(self, withheld, monkeypatch):
         sc, report, _ = withheld

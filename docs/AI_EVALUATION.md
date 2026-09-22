@@ -11,7 +11,7 @@ differences below are noise.
 |---|---|---|---|
 | Reading bank narrations | regex: 88.5% / 82.7% | 97.7% / 97.5% | every value must appear in the narration |
 | Reading scanned statements | browser OCR: 11 of 24 right | 23 of 24 | every line's running balance, and the total |
-| Investigating withheld settlements | rules: 2 of 58 right and verified | 14 of 58 | a verifier: arithmetic, ledger, calendar, evidence, grounding |
+| Investigating withheld settlements | rules: 16 of 58 right and verified | 22 of 58 (2 of the 38 solvable) | a verifier: arithmetic, ledger, calendar, evidence, grounding |
 | Answering questions about a result | — | 44 of 44 | every figure and id must trace to the recorded result |
 | Linkage where references are gone | 24.3% of sets found | 56.8% | the solver: exact sums only, 0 false clears |
 | Confidence calibration | ECE 0.090 out-of-sample | 0.026 | isotonic, and the auto-clear gate never reads it |
@@ -75,7 +75,9 @@ measures reading a statement's table under noise, not every bank's layout.
 ## Investigating withheld settlements — `investigation_agent.py`
 
 For a settlement the engine would not clear, the investigator gathers the
-case: the engine's own set, every record with its feed, up to three other sets that reach the target,
+case: the engine's own set, every record with its feed, up to three other sets that reach the target
+(two more, where they exist, built around the records the evidence ties to
+the settlement),
 exceptions by category, and the next working day. All of these tools are
 read-only and are run for it. It then proposes one typed action: match,
 wait, request a document, write off rounding, or escalate. A verifier checks
@@ -95,20 +97,37 @@ engine withheld: 38 solvable, 20 where a member is missing.
 
 | | rules | investigator |
 |---|---:|---:|
-| right action | 3 | 17 |
-| right, verified, reaching a reviewer | 2 | **14** |
-| wrong match reaching a reviewer, no verifier | 55 | 20 |
-| wrong match reaching a reviewer, with verifier | 3 | **4** |
+| right action | 18 | 22 |
+| right, verified, reaching a reviewer | 16 | **22** |
+| wrong match reaching a reviewer, no verifier | 7 | 3 |
+| wrong match reaching a reviewer, with verifier | 0 | **3** |
 
-The investigator column is what is deployed: the model's proposal where it
-gave one (54 of 58) and the rules' where it did not, as `investigate()` falls
-back in production. These figures replace an earlier 16 right and 11 wrong
-without the verifier, measured on cases that were missing records: the case
-showed only the member feed's part of the engine's proposal, so a set that
-reached into the ledger feed arrived truncated, and one that counted a
-payment in both feeds could not be seen (FAILURE_LOG 30). The rules' "no
-verifier" count rose from 35 to 55 for the same reason — their proposals are
-now shown whole — and the verifier stops all but 3 of them.
+| investigator, by kind | cases | right and verified | wrong match passing |
+|---|---:|---:|---:|
+| solvable (every member present) | 38 | 2 | 3 |
+| a member missing | 20 | 20 | 0 |
+
+The investigator column is what is deployed. The model proposes; a proposal
+the verifier turns down goes back to it once, with the failed checks named in
+the same aliases it already sees, so the retry learns nothing the case did
+not show. If it still has no verified answer, the rules' proposal stands when
+it verifies, and otherwise the case is escalated. A proposal the verifier
+rejected never reaches a reviewer. The model answered 50 of 58 cases in 85
+calls.
+
+Read the by-kind rows before the total. 20 of the 22 are cases with a member
+missing, where the right answer is to wait or ask for the missing record, and
+the investigator gets every one. On the 38 solvable cases it finds the exact
+set twice and mostly escalates: where several sets reach the target and the
+evidence does not separate them, it says so instead of picking one.
+
+The rules changed too (FAILURE_LOG 37). They used to propose the engine's own
+set, which the engine had already withheld, and the verifier stopped almost
+all of them; they now match only a set the evidence singles out and escalate
+otherwise. That moved fixed rules from 2 to 16 right and verified, all 16 on
+cases missing a member, with no wrong match through. The earlier published
+figures, 14 and 4 for the investigator, came before these changes; the ones
+before those were measured on truncated cases (FAILURE_LOG 30).
 
 **What this measures, and what it doesn't.** The model sees ids and the
 settlement's name as opaque aliases, with reference and memo text removed,
@@ -117,8 +136,8 @@ because the benchmark's labels live there. Its members are named
 redaction, read the labels and scored 46.6%; that number is void
 (FAILURE_LOG 26). This measures reasoning over amounts, dates and linkage
 evidence. It cannot measure reading real narrations, which the product also
-gives the model. The 4 wrong matches that pass are sets where noise shares
-the settlement's reference, so the evidence itself points the wrong way. A
+gives the model. The 3 wrong matches that pass are sets the evidence itself favours over the
+true one, which is what the verifier's evidence check allows. A
 verified proposal is still only a proposal: accepting it goes through the
 reviewer decision, where separation of duties applies.
 

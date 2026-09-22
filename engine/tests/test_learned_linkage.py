@@ -219,3 +219,28 @@ class TestItIsVisible:
         reconcile_settlement(batch_for(members), pool, settlement_window_days=15, rate_card=NET)
         lines = [e["detail"] for e in audit.get_audit_trail("SETL-LEARN")]
         assert any(d.startswith("Learned linkage (Fellegi-Sunter") for d in lines)
+
+
+class TestOneCyclePerMerchant:
+    """Two merchants on one deployment: one settles T+1, the other T+3."""
+
+    def _teach(self, merchant, lag_days):
+        from datetime import datetime, timedelta, timezone
+        paid = datetime(2026, 9, 10, 12, tzinfo=timezone.utc)
+        for k in range(3):
+            settlement_cycle.record_clear(f"{merchant or 'solo'}-{k}", "gateway", "INR", paid,
+                                          [paid - timedelta(days=lag_days)] * 5, merchant=merchant)
+
+    def test_one_merchants_payouts_do_not_teach_anothers(self):
+        self._teach("acme-foods", 1)
+        self._teach("bolt-retail", 3)
+        acme = settlement_cycle.profile("gateway", "INR", merchant="acme-foods")["m"]
+        bolt = settlement_cycle.profile("gateway", "INR", merchant="bolt-retail")["m"]
+        assert max(acme, key=acme.get) != max(bolt, key=bolt.get)
+        assert settlement_cycle.profile("gateway", "INR") is None, "nothing leaked to the default"
+
+    def test_a_single_merchant_deployment_keeps_its_history_key(self):
+        self._teach("", 2)
+        assert settlement_cycle.profile("gateway", "INR")["settlements"] == 3
+        assert settlement_cycle._key("gateway", "INR") == "gateway:INR"
+        assert settlement_cycle.merchant_key("  Acme Foods! ") == "acmefoods"

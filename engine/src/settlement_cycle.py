@@ -29,10 +29,11 @@ from the first and applies it to the second, with no history at all.
 
 SCOPE
 -----
-Kept per member feed and currency — a USD processor and an INR one may run
-different cycles. That assumes one merchant per deployment, which is what
-this engine is: a deployment serving several merchants would key the cycle by
-merchant too, or one merchant's payouts would teach another's. SETTLEMENT_CYCLE_STORE=memory keeps it in-process only,
+Kept per merchant, member feed and currency — a USD processor and an INR one
+may run different cycles, and so may two merchants on one processor: one on
+T+1, another on T+2. A settlement names its merchant (SettlementBatch.merchant,
+the upload's merchant_id); without one it belongs to the deployment's single
+merchant, whose history keeps the key it always had. SETTLEMENT_CYCLE_STORE=memory keeps it in-process only,
 which is what the benchmarks use so that one run cannot leak into the next.
 """
 
@@ -62,8 +63,18 @@ _lock = threading.Lock()
 _memory: dict[str, dict] = {}
 
 
-def _key(member_source: str, currency: str) -> str:
-    return f"{(member_source or 'gateway').lower()}:{(currency or '').upper()}"
+def merchant_key(merchant: str) -> str:
+    """A merchant id as stored: letters, digits, '-' and '_', at most 64."""
+    return "".join(ch for ch in (merchant or "").strip().lower()
+                   if ch.isalnum() or ch in "-_")[:64]
+
+
+def _key(member_source: str, currency: str, merchant: str = "") -> str:
+    base = f"{(member_source or 'gateway').lower()}:{(currency or '').upper()}"
+    m = merchant_key(merchant)
+    # The single-merchant key is unchanged, so history learned before
+    # merchants existed is still found.
+    return f"{m}|{base}" if m else base
 
 
 def _memory_only() -> bool:
@@ -154,11 +165,12 @@ def reset() -> None:
 
 
 def record_clear(batch_id: str, member_source: str, currency: str,
-                 settled_at: datetime, member_times: list[datetime]) -> None:
+                 settled_at: datetime, member_times: list[datetime],
+                 merchant: str = "") -> None:
     """Add one cleared settlement's capture-to-payout lags to the histogram."""
     if not member_times or os.environ.get("SETTLEMENT_CYCLE_LEARNING", "1").strip() == "0":
         return
-    key = _key(member_source, currency)
+    key = _key(member_source, currency, merchant)
     lags = Counter(lag_level((settled_at.date() - t.date()).days) for t in member_times)
     with _lock:
         body = _load(key)
@@ -199,7 +211,7 @@ def profile_from(lags: list[int], settlements: int) -> dict | None:
             "settlements": settlements, "members": len(lags)}
 
 
-def profile(member_source: str, currency: str) -> dict | None:
+def profile(member_source: str, currency: str, merchant: str = "") -> dict | None:
     """
     The learned m-probabilities for the lag comparison, or None if too thin.
 
@@ -210,7 +222,7 @@ def profile(member_source: str, currency: str) -> dict | None:
     override = _OVERRIDE.get()
     if override is not None:
         return override
-    body = _load(_key(member_source, currency))
+    body = _load(_key(member_source, currency, merchant))
     if int(body.get("settlements", 0)) < MIN_SETTLEMENTS:
         return None
     counts = body.get("counts") or {}
@@ -231,6 +243,6 @@ def learn_from(batch, candidates: list, matched_ids: list[str]) -> None:
              if t.source == feed and t.source_txn_id in ids]
     try:
         record_clear(batch.batch_id, feed.value, batch.currency,
-                     batch.settled_at_utc, times)
+                     batch.settled_at_utc, times, merchant=getattr(batch, "merchant", ""))
     except Exception as exc:  # pragma: no cover - learning must never fail a run
         logger.warning("Settlement cycle: not recorded (%s)", type(exc).__name__)

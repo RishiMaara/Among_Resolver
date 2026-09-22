@@ -5,33 +5,53 @@
  "solvable_cases": 38,
  "rules": {
   "cases": 58,
-  "right": 3,
-  "right_pct": 5.2,
-  "rejected_by_verifier": 53,
-  "right_and_reaching_reviewer": 2,
-  "harmful_reaching_reviewer_without_verifier": 55,
-  "harmful_reaching_reviewer_with_verifier": 3
+  "right": 18,
+  "right_pct": 31.0,
+  "rejected_by_verifier": 9,
+  "right_and_reaching_reviewer": 16,
+  "harmful_reaching_reviewer_without_verifier": 7,
+  "harmful_reaching_reviewer_with_verifier": 0
  },
  "model": {
-  "cases": 54,
-  "right": 17,
-  "right_pct": 31.5,
-  "rejected_by_verifier": 16,
-  "right_and_reaching_reviewer": 14,
-  "harmful_reaching_reviewer_without_verifier": 16,
-  "harmful_reaching_reviewer_with_verifier": 4
+  "cases": 50,
+  "right": 13,
+  "right_pct": 26.0,
+  "rejected_by_verifier": 18,
+  "right_and_reaching_reviewer": 11,
+  "harmful_reaching_reviewer_without_verifier": 19,
+  "harmful_reaching_reviewer_with_verifier": 3
  },
- "model_answered": 54,
+ "model_answered": 50,
  "investigator": {
   "cases": 58,
-  "right": 17,
-  "right_pct": 29.3,
-  "rejected_by_verifier": 20,
-  "right_and_reaching_reviewer": 14,
-  "harmful_reaching_reviewer_without_verifier": 20,
-  "harmful_reaching_reviewer_with_verifier": 4
+  "right": 22,
+  "right_pct": 37.9,
+  "rejected_by_verifier": 0,
+  "right_and_reaching_reviewer": 22,
+  "harmful_reaching_reviewer_without_verifier": 3,
+  "harmful_reaching_reviewer_with_verifier": 3
  },
- "model_calls_this_run": 0,
+ "model_calls_this_run": 85,
+ "investigator_by_kind": {
+  "solvable": {
+   "cases": 38,
+   "right": 2,
+   "right_pct": 5.3,
+   "rejected_by_verifier": 0,
+   "right_and_reaching_reviewer": 2,
+   "harmful_reaching_reviewer_without_verifier": 3,
+   "harmful_reaching_reviewer_with_verifier": 3
+  },
+  "unsolvable": {
+   "cases": 20,
+   "right": 20,
+   "right_pct": 100.0,
+   "rejected_by_verifier": 0,
+   "right_and_reaching_reviewer": 20,
+   "harmful_reaching_reviewer_without_verifier": 0,
+   "harmful_reaching_reviewer_with_verifier": 0
+  }
+ },
  "model_name": "gemini-flash-latest",
  "cases": [
   {
@@ -57,13 +77,43 @@
     "failed": [
      "3 other set(s) reach the same target and this one has no more evidence than the best of them (0 vs 4 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
     ]
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "MATCH_PROPOSAL",
+      "valid": false
+     },
+     {
+      "proposer": "model",
+      "action": "MATCH_PROPOSAL",
+      "valid": false,
+      "failed": [
+       "3 other set(s) reach the same target and this one has no more evidence than the best of them (0 vs 4 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+      ]
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
    "scenario": "BENCH_0007_out_of_window_sparse",
    "family": "out_of_window",
    "solvable": false,
-   "alternatives": 3,
+   "alternatives": 4,
    "rules": {
     "action": "MATCH_PROPOSAL",
     "right": false,
@@ -80,7 +130,31 @@
     "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false,
     "failed": [
-     "3 other set(s) reach the same target and this one has no more evidence than the best of them (2 vs 4 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+     "4 other set(s) reach the same target and this one has no more evidence than the best of them (2 vs 4 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+    ]
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "rules",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "MATCH_PROPOSAL",
+      "valid": false
+     },
+     {
+      "proposer": "model",
+      "action": "MATCH_PROPOSAL",
+      "valid": false,
+      "failed": [
+       "4 other set(s) reach the same target and this one has no more evidence than the best of them (2 vs 4 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+      ]
+     }
     ]
    }
   },
@@ -90,11 +164,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "MATCH_PROPOSAL",
+    "action": "WAIT_FOR_DATA",
     "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
    },
    "model": {
@@ -105,6 +179,28 @@
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false,
     "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
@@ -113,11 +209,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "MATCH_PROPOSAL",
+    "action": "WAIT_FOR_DATA",
     "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
    },
    "model": {
@@ -130,43 +226,80 @@
     "failed": [
      "3 other set(s) reach the same target and this one has no more evidence than the best of them (0 vs 0 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
     ]
+   },
+   "investigator": {
+    "action": "WAIT_FOR_DATA",
+    "proposer": "rules",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "MATCH_PROPOSAL",
+      "valid": false,
+      "failed": [
+       "3 other set(s) reach the same target and this one has no more evidence than the best of them (0 vs 0 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+      ]
+     }
+    ]
    }
   },
   {
    "scenario": "BENCH_0011_ref_partial_sparse",
    "family": "ref_partial",
    "solvable": true,
-   "alternatives": 3,
+   "alternatives": 5,
    "rules": {
-    "action": "MATCH_PROPOSAL",
+    "action": "WAIT_FOR_DATA",
     "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
    },
-   "model": {
-    "action": "ESCALATE",
+   "investigator": {
+    "action": "WAIT_FOR_DATA",
+    "proposer": "model",
     "right": false,
     "harmful": false,
     "valid": true,
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false,
-    "failed": []
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "WAIT_FOR_DATA",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
    "scenario": "BENCH_0018_missing_leg_medium",
    "family": "missing_leg",
    "solvable": false,
-   "alternatives": 3,
+   "alternatives": 5,
    "rules": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
-    "right_with_verifier": false
+    "action": "ESCALATE",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true
    },
    "model": {
     "action": "ESCALATE",
@@ -176,6 +309,28 @@
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": true,
     "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "ESCALATE",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
@@ -192,14 +347,34 @@
     "right_with_verifier": false
    },
    "model": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
-    "right_with_verifier": false,
-    "failed": [
-     "the set sums to 310568 paise, -30868 from the target, beyond the engine's tolerance of 10"
+    "action": "ESCALATE",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true,
+    "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "MATCH_PROPOSAL",
+      "valid": false
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
     ]
    }
   },
@@ -209,21 +384,53 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
+    "action": "WAIT_FOR_DATA",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false
+   },
+   "model": {
     "action": "MATCH_PROPOSAL",
     "right": false,
     "harmful": true,
     "valid": false,
     "reaches_reviewer_with_verifier": false,
-    "right_with_verifier": false
+    "right_with_verifier": false,
+    "failed": [
+     "3 record(s) are not from the gateway feed, where this settlement's payments are (assumed: no member feed was declared \u2014 declare it and re-run): S20_TRUE_0_MIRROR, S20_TRUE_1_MIRROR, S20_TRUE_2_MIRROR"
+    ]
    },
-   "model": {
+   "investigator": {
     "action": "ESCALATE",
+    "proposer": "model",
     "right": false,
     "harmful": false,
     "valid": true,
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false,
-    "failed": []
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "MATCH_PROPOSAL",
+      "valid": false,
+      "failed": [
+       "3 record(s) are not from the gateway feed, where this settlement's payments are (assumed: no member feed was declared \u2014 declare it and re-run): S20_TRUE_0_MIRROR, S20_TRUE_1_MIRROR, S20_TRUE_2_MIRROR"
+      ]
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
@@ -232,11 +439,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "MATCH_PROPOSAL",
+    "action": "WAIT_FOR_DATA",
     "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
    },
    "model": {
@@ -247,6 +454,28 @@
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false,
     "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
@@ -255,11 +484,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "MATCH_PROPOSAL",
+    "action": "WAIT_FOR_DATA",
     "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
    },
    "model": {
@@ -272,19 +501,43 @@
     "failed": [
      "3 other set(s) reach the same target and this one has no more evidence than the best of them (7 vs 7 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
     ]
+   },
+   "investigator": {
+    "action": "WAIT_FOR_DATA",
+    "proposer": "rules",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "MATCH_PROPOSAL",
+      "valid": false,
+      "failed": [
+       "3 other set(s) reach the same target and this one has no more evidence than the best of them (7 vs 7 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+      ]
+     }
+    ]
    }
   },
   {
    "scenario": "BENCH_0023_ref_partial_medium",
    "family": "ref_partial",
    "solvable": true,
-   "alternatives": 3,
+   "alternatives": 5,
    "rules": {
-    "action": "MATCH_PROPOSAL",
+    "action": "WAIT_FOR_DATA",
     "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
    },
    "model": {
@@ -295,7 +548,37 @@
     "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false,
     "failed": [
-     "3 other set(s) reach the same target and this one has no more evidence than the best of them (0 vs 0 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+     "5 other set(s) reach the same target and this one has no more evidence than the best of them (1 vs 1 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+    ]
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "MATCH_PROPOSAL",
+      "valid": false,
+      "failed": [
+       "5 other set(s) reach the same target and this one has no more evidence than the best of them (1 vs 1 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+      ]
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
     ]
    }
   },
@@ -303,37 +586,69 @@
    "scenario": "BENCH_0030_missing_leg_dense",
    "family": "missing_leg",
    "solvable": false,
-   "alternatives": 3,
+   "alternatives": 5,
    "rules": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
-    "right_with_verifier": false
-   },
-   "model": {
     "action": "ESCALATE",
     "right": true,
     "harmful": false,
     "valid": true,
     "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true
+   },
+   "model": {
+    "action": "MATCH_PROPOSAL",
+    "right": false,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
+    "right_with_verifier": false,
+    "failed": [
+     "5 other set(s) reach the same target and this one has no more evidence than the best of them (2 vs 2 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+    ]
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": true,
-    "failed": []
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "ESCALATE",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "MATCH_PROPOSAL",
+      "valid": false,
+      "failed": [
+       "5 other set(s) reach the same target and this one has no more evidence than the best of them (2 vs 2 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+      ]
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
    "scenario": "BENCH_0031_out_of_window_dense",
    "family": "out_of_window",
    "solvable": false,
-   "alternatives": 3,
+   "alternatives": 5,
    "rules": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
-    "right_with_verifier": false
+    "action": "ESCALATE",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true
    },
    "model": {
     "action": "ESCALATE",
@@ -343,6 +658,28 @@
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": true,
     "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "ESCALATE",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
@@ -351,11 +688,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "MATCH_PROPOSAL",
+    "action": "WAIT_FOR_DATA",
     "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
    },
    "model": {
@@ -366,6 +703,28 @@
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false,
     "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
@@ -374,11 +733,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "MATCH_PROPOSAL",
+    "action": "WAIT_FOR_DATA",
     "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
    },
    "model": {
@@ -389,6 +748,28 @@
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false,
     "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
@@ -400,31 +781,44 @@
     "action": "MATCH_PROPOSAL",
     "right": true,
     "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
-    "right_with_verifier": true
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
+    "right_with_verifier": false
    },
-   "model": {
+   "investigator": {
     "action": "MATCH_PROPOSAL",
+    "proposer": "model",
     "right": true,
     "harmful": false,
     "valid": true,
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": true,
-    "failed": []
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "MATCH_PROPOSAL",
+      "valid": false
+     },
+     {
+      "proposer": "model",
+      "action": "MATCH_PROPOSAL",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
    "scenario": "BENCH_0035_ref_partial_dense",
    "family": "ref_partial",
    "solvable": true,
-   "alternatives": 3,
+   "alternatives": 5,
    "rules": {
-    "action": "MATCH_PROPOSAL",
+    "action": "WAIT_FOR_DATA",
     "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
    },
    "model": {
@@ -435,6 +829,28 @@
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false,
     "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
@@ -443,12 +859,12 @@
    "solvable": false,
    "alternatives": 3,
    "rules": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
-    "right_with_verifier": false
+    "action": "ESCALATE",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true
    },
    "model": {
     "action": "MATCH_PROPOSAL",
@@ -460,30 +876,65 @@
     "failed": [
      "the set sums to 481166 paise, -28023 from the target, beyond the engine's tolerance of 10"
     ]
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "rules",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "ESCALATE",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "MATCH_PROPOSAL",
+      "valid": false,
+      "failed": [
+       "the set sums to 481166 paise, -28023 from the target, beyond the engine's tolerance of 10"
+      ]
+     }
+    ]
    }
   },
   {
    "scenario": "BENCH_0043_out_of_window_sparse",
    "family": "out_of_window",
    "solvable": false,
-   "alternatives": 3,
+   "alternatives": 5,
    "rules": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
-    "right_with_verifier": false
+    "action": "ESCALATE",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true
    },
-   "model": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
-    "right_with_verifier": false,
-    "failed": [
-     "3 other set(s) reach the same target and this one has no more evidence than the best of them (1 vs 3 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "ESCALATE",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
     ]
    }
   },
@@ -493,22 +944,33 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "MATCH_PROPOSAL",
+    "action": "WAIT_FOR_DATA",
     "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
    },
-   "model": {
-    "action": "MATCH_PROPOSAL",
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
     "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false,
-    "failed": [
-     "3 other set(s) reach the same target and this one has no more evidence than the best of them (0 vs 0 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
     ]
    }
   },
@@ -518,11 +980,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "MATCH_PROPOSAL",
+    "action": "WAIT_FOR_DATA",
     "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
    },
    "model": {
@@ -533,6 +995,28 @@
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false,
     "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
@@ -544,8 +1028,8 @@
     "action": "MATCH_PROPOSAL",
     "right": false,
     "harmful": true,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false
    },
    "model": {
@@ -556,30 +1040,72 @@
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false,
     "failed": []
+   },
+   "investigator": {
+    "action": "MATCH_PROPOSAL",
+    "proposer": "model",
+    "right": false,
+    "harmful": true,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "MATCH_PROPOSAL",
+      "valid": false
+     },
+     {
+      "proposer": "model",
+      "action": "MATCH_PROPOSAL",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
    "scenario": "BENCH_0047_ref_partial_sparse",
    "family": "ref_partial",
    "solvable": true,
-   "alternatives": 3,
+   "alternatives": 5,
    "rules": {
-    "action": "MATCH_PROPOSAL",
+    "action": "WAIT_FOR_DATA",
     "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
    },
    "model": {
     "action": "ESCALATE",
     "right": false,
     "harmful": false,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false,
-    "failed": [
-     "the reason cites figures or ids not in the case: 15784543"
+    "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
     ]
    }
   },
@@ -587,14 +1113,14 @@
    "scenario": "BENCH_0054_missing_leg_medium",
    "family": "missing_leg",
    "solvable": false,
-   "alternatives": 3,
+   "alternatives": 5,
    "rules": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
-    "right_with_verifier": false
+    "action": "ESCALATE",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true
    },
    "model": {
     "action": "MATCH_PROPOSAL",
@@ -604,7 +1130,37 @@
     "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false,
     "failed": [
-     "3 other set(s) reach the same target and this one has no more evidence than the best of them (1 vs 4 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+     "5 other set(s) reach the same target and this one has no more evidence than the best of them (4 vs 4 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+    ]
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "ESCALATE",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "MATCH_PROPOSAL",
+      "valid": false,
+      "failed": [
+       "5 other set(s) reach the same target and this one has no more evidence than the best of them (4 vs 4 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+      ]
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
     ]
    }
   },
@@ -631,6 +1187,36 @@
     "failed": [
      "3 other set(s) reach the same target and this one has no more evidence than the best of them (1 vs 4 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
     ]
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "MATCH_PROPOSAL",
+      "valid": false
+     },
+     {
+      "proposer": "model",
+      "action": "MATCH_PROPOSAL",
+      "valid": false,
+      "failed": [
+       "3 other set(s) reach the same target and this one has no more evidence than the best of them (1 vs 4 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+      ]
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
@@ -639,11 +1225,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "MATCH_PROPOSAL",
+    "action": "WAIT_FOR_DATA",
     "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
    },
    "model": {
@@ -654,6 +1240,28 @@
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false,
     "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
@@ -662,11 +1270,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "MATCH_PROPOSAL",
+    "action": "WAIT_FOR_DATA",
     "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
    },
    "model": {
@@ -677,6 +1285,28 @@
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false,
     "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
@@ -688,9 +1318,9 @@
     "action": "MATCH_PROPOSAL",
     "right": true,
     "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
-    "right_with_verifier": true
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
+    "right_with_verifier": false
    },
    "model": {
     "action": "MATCH_PROPOSAL",
@@ -700,11 +1330,278 @@
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": true,
     "failed": []
+   },
+   "investigator": {
+    "action": "MATCH_PROPOSAL",
+    "proposer": "model",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "MATCH_PROPOSAL",
+      "valid": false
+     },
+     {
+      "proposer": "model",
+      "action": "MATCH_PROPOSAL",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
    "scenario": "BENCH_0059_ref_partial_medium",
    "family": "ref_partial",
+   "solvable": true,
+   "alternatives": 5,
+   "rules": {
+    "action": "WAIT_FOR_DATA",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false
+   },
+   "model": {
+    "action": "MATCH_PROPOSAL",
+    "right": false,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
+    "right_with_verifier": false,
+    "failed": [
+     "5 other set(s) reach the same target and this one has no more evidence than the best of them (0 vs 1 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+    ]
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "MATCH_PROPOSAL",
+      "valid": false,
+      "failed": [
+       "5 other set(s) reach the same target and this one has no more evidence than the best of them (0 vs 1 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+      ]
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
+   }
+  },
+  {
+   "scenario": "BENCH_0066_missing_leg_dense",
+   "family": "missing_leg",
+   "solvable": false,
+   "alternatives": 5,
+   "rules": {
+    "action": "ESCALATE",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true
+   },
+   "model": {
+    "action": "ESCALATE",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true,
+    "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "ESCALATE",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
+   }
+  },
+  {
+   "scenario": "BENCH_0067_out_of_window_dense",
+   "family": "out_of_window",
+   "solvable": false,
+   "alternatives": 5,
+   "rules": {
+    "action": "ESCALATE",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true
+   },
+   "model": {
+    "action": "ESCALATE",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true,
+    "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "ESCALATE",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
+   }
+  },
+  {
+   "scenario": "BENCH_0068_ref_missing_dense",
+   "family": "ref_missing",
+   "solvable": true,
+   "alternatives": 3,
+   "rules": {
+    "action": "WAIT_FOR_DATA",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false
+   },
+   "model": {
+    "action": "ESCALATE",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
+   }
+  },
+  {
+   "scenario": "BENCH_0069_ref_truncated_dense",
+   "family": "ref_truncated",
+   "solvable": true,
+   "alternatives": 3,
+   "rules": {
+    "action": "WAIT_FOR_DATA",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false
+   },
+   "model": {
+    "action": "MATCH_PROPOSAL",
+    "right": false,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
+    "right_with_verifier": false,
+    "failed": [
+     "5 record(s) are not from the gateway feed, where this settlement's payments are (assumed: no member feed was declared \u2014 declare it and re-run): S69_TRUE_0_MIRROR, S69_TRUE_1_MIRROR, S69_TRUE_2_MIRROR"
+    ]
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "MATCH_PROPOSAL",
+      "valid": false,
+      "failed": [
+       "5 record(s) are not from the gateway feed, where this settlement's payments are (assumed: no member feed was declared \u2014 declare it and re-run): S69_TRUE_0_MIRROR, S69_TRUE_1_MIRROR, S69_TRUE_2_MIRROR"
+      ]
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
+   }
+  },
+  {
+   "scenario": "BENCH_0070_ref_collision_dense",
+   "family": "ref_collision",
    "solvable": true,
    "alternatives": 3,
    "rules": {
@@ -713,6 +1610,177 @@
     "harmful": true,
     "valid": false,
     "reaches_reviewer_with_verifier": false,
+    "right_with_verifier": false
+   },
+   "model": {
+    "action": "MATCH_PROPOSAL",
+    "right": false,
+    "harmful": true,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "failed": []
+   },
+   "investigator": {
+    "action": "MATCH_PROPOSAL",
+    "proposer": "model",
+    "right": false,
+    "harmful": true,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "MATCH_PROPOSAL",
+      "valid": false
+     },
+     {
+      "proposer": "model",
+      "action": "MATCH_PROPOSAL",
+      "valid": true,
+      "failed": []
+     }
+    ]
+   }
+  },
+  {
+   "scenario": "BENCH_0071_ref_partial_dense",
+   "family": "ref_partial",
+   "solvable": true,
+   "alternatives": 5,
+   "rules": {
+    "action": "WAIT_FOR_DATA",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false
+   },
+   "model": {
+    "action": "ESCALATE",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
+   }
+  },
+  {
+   "scenario": "BENCH_0078_missing_leg_sparse",
+   "family": "missing_leg",
+   "solvable": false,
+   "alternatives": 3,
+   "rules": {
+    "action": "ESCALATE",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "ESCALATE",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
+   }
+  },
+  {
+   "scenario": "BENCH_0079_out_of_window_sparse",
+   "family": "out_of_window",
+   "solvable": false,
+   "alternatives": 3,
+   "rules": {
+    "action": "ESCALATE",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true
+   },
+   "model": {
+    "action": "ESCALATE",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true,
+    "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "ESCALATE",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
+   }
+  },
+  {
+   "scenario": "BENCH_0080_ref_missing_sparse",
+   "family": "ref_missing",
+   "solvable": true,
+   "alternatives": 3,
+   "rules": {
+    "action": "WAIT_FOR_DATA",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
    },
    "model": {
@@ -725,215 +1793,36 @@
     "failed": [
      "3 other set(s) reach the same target and this one has no more evidence than the best of them (0 vs 0 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
     ]
-   }
-  },
-  {
-   "scenario": "BENCH_0066_missing_leg_dense",
-   "family": "missing_leg",
-   "solvable": false,
-   "alternatives": 3,
-   "rules": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
-    "right_with_verifier": false
    },
-   "model": {
+   "investigator": {
     "action": "ESCALATE",
-    "right": true,
+    "proposer": "model",
+    "right": false,
     "harmful": false,
     "valid": true,
     "reaches_reviewer_with_verifier": true,
-    "right_with_verifier": true,
-    "failed": []
-   }
-  },
-  {
-   "scenario": "BENCH_0067_out_of_window_dense",
-   "family": "out_of_window",
-   "solvable": false,
-   "alternatives": 3,
-   "rules": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
-    "right_with_verifier": false
-   },
-   "model": {
-    "action": "ESCALATE",
-    "right": true,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
-    "right_with_verifier": true,
-    "failed": []
-   }
-  },
-  {
-   "scenario": "BENCH_0068_ref_missing_dense",
-   "family": "ref_missing",
-   "solvable": true,
-   "alternatives": 3,
-   "rules": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
-    "right_with_verifier": false
-   },
-   "model": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false,
-    "failed": [
-     "5 record(s) are not from the gateway feed, where this settlement's payments are (assumed: no member feed was declared \u2014 declare it and re-run): S68_TRUE_0_MIRROR, S68_TRUE_1_MIRROR, S68_TRUE_2_MIRROR"
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "MATCH_PROPOSAL",
+      "valid": false,
+      "failed": [
+       "3 other set(s) reach the same target and this one has no more evidence than the best of them (0 vs 0 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+      ]
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
     ]
-   }
-  },
-  {
-   "scenario": "BENCH_0069_ref_truncated_dense",
-   "family": "ref_truncated",
-   "solvable": true,
-   "alternatives": 3,
-   "rules": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
-    "right_with_verifier": false
-   },
-   "model": {
-    "action": "ESCALATE",
-    "right": false,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
-    "right_with_verifier": false,
-    "failed": []
-   }
-  },
-  {
-   "scenario": "BENCH_0070_ref_collision_dense",
-   "family": "ref_collision",
-   "solvable": true,
-   "alternatives": 3,
-   "rules": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
-    "right_with_verifier": false
-   },
-   "model": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
-    "right_with_verifier": false,
-    "failed": []
-   }
-  },
-  {
-   "scenario": "BENCH_0071_ref_partial_dense",
-   "family": "ref_partial",
-   "solvable": true,
-   "alternatives": 3,
-   "rules": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
-    "right_with_verifier": false
-   },
-   "model": {
-    "action": "ESCALATE",
-    "right": false,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
-    "right_with_verifier": false,
-    "failed": []
-   }
-  },
-  {
-   "scenario": "BENCH_0078_missing_leg_sparse",
-   "family": "missing_leg",
-   "solvable": false,
-   "alternatives": 3,
-   "rules": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
-    "right_with_verifier": false
-   },
-   "model": {
-    "action": "ESCALATE",
-    "right": true,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
-    "right_with_verifier": true,
-    "failed": []
-   }
-  },
-  {
-   "scenario": "BENCH_0079_out_of_window_sparse",
-   "family": "out_of_window",
-   "solvable": false,
-   "alternatives": 3,
-   "rules": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
-    "right_with_verifier": false
-   },
-   "model": {
-    "action": "ESCALATE",
-    "right": true,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
-    "right_with_verifier": true,
-    "failed": []
-   }
-  },
-  {
-   "scenario": "BENCH_0080_ref_missing_sparse",
-   "family": "ref_missing",
-   "solvable": true,
-   "alternatives": 3,
-   "rules": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
-    "right_with_verifier": false
-   },
-   "model": {
-    "action": "ESCALATE",
-    "right": false,
-    "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
-    "right_with_verifier": false,
-    "failed": []
    }
   },
   {
@@ -942,11 +1831,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "MATCH_PROPOSAL",
+    "action": "WAIT_FOR_DATA",
     "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
    },
    "model": {
@@ -957,6 +1846,28 @@
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false,
     "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
@@ -965,11 +1876,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "MATCH_PROPOSAL",
-    "right": true,
+    "action": "WAIT_FOR_DATA",
+    "right": false,
     "harmful": false,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
    },
    "model": {
@@ -982,75 +1893,195 @@
     "failed": [
      "3 other set(s) reach the same target and this one has no more evidence than the best of them (5 vs 5 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
     ]
+   },
+   "investigator": {
+    "action": "WAIT_FOR_DATA",
+    "proposer": "rules",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "MATCH_PROPOSAL",
+      "valid": false,
+      "failed": [
+       "3 other set(s) reach the same target and this one has no more evidence than the best of them (5 vs 5 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+      ]
+     }
+    ]
    }
   },
   {
    "scenario": "BENCH_0083_ref_partial_sparse",
    "family": "ref_partial",
    "solvable": true,
-   "alternatives": 3,
+   "alternatives": 5,
    "rules": {
+    "action": "WAIT_FOR_DATA",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false
+   },
+   "model": {
     "action": "MATCH_PROPOSAL",
     "right": false,
     "harmful": true,
     "valid": false,
     "reaches_reviewer_with_verifier": false,
-    "right_with_verifier": false
+    "right_with_verifier": false,
+    "failed": [
+     "5 other set(s) reach the same target and this one has no more evidence than the best of them (1 vs 1 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+    ]
    },
-   "model": {
+   "investigator": {
     "action": "ESCALATE",
+    "proposer": "model",
     "right": false,
     "harmful": false,
     "valid": true,
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false,
-    "failed": []
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "MATCH_PROPOSAL",
+      "valid": false,
+      "failed": [
+       "5 other set(s) reach the same target and this one has no more evidence than the best of them (1 vs 1 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+      ]
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
    "scenario": "BENCH_0090_missing_leg_medium",
    "family": "missing_leg",
    "solvable": false,
-   "alternatives": 3,
+   "alternatives": 5,
    "rules": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
-    "right_with_verifier": false
-   },
-   "model": {
     "action": "ESCALATE",
     "right": true,
     "harmful": false,
     "valid": true,
     "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true
+   },
+   "model": {
+    "action": "MATCH_PROPOSAL",
+    "right": false,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
+    "right_with_verifier": false,
+    "failed": [
+     "5 other set(s) reach the same target and this one has no more evidence than the best of them (4 vs 4 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+    ]
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": true,
-    "failed": []
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "ESCALATE",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "MATCH_PROPOSAL",
+      "valid": false,
+      "failed": [
+       "5 other set(s) reach the same target and this one has no more evidence than the best of them (4 vs 4 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+      ]
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
    "scenario": "BENCH_0091_out_of_window_medium",
    "family": "out_of_window",
    "solvable": false,
-   "alternatives": 3,
+   "alternatives": 5,
    "rules": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
-    "right_with_verifier": false
-   },
-   "model": {
     "action": "ESCALATE",
     "right": true,
     "harmful": false,
     "valid": true,
     "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true
+   },
+   "model": {
+    "action": "MATCH_PROPOSAL",
+    "right": false,
+    "harmful": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
+    "right_with_verifier": false,
+    "failed": [
+     "5 other set(s) reach the same target and this one has no more evidence than the best of them (4 vs 4 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+    ]
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": true,
-    "failed": []
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "ESCALATE",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "MATCH_PROPOSAL",
+      "valid": false,
+      "failed": [
+       "5 other set(s) reach the same target and this one has no more evidence than the best of them (4 vs 4 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+      ]
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
@@ -1059,21 +2090,53 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
+    "action": "WAIT_FOR_DATA",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false
+   },
+   "model": {
     "action": "MATCH_PROPOSAL",
     "right": false,
     "harmful": true,
     "valid": false,
     "reaches_reviewer_with_verifier": false,
-    "right_with_verifier": false
+    "right_with_verifier": false,
+    "failed": [
+     "4 record(s) are not from the gateway feed, where this settlement's payments are (assumed: no member feed was declared \u2014 declare it and re-run): S92_TRUE_0_MIRROR, S92_TRUE_1_MIRROR, S92_TRUE_2_MIRROR"
+    ]
    },
-   "model": {
+   "investigator": {
     "action": "ESCALATE",
+    "proposer": "model",
     "right": false,
     "harmful": false,
     "valid": true,
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false,
-    "failed": []
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "MATCH_PROPOSAL",
+      "valid": false,
+      "failed": [
+       "4 record(s) are not from the gateway feed, where this settlement's payments are (assumed: no member feed was declared \u2014 declare it and re-run): S92_TRUE_0_MIRROR, S92_TRUE_1_MIRROR, S92_TRUE_2_MIRROR"
+      ]
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
@@ -1082,11 +2145,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "MATCH_PROPOSAL",
+    "action": "WAIT_FOR_DATA",
     "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
    },
    "model": {
@@ -1097,19 +2160,41 @@
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false,
     "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
    "scenario": "BENCH_0095_ref_partial_medium",
    "family": "ref_partial",
    "solvable": true,
-   "alternatives": 3,
+   "alternatives": 5,
    "rules": {
-    "action": "MATCH_PROPOSAL",
+    "action": "WAIT_FOR_DATA",
     "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
    },
    "model": {
@@ -1120,20 +2205,42 @@
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false,
     "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
    "scenario": "BENCH_0102_missing_leg_dense",
    "family": "missing_leg",
    "solvable": false,
-   "alternatives": 3,
+   "alternatives": 5,
    "rules": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
-    "right_with_verifier": false
+    "action": "ESCALATE",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true
    },
    "model": {
     "action": "ESCALATE",
@@ -1143,20 +2250,42 @@
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": true,
     "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "ESCALATE",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
    "scenario": "BENCH_0103_out_of_window_dense",
    "family": "out_of_window",
    "solvable": false,
-   "alternatives": 3,
+   "alternatives": 5,
    "rules": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
-    "right_with_verifier": false
+    "action": "ESCALATE",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true
    },
    "model": {
     "action": "ESCALATE",
@@ -1166,6 +2295,28 @@
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": true,
     "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "ESCALATE",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
@@ -1174,11 +2325,11 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "MATCH_PROPOSAL",
+    "action": "WAIT_FOR_DATA",
     "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
    },
    "model": {
@@ -1189,6 +2340,28 @@
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false,
     "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
@@ -1197,12 +2370,34 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "MATCH_PROPOSAL",
+    "action": "WAIT_FOR_DATA",
     "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
@@ -1211,25 +2406,41 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "MATCH_PROPOSAL",
+    "action": "WAIT_FOR_DATA",
     "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
+   },
+   "investigator": {
+    "action": "WAIT_FOR_DATA",
+    "proposer": "rules",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     }
+    ]
    }
   },
   {
    "scenario": "BENCH_0107_ref_partial_dense",
    "family": "ref_partial",
    "solvable": true,
-   "alternatives": 3,
+   "alternatives": 5,
    "rules": {
-    "action": "MATCH_PROPOSAL",
+    "action": "WAIT_FOR_DATA",
     "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
    },
    "model": {
@@ -1240,6 +2451,28 @@
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false,
     "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
@@ -1248,22 +2481,42 @@
    "solvable": false,
    "alternatives": 3,
    "rules": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
-    "right_with_verifier": false
+    "action": "ESCALATE",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true
    },
    "model": {
     "action": "ESCALATE",
     "right": true,
     "harmful": false,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": true,
-    "failed": [
-     "the reason cites figures or ids not in the case: 14237409"
+    "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "ESCALATE",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
     ]
    }
   },
@@ -1273,12 +2526,12 @@
    "solvable": false,
    "alternatives": 3,
    "rules": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
-    "right_with_verifier": false
+    "action": "ESCALATE",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true
    },
    "model": {
     "action": "ESCALATE",
@@ -1288,6 +2541,28 @@
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": true,
     "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "ESCALATE",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
@@ -1296,12 +2571,36 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "MATCH_PROPOSAL",
+    "action": "WAIT_FOR_DATA",
     "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
+   },
+   "investigator": {
+    "action": "WAIT_FOR_DATA",
+    "proposer": "rules",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "MATCH_PROPOSAL",
+      "valid": false,
+      "failed": [
+       "3 other set(s) reach the same target and this one has no more evidence than the best of them (0 vs 0 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+      ]
+     }
+    ]
    }
   },
   {
@@ -1310,12 +2609,43 @@
    "solvable": true,
    "alternatives": 3,
    "rules": {
-    "action": "MATCH_PROPOSAL",
+    "action": "WAIT_FOR_DATA",
     "right": false,
-    "harmful": true,
-    "valid": false,
-    "reaches_reviewer_with_verifier": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
+   },
+   "model": {
+    "action": "ESCALATE",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   },
   {
@@ -1327,29 +2657,6 @@
     "action": "MATCH_PROPOSAL",
     "right": false,
     "harmful": true,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
-    "right_with_verifier": false
-   },
-   "model": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
-    "right_with_verifier": false,
-    "failed": []
-   }
-  },
-  {
-   "scenario": "BENCH_0119_ref_partial_sparse",
-   "family": "ref_partial",
-   "solvable": true,
-   "alternatives": 3,
-   "rules": {
-    "action": "MATCH_PROPOSAL",
-    "right": false,
-    "harmful": true,
     "valid": false,
     "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false
@@ -1362,6 +2669,73 @@
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false,
     "failed": []
+   },
+   "investigator": {
+    "action": "MATCH_PROPOSAL",
+    "proposer": "model",
+    "right": false,
+    "harmful": true,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "MATCH_PROPOSAL",
+      "valid": false
+     },
+     {
+      "proposer": "model",
+      "action": "MATCH_PROPOSAL",
+      "valid": true,
+      "failed": []
+     }
+    ]
+   }
+  },
+  {
+   "scenario": "BENCH_0119_ref_partial_sparse",
+   "family": "ref_partial",
+   "solvable": true,
+   "alternatives": 5,
+   "rules": {
+    "action": "WAIT_FOR_DATA",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false
+   },
+   "model": {
+    "action": "ESCALATE",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "failed": []
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "model",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "attempts": [
+     {
+      "proposer": "rules",
+      "action": "WAIT_FOR_DATA",
+      "valid": true
+     },
+     {
+      "proposer": "model",
+      "action": "ESCALATE",
+      "valid": true,
+      "failed": []
+     }
+    ]
    }
   }
  ]
