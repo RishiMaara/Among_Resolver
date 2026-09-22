@@ -88,6 +88,30 @@ export const MEASURED: Measured[] = [
     },
   },
   {
+    label: "Real government payments, Baton Rouge checkbook (of 50)",
+    before: "2",
+    after: "50",
+    note: "exact invoices behind each payment: amounts only, then with the payee; the answer is the city's own record. 0 wrong clears in either.",
+    source: {
+      file: "public_ledgers.json",
+      beforePath: "ledgers.baton_rouge.amounts_only.exact_set_identified",
+      path: "ledgers.baton_rouge.payee_known.exact_set_identified",
+      digits: 0,
+    },
+  },
+  {
+    label: "Real government payments, Fulton County checkbook (of 50)",
+    before: "0",
+    after: "50",
+    note: "the same test on a second county's ledger, CC BY 4.0. 0 wrong clears in either condition.",
+    source: {
+      file: "public_ledgers.json",
+      beforePath: "ledgers.fulton.amounts_only.exact_set_identified",
+      path: "ledgers.fulton.payee_known.exact_set_identified",
+      digits: 0,
+    },
+  },
+  {
     label: "Scanned statements read exactly right (of 24 noisy scans)",
     before: "11",
     after: "23",

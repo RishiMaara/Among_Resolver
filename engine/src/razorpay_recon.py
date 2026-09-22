@@ -67,7 +67,8 @@ def _blind(txn: NormalizedTxn, item: dict) -> NormalizedTxn:
     order = str(item.get("order_id") or "")
     return replace(txn, ref_id_canonical=(order or txn.source_txn_id).upper().replace("_", ""),
                    timestamp_utc=ts, extra={k: v for k, v in txn.extra.items()
-                                            if k not in ("settlement_id", "settlement_utr")})
+                                            if k not in ("settlement_id", "settlement_utr",
+                                                         "ref_raw")})
 
 
 def _lags(settlement: dict, items: list[dict]) -> list[int]:
@@ -210,6 +211,14 @@ def reconcile(settlements: list[dict], recon: list[dict],
                       + ("." if tie["ties_out"] else
                          f" — off by ₹{tie['residual_paise'] / 100:,.2f}.")),
             **tie}}
+        if s.get("_derived"):
+            # No settlements list: the amount IS the lines' sum, so a tie-out
+            # would be a check of the report against itself.
+            checks["tie_out"] = {
+                **tie, "verdict": "derived",
+                "plain": ("No settlements list was given, so this payout's amount is the "
+                          "sum of its own lines in the report; they tie out by construction. "
+                          "The bank credit is the independent check.")}
         if blind and members:
             others = [o for o in settlements if o is not s and rz.members_of(str(o.get("id") or ""), recon)]
             checks["blind_solve"] = blind_check(s, recon, others=others)
@@ -227,8 +236,10 @@ def reconcile(settlements: list[dict], recon: list[dict],
         }
 
         bad = {"does_not_tie_out", "disagrees", "amount_differs", "not_found"}
-        soft = {"missing_in_books", "amount_only", "findings"}
+        soft = {"missing_in_books", "amount_only", "findings", "derived"}
         verdicts = {k: v["verdict"] for k, v in checks.items()}
+        if verdicts.get("tie_out") == "derived" and verdicts.get("bank") == "arrived":
+            verdicts.pop("tie_out")      # the bank credit proved the amount instead
         if not members:
             status = "no_lines"
         elif any(v in bad for v in verdicts.values()):

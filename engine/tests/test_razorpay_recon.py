@@ -209,3 +209,64 @@ class TestTheProfileOverride:
         with settlement_cycle.using(prof):
             assert settlement_cycle.profile("gateway", "INR") is prof
         assert settlement_cycle.profile("gateway", "INR") is None
+
+
+def upload_report(files):
+    from fastapi.testclient import TestClient
+    import main
+    return TestClient(main.app).post("/razorpay/reconcile/upload", files=files).json()
+
+
+class TestTheDashboardReport:
+    """
+    A merchant reconciles the report they download, with no keys and no one
+    else's help. It must reach what the API path reaches, and say how it read
+    the file.
+    """
+
+    def test_the_report_is_read_as_the_api_sends_it(self):
+        items, note = rz.report_items((SAMPLE / "settlement_report.csv").read_bytes())
+        api = load("recon_combined.json")["items"]
+        assert "rupees" in note and len(items) == len(api)
+        for got, want in zip(items, api):
+            assert (got["entity_id"], got["credit"], got["debit"], got["settled_at"]) == \
+                (want["entity_id"], want["credit"], want["debit"], want["settled_at"])
+
+    def test_the_report_alone_with_the_bank_reaches_the_api_verdicts(self, sample_result):
+        body = upload_report({
+            "recon_file": ("settlement_report.csv", (SAMPLE / "settlement_report.csv").read_bytes(), "text/csv"),
+            "bank_file": ("bank_statement.csv", (SAMPLE / "bank_statement.csv").read_bytes(), "text/csv"),
+            "ledger_file": ("ledger.json", (SAMPLE / "ledger.json").read_bytes(), "application/json"),
+        })
+        assert body["read"]["recon"].startswith("dashboard report")
+        assert {r["settlement_id"]: r["status"] for r in body["results"]} == \
+            {r["settlement_id"]: r["status"] for r in sample_result["results"]}
+        assert all(r["checks"]["tie_out"]["verdict"] == "derived" for r in body["results"])
+
+    def test_without_a_bank_statement_nothing_is_verified_by_its_own_sum(self):
+        body = upload_report({
+            "recon_file": ("settlement_report.csv", (SAMPLE / "settlement_report.csv").read_bytes(), "text/csv")})
+        assert body["tally"]["verified"] == 0
+        assert "by construction" in body["results"][0]["checks"]["tie_out"]["plain"]
+
+    def test_a_report_read_in_the_wrong_unit_is_caught_by_the_bank(self):
+        # Whole-rupee amounts with no decimals read as paise: 100x too small.
+        text = (SAMPLE / "settlement_report.csv").read_text(encoding="utf-8")
+        whole = "\n".join(",".join(c.split(".")[0] if c.replace(".", "", 1).isdigit() else c
+                                   for c in line.split(",")) for line in text.splitlines())
+        body = upload_report({
+            "recon_file": ("r.csv", whole.encode(), "text/csv"),
+            "bank_file": ("bank_statement.csv", (SAMPLE / "bank_statement.csv").read_bytes(), "text/csv")})
+        assert "paise" in body["read"]["units"]
+        assert body["tally"]["verified"] == 0 and body["tally"]["not_verified"] > 0
+
+    def test_documented_units_hold_in_the_api_sample(self):
+        # Razorpay documents recon amounts as integer subunits and times as
+        # Unix seconds; the sample the checks are built on keeps to that.
+        for i in load("recon_combined.json")["items"]:
+            assert all(isinstance(i[f], int) for f in ("debit", "credit", "amount", "fee", "tax"))
+            # A line on hold has not settled, so it has no settlement time yet.
+            if i["settled"]:
+                assert isinstance(i["settled_at"], int) and i["settled_at"] > 1_600_000_000
+            else:
+                assert i["settled_at"] is None and not i["settlement_id"]

@@ -172,6 +172,6 @@ describe("the judge page", () => {
 
   it("names its limits", () => {
     render(<Judge />);
-    expect(screen.getByText(/Not yet run against a live Razorpay account/)).toBeTruthy();
+    expect(screen.getByText(/Not run on a live Razorpay account/)).toBeTruthy();
   });
 });

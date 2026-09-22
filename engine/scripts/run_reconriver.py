@@ -217,6 +217,9 @@ def _strip_settlement_ref(txns: list[NormalizedTxn], batch_ids: set[str]) -> Non
         for tok in tokens:
             ref = ref.replace(tok, "")
         t.ref_id_canonical = ref
+        # The raw copy still names the settlement; linkage ignores a raw
+        # reference that no longer matches, but a stripped one is stripped.
+        (t.extra or {}).pop("ref_raw", None)
 
 
 def build_pool(scenario: str, strip_anchor: bool) -> list[NormalizedTxn]:

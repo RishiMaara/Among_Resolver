@@ -106,7 +106,7 @@ describe("Razorpay payouts", () => {
   it("checks the sample payouts and says which could not be verified", async () => {
     vi.stubGlobal("fetch", engine({ "razorpay/reconcile/upload": RAZORPAY, "open-items": OPEN }));
     render(<Payouts />);
-    await userEvent.click(screen.getByRole("button", { name: /Use the sample payouts/ }));
+    await userEvent.click(screen.getByRole("button", { name: /Sample: API responses/ }));
     expect(await screen.findByText(/2 payout\(s\): 1 verified/)).toBeInTheDocument();
     expect(screen.getByText("Not verified")).toBeInTheDocument();
     // A check's finding is readable, not only its colour.
@@ -115,19 +115,47 @@ describe("Razorpay payouts", () => {
     expect(screen.getByText("2 line(s) name no settlement yet.")).toBeInTheDocument();
   });
 
-  it("will not send a run without both Razorpay files", async () => {
+  it("reconciles the dashboard report with no settlements list, and says how it read it", async () => {
+    let sent: FormData | undefined;
+    const run = {
+      ...RAZORPAY,
+      read: {
+        recon: "dashboard report (CSV)",
+        units: "Amounts read as rupees (they carry decimals) and converted to paise.",
+        settlements: "derived from the report's own lines",
+      },
+    };
+    const base = engine({ "open-items": OPEN });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (String(url).includes("razorpay/reconcile/upload")) {
+          sent = init?.body as FormData;
+          return { ok: true, status: 200, json: async () => run } as Response;
+        }
+        return base(url);
+      }),
+    );
+    render(<Payouts />);
+    await userEvent.click(screen.getByRole("button", { name: /Sample: dashboard report/ }));
+    expect(await screen.findByText(/Read as a dashboard report \(CSV\)/)).toBeInTheDocument();
+    expect(sent?.get("settlements_file")).toBeNull();
+    expect((sent?.get("recon_file") as File).name).toBe("settlement_report.csv");
+  });
+
+  it("will not send a run without the recon report", async () => {
     const fetchMock = engine({ "open-items": OPEN });
     vi.stubGlobal("fetch", fetchMock);
     render(<Payouts />);
     await userEvent.click(screen.getByRole("button", { name: /Check these payouts/ }));
-    expect(screen.getByText(/Both Razorpay files are needed/)).toBeInTheDocument();
+    expect(screen.getByText(/The recon report is needed/)).toBeInTheDocument();
     expect(fetchMock.mock.calls.some(([u]) => String(u).includes("razorpay/"))).toBe(false);
   });
 
   it("shows an engine failure as a failure", async () => {
     vi.stubGlobal("fetch", engine({ "open-items": OPEN }, ["razorpay/reconcile/upload"]));
     render(<Payouts />);
-    await userEvent.click(screen.getByRole("button", { name: /Use the sample payouts/ }));
+    await userEvent.click(screen.getByRole("button", { name: /Sample: dashboard report/ }));
     expect(await screen.findByText("The engine is asleep.")).toBeInTheDocument();
   });
 });

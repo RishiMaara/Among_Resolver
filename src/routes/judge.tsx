@@ -504,9 +504,9 @@ const AI_USES: { use: string; model: string; check: string }[] = [
 ];
 
 const LIMITS = [
-  "Not yet run against a live Razorpay account — the path is built to Razorpay's published contract and needs a merchant's test keys.",
+  "Not run on a live Razorpay account: test mode makes no settlements, so the API path is built to Razorpay's published contract. A merchant can check their own payouts from the Settlement Recon report they download — no keys, nothing shared.",
   "Scans are read by OCR in the browser, then Gemini where a key is set. On 24 deliberately noisy scans the browser alone read 11 right; what does not balance is refused, never guessed.",
-  "Every accuracy corpus is synthetic — ours or ReconRiver's. The figures say what the engine does on them, not on your data.",
+  "Two corpora are real — public government checkbooks, with the answer recorded by their own systems; the rest are generated. No card or UPI processor publishes settlement data, so none of them is a payment gateway's.",
   "The investigator was measured with reference and memo text removed, because the benchmark's labels live there; reading real narrations is not measured.",
   "The learned settlement cycle assumes one merchant per deployment.",
 ];

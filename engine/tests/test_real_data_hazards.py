@@ -587,3 +587,45 @@ class TestSettlementAnchorIgnoresServerTimezone:
         if hasattr(time, "tzset"):
             time.tzset()
         assert _settlement_instant("2026-03-03") == before
+
+
+class TestAnIdReadAtItsSeparators:
+    """
+    Found on a public checkbook: a payee code ending in a digit, glued to a
+    numeric invoice number, lost its boundary when the reference was
+    canonicalised — and the engine withheld every such payment. The source's
+    own separator says where the id ends; sequential ids stay apart.
+    """
+
+    def test_a_code_ending_in_a_digit_is_read_at_its_separator(self):
+        from linkage import _names_by_its_separators
+        assert _names_by_its_separators("VNDE960709B38-4277809164", "VNDE960709B38")
+
+    def test_a_shorter_sequential_id_is_still_not_named(self):
+        from linkage import _names_by_its_separators
+        assert not _names_by_its_separators("SETTLE-10-ORD001", "SETTLE1")
+        assert _names_by_its_separators("SETTLE-1-ORD001", "SETTLE1")
+
+    def test_ingestion_keeps_the_reference_as_written(self):
+        from ingestion import normalize_record
+        from schema import SourceType
+        t = normalize_record({"txn_id": "T1", "ref_id": "VNDE960709B38-4277809164",
+                              "amount": "10.00", "currency": "USD",
+                              "timestamp": "2026-08-13T00:00:00Z"}, SourceType.ERP)
+        assert t.extra["ref_raw"] == "VNDE960709B38-4277809164"
+        assert t.ref_id_canonical == "VNDE960709B384277809164"
+
+    def test_a_rewritten_reference_is_not_read_from_its_stale_raw_copy(self):
+        # FAILURE_LOG 36: a benchmark stripped the settlement id from the
+        # canonical reference and the raw copy still carried it.
+        from datetime import datetime, timezone
+        from linkage import _canonical_anchor_hits
+        from schema import NormalizedTxn, SettlementBatch, SourceType, TzConfidence
+        when = datetime(2026, 8, 13, tzinfo=timezone.utc)
+        t = NormalizedTxn(source=SourceType.ERP, source_txn_id="T1",
+                          ref_id_canonical="ORDER0001", amount_cents=100, currency="INR",
+                          timestamp_utc=when, tz_confidence=TzConfidence.HIGH,
+                          extra={"ref_raw": "SETTLE-2026-0042-ORDER-0001"})
+        batch = SettlementBatch(batch_id="SETTLE-2026-0042", net_amount_cents=100,
+                                currency="INR", settled_at_utc=when)
+        assert _canonical_anchor_hits(batch, [t]) == set()

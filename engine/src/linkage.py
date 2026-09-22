@@ -257,6 +257,53 @@ def _contains_identifier(haystack: str, needle: str) -> bool:
     return False
 
 
+_SEPARATED = re.compile(r"[0-9A-Za-z]+")
+
+
+def _raw_ref(t: NormalizedTxn) -> str:
+    """
+    The reference as the source wrote it — only while it is still the same
+    reference. Code that rewrites ref_id_canonical (a benchmark stripping the
+    settlement id, the blind re-solve swapping in the order id) leaves a raw
+    copy that still names what was removed, and the first run of this check
+    read it: ReconRiver's "references stripped" condition rose from 24% to
+    95%, because nothing had been stripped from the copy. A raw reference
+    that no longer canonicalises to the canonical one is ignored.
+    """
+    raw = str((t.extra or {}).get("ref_raw") or "")
+    same = re.sub(r"[^A-Za-z0-9]", "", raw).upper() == (t.ref_id_canonical or "").upper()
+    return raw if raw and same else ""
+
+
+def _names_by_its_separators(raw_ref: str, canon: str) -> bool:
+    """
+    Does the reference, as the source wrote it, name the id as whole pieces?
+
+    The canonical form strips separators, so "VNDE960709B38-4277809164"
+    becomes one run in which a payee code ending in a digit runs straight
+    into a numeric invoice number — and _contains_identifier, rightly,
+    refuses an id followed by more digits. The separator the source system
+    wrote says where the id ends. Measured on a public checkbook: with the
+    payee readable the engine found every single-payment vendor's invoices
+    exactly; with it glued to a numeric invoice number, 15 of 51.
+
+    Whole pieces only: "SETTLE-10-ORD" does not name "SETTLE-1", because no
+    run of its pieces joins to exactly SETTLE1.
+    """
+    if not raw_ref:
+        return False
+    parts = [p.upper() for p in _SEPARATED.findall(raw_ref)]
+    for i in range(len(parts)):
+        joined = ""
+        for part in parts[i:]:
+            joined += part
+            if joined == canon:
+                return True
+            if len(joined) >= len(canon):
+                break
+    return False
+
+
 def _canonical_anchor_hits(batch: SettlementBatch, pool: list[NormalizedTxn]) -> set[str]:
     """
     Transactions whose reference contains the settlement id as a whole
@@ -288,6 +335,7 @@ def _canonical_anchor_hits(batch: SettlementBatch, pool: list[NormalizedTxn]) ->
     return {
         txn_key(t) for t in pool
         if _contains_identifier(canonical_key(t.ref_id_canonical), canon)
+        or _names_by_its_separators(_raw_ref(t), canon)
     }
 
 

@@ -648,3 +648,31 @@ rows" on all eight in the evaluation, with the text itself read correctly.
 Mitigation: a marker may follow the amount. The sign still comes from the
 running balance, as it did; the marker is only skipped. Browser OCR then read
 3 of the 8 right, and the rest were real misreads, refused.
+
+---
+
+## 36. A payee code glued to an invoice number lost its anchor
+
+Severity: Medium (real payments withheld that the evidence identified)
+Fails safe: Yes — every one was withheld; none was cleared wrong
+
+Found by the first benchmark on real data (two public government
+checkbooks). Ingestion stores a reference with its separators stripped, so
+"VNDE960709B38-4277809164" became one run in which a payee code ending in a
+digit runs straight into a numeric invoice number. The anchor rule rightly
+refuses an id followed by more digits — that is what keeps SETTLE-1 from
+anchoring SETTLE-10 — so the payee never anchored. With the payee readable
+the engine found every single-payment vendor's invoices exactly (39 of 39);
+glued to a numeric invoice number, 15 of 51.
+
+Mitigation: ingestion keeps the reference as written (extra["ref_raw"]), and
+an id also anchors where it equals whole separator-delimited pieces of it;
+SETTLE-1 still does not anchor SETTLE-10-ORD. Re-measured: 100 of 100 exact
+with the payee known, 0 wrong clears.
+
+The first run of the fix leaked. Benchmarks that strip the settlement id
+rewrote the canonical reference and left the raw copy, which still named the
+settlement: ReconRiver's "references stripped" rose from 24% to 95%. A raw
+reference is now used only while it still canonicalises to the stored one,
+and the stripping drops it; every ReconRiver figure then matched its
+committed value exactly.

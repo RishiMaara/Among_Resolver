@@ -451,6 +451,11 @@ def normalize_record(raw: dict, source: SourceType) -> NormalizedTxn:
         "payer_id", "payee_id", "is_cash", "is_wire_transfer",
     }
     extra: dict = {k: v for k, v in raw.items() if k not in known_keys}
+    # The reference as the source wrote it, separators and all. The canonical
+    # form drops them, and with them the boundary between "VND-B38" and
+    # "4277809164" that linkage needs to see a payee code as a whole id.
+    if raw_ref:
+        extra["ref_raw"] = raw_ref
     if ref_truncated:
         extra["ref_truncated"] = True
         extra["ref_canonical_len"] = len(ref_canonical)

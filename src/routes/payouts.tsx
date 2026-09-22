@@ -45,6 +45,7 @@ interface RazorpayRun {
   tally: { verified?: number; verified_with_findings?: number; not_verified?: number };
   results: PayoutResult[];
   unsettled_lines?: { count: number; value_cents: number; plain: string };
+  read?: { recon: string; units: string; settlements: string };
 }
 
 const STATUS: Record<PayoutResult["status"], { label: string; tone: string }> = {
@@ -189,8 +190,10 @@ function RazorpaySection() {
   const [run, setRun] = useState<RazorpayRun | null>(null);
 
   const reconcile = async (use: Files) => {
-    if (!use.settlements_file || !use.recon_file) {
-      setError("Both Razorpay files are needed: the settlements list and the recon report.");
+    if (!use.recon_file) {
+      setError(
+        "The recon report is needed: the Settlement Recon report from the Razorpay Dashboard, or the API's JSON.",
+      );
       return;
     }
     setBusy(true);
@@ -209,11 +212,15 @@ function RazorpaySection() {
     }
   };
 
-  const loadSample = async () => {
+  // The dashboard report is what a merchant can download themselves, with no
+  // keys and nothing shared; the API responses are what a live account returns.
+  const loadSample = async (kind: "report" | "api") => {
     try {
       const sample = {
-        settlements_file: await sampleFile("settlements.json"),
-        recon_file: await sampleFile("recon_combined.json"),
+        settlements_file: kind === "api" ? await sampleFile("settlements.json") : null,
+        recon_file: await sampleFile(
+          kind === "api" ? "recon_combined.json" : "settlement_report.csv",
+        ),
         bank_file: await sampleFile("bank_statement.csv"),
         ledger_file: await sampleFile("ledger.json"),
       };
@@ -225,8 +232,12 @@ function RazorpaySection() {
   };
 
   const inputs: [FileKey, string, string][] = [
-    ["settlements_file", "Settlements", "JSON from GET /v1/settlements"],
-    ["recon_file", "Recon report", "JSON from GET /v1/settlements/recon/combined"],
+    [
+      "recon_file",
+      "Recon report",
+      "Settlement Recon report from the Dashboard (CSV), or the API's JSON",
+    ],
+    ["settlements_file", "Settlements", "optional — JSON from GET /v1/settlements"],
     ["bank_file", "Bank statement", "optional — CSV, MT940, CAMT.053, OFX or PDF"],
     ["ledger_file", "Ledger", "optional — your books, any format the main upload reads"],
   ];
@@ -239,7 +250,9 @@ function RazorpaySection() {
         the lines sum to the payout to the paisa; that solving blind, without the settlement ids,
         reaches the same set; that the bank credit carries the UTR and the exact amount; that every
         order is in your books; and that fees, GST, TDS and TCS are right for their dates. Read-only
-        — the engine never writes to Razorpay.
+        — the engine never writes to Razorpay. No API keys needed: the Settlement Recon report you
+        download from the Razorpay Dashboard is enough, and on a self-hosted engine it never leaves
+        your machine.
       </p>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -272,11 +285,19 @@ function RazorpaySection() {
         </button>
         <button
           type="button"
-          onClick={() => void loadSample()}
+          onClick={() => void loadSample("report")}
           disabled={busy}
           className="rounded-md border border-border px-3 py-1.5 text-[13px] hover:bg-muted disabled:opacity-60"
         >
-          Use the sample payouts
+          Sample: dashboard report
+        </button>
+        <button
+          type="button"
+          onClick={() => void loadSample("api")}
+          disabled={busy}
+          className="rounded-md border border-border px-3 py-1.5 text-[13px] hover:bg-muted disabled:opacity-60"
+        >
+          Sample: API responses
         </button>
       </div>
 
@@ -309,6 +330,11 @@ function RazorpaySection() {
           </div>
           {run.unsettled_lines?.plain && (
             <p className="mt-3 text-xs text-muted-foreground">{run.unsettled_lines.plain}</p>
+          )}
+          {run.read && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Read as a {run.read.recon}. {run.read.units} Payout amounts {run.read.settlements}.
+            </p>
           )}
         </div>
       )}

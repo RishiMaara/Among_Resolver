@@ -312,3 +312,96 @@ def verify_tie_out(settlement: dict, recon_items: list[dict]) -> dict:
         "residual_paise": net - declared,
         "ties_out": net == declared,
     }
+
+
+# ── the dashboard report ──────────────────────────────────────────────────
+#
+# A merchant can download the Settlement Recon report from the Razorpay
+# Dashboard (Reports) and reconcile it here without API keys or sharing
+# anything with anyone: the report carries the same fields the recon API
+# returns. What the API documents precisely — integer subunits, Unix seconds
+# — a download may print as rupees and dates, and Razorpay does not document
+# the download's format. So units and dates are read from the file itself,
+# the reading is stated in the result, and the bank credit (UTR and amount)
+# checks it independently: a report read in the wrong unit is off from its
+# bank credit by a factor of 100, and says so.
+
+_MONEY = ("debit", "credit", "amount", "fee", "tax")
+_TIMES = ("created_at", "settled_at", "posted_at")
+
+
+def _header(h: str) -> str:
+    return "_".join("".join(ch.lower() if ch.isalnum() else " " for ch in h).split())
+
+
+def report_items(content: bytes) -> tuple[list[dict], str]:
+    """Rows of a Settlement Recon report (CSV) as API-shaped items, and how they were read."""
+    import csv  # pylint: disable=import-outside-toplevel
+    import io  # pylint: disable=import-outside-toplevel
+    from decimal import Decimal, InvalidOperation  # pylint: disable=import-outside-toplevel
+    from dateutil import parser as dateparser  # pylint: disable=import-outside-toplevel
+    from zoneinfo import ZoneInfo  # pylint: disable=import-outside-toplevel
+
+    rows = [{_header(k): (v or "").strip() for k, v in r.items() if k}
+            for r in csv.DictReader(io.StringIO(content.decode("utf-8-sig", errors="replace")))]
+    rows = [r for r in rows if r.get("entity_id")]
+    if not rows:
+        raise ValueError("no rows with an entity_id — not a Settlement Recon report")
+    rupees = any("." in r.get(f, "") for r in rows for f in _MONEY)
+    ist = ZoneInfo("Asia/Kolkata")
+
+    def money(v: str) -> int:
+        v = v.replace(",", "").replace("₹", "").strip()
+        if not v:
+            return 0
+        try:
+            d = Decimal(v)
+        except InvalidOperation:
+            raise ValueError(f"cannot read the amount {v!r}") from None
+        return int(d * 100) if rupees else int(d)
+
+    def when(v: str) -> int | None:
+        if not v:
+            return None
+        if v.isdigit():
+            return int(v)
+        dt = dateparser.parse(v, dayfirst=True)
+        return int((dt if dt.tzinfo else dt.replace(tzinfo=ist)).timestamp())
+
+    items = []
+    for r in rows:
+        item = dict(r)
+        for f in _MONEY:
+            item[f] = money(r.get(f, ""))
+        for f in _TIMES:
+            item[f] = when(r.get(f, ""))
+        for f in ("settled", "on_hold"):
+            item[f] = r.get(f, "").lower() in ("true", "1", "yes")
+        items.append(item)
+    note = ("Amounts read as rupees (they carry decimals) and converted to paise."
+            if rupees else
+            "Amounts read as paise (whole numbers, as the API sends them).")
+    note += " Dates without a zone read as IST."
+    return items, note
+
+
+def settlements_from_report(items: list[dict]) -> list[dict]:
+    """
+    The payouts a report's lines belong to, when no settlements list was given.
+
+    Their amounts are the lines' own sum, so they tie out by construction and
+    are marked _derived: the bank credit is then the only independent check.
+    """
+    groups: dict[str, list[dict]] = {}
+    for i in items:
+        sid = str(i.get("settlement_id") or "").strip()
+        if sid:
+            groups.setdefault(sid, []).append(i)
+    out = []
+    for sid, lines in sorted(groups.items()):
+        out.append({"id": sid, "entity": "settlement", "_derived": True,
+                    "amount": sum(int(i.get("credit") or 0) - int(i.get("debit") or 0) for i in lines),
+                    "utr": next((i.get("settlement_utr") for i in lines if i.get("settlement_utr")), ""),
+                    "created_at": max((i.get("settled_at") or 0) for i in lines),
+                    "currency": lines[0].get("currency") or "INR"})
+    return out

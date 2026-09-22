@@ -151,5 +151,42 @@ def main() -> None:
           f"{len(bank)} bank rows, {len(ledger)} ledger entries -> {os.path.abspath(OUT)}")
 
 
+def dashboard_report() -> None:
+    """
+    The same recon lines as a merchant would download them from the Dashboard:
+    title-case headers, rupees with decimals, IST dates as printed. Written from
+    recon_combined.json, so the two must reconcile identically.
+    """
+    import csv  # pylint: disable=import-outside-toplevel
+    from zoneinfo import ZoneInfo  # pylint: disable=import-outside-toplevel
+    ist = ZoneInfo("Asia/Kolkata")
+    with open(os.path.join(OUT, "recon_combined.json"), encoding="utf-8") as f:
+        items = json.load(f)["items"]
+    cols = ["entity_id", "type", "debit", "credit", "amount", "currency", "fee", "tax",
+            "on_hold", "settled", "created_at", "settled_at", "settlement_id",
+            "settlement_utr", "order_id", "order_receipt", "method"]
+
+    def cell(k, v):
+        if k in ("debit", "credit", "amount", "fee", "tax"):
+            return f"{(v or 0) / 100:.2f}"
+        if k in ("created_at", "settled_at"):
+            return datetime.fromtimestamp(v, tz=ist).strftime("%d/%m/%Y %H:%M:%S") if v else ""
+        return "" if v is None else str(v)
+
+    path = os.path.join(OUT, "settlement_report.csv")
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        w.writerow([c.replace("_", " ").title().replace("Id", "ID").replace("Utr", "UTR")
+                    for c in cols])
+        for i in items:
+            w.writerow([cell(c, i.get(c)) for c in cols])
+    print(f"{len(items)} lines -> {os.path.abspath(path)}")
+
+
 if __name__ == "__main__":
-    main()
+    import sys
+    if "--report-only" in sys.argv:
+        dashboard_report()
+    else:
+        main()
+        dashboard_report()

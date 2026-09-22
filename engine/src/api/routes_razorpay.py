@@ -112,15 +112,50 @@ async def _rows(upload: Optional[UploadFile], source: SourceType):
 
 
 @router.post("/razorpay/reconcile/upload",
-             summary="Reconcile saved Razorpay API responses, with bank and books if given")
+             summary="Reconcile Razorpay's recon data — API responses or a dashboard report")
 async def reconcile_upload(
-    settlements_file: UploadFile = File(..., description="JSON from GET /v1/settlements"),
-    recon_file: UploadFile = File(..., description="JSON from GET /v1/settlements/recon/combined"),
+    recon_file: UploadFile = File(..., description=(
+        "JSON from GET /v1/settlements/recon/combined, or the Settlement Recon report "
+        "downloaded from the Razorpay Dashboard as CSV")),
+    settlements_file: Optional[UploadFile] = File(None, description=(
+        "JSON from GET /v1/settlements. Optional: without it each payout's amount is "
+        "taken from its lines, and the bank credit is the independent check")),
     bank_file: Optional[UploadFile] = File(None),
     ledger_file: Optional[UploadFile] = File(None),
 ):
-    settlements = _items(await _json(settlements_file, "settlements_file"), "settlements_file")
-    recon = _items(await _json(recon_file, "recon_file"), "recon_file")
+    """
+    Self-serve: a merchant can reconcile the report they download themselves,
+    with no API keys and nothing shared — on a self-hosted engine
+    (docker compose up) the data never leaves their machine.
+    """
+    from main import read_upload_capped  # pylint: disable=import-outside-toplevel
+    raw = await read_upload_capped(recon_file)
+    note = ""
+    if raw.lstrip()[:1] in (b"{", b"["):
+        try:
+            recon = _items(json.loads(raw.decode("utf-8-sig")), "recon_file")
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            raise HTTPException(status_code=422, detail={
+                "message": "recon_file is not JSON", "plain": "Could not read the recon file as JSON."})
+    else:
+        try:
+            recon, note = rz.report_items(raw)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail={
+                "message": "recon_file unreadable",
+                "plain": f"Could not read {recon_file.filename or 'the report'}: {exc}."})
+    if settlements_file is not None:
+        settlements = _items(await _json(settlements_file, "settlements_file"), "settlements_file")
+    else:
+        settlements = rz.settlements_from_report(recon)
     bank = await _rows(bank_file, SourceType.BANK)
     ledger = await _rows(ledger_file, SourceType.ERP)
-    return razorpay_recon.reconcile(settlements, recon, bank=bank, ledger=ledger)
+    out = razorpay_recon.reconcile(settlements, recon, bank=bank, ledger=ledger)
+    out["read"] = {
+        "recon": "dashboard report (CSV)" if note else "API response (JSON)",
+        "units": note or "Amounts in paise and times in Unix seconds, as the API documents.",
+        "settlements": ("taken from the settlements list" if settlements_file is not None else
+                        "derived from the report's own lines — tie-out is by construction; "
+                        "the bank credit is the independent check"),
+    }
+    return out

@@ -264,6 +264,29 @@ three scenarios' anchored clears — nothing from the scenario being measured
 | learned linkage, no history | 9 (24.3%) | 8 | 0 |
 | learned linkage, cycle learned from other scenarios | **21 (56.8%)** | 8 | 0 |
 
+### On real payments
+
+`scripts/public_ledger_benchmark.py` takes two public government checkbooks —
+Baton Rouge (public domain) and Fulton County, GA (CC BY 4.0) — where each
+cheque or transfer pays several invoices and the government's own system
+recorded which. One payment is the settlement, the day's whole payment run
+(median 482 and 675 invoices) is the pool, and invoice ids are opaque.
+
+| | payee known | amounts only |
+|---|---:|---:|
+| Baton Rouge, 50 payments | **50 exact**, 49 auto-cleared | 2 exact, 0 cleared |
+| Fulton County, 50 payments | **50 exact**, 50 auto-cleared | 0 exact, 0 cleared |
+| wrong clears | **0** | **0** |
+
+Amounts only is subset-sum's case: about a fifth of amounts repeat within a
+day, nothing ties an invoice to the payment, and the engine withholds rather
+than pick one of the sets that add up. With the payee on the invoices it is
+exact every time — after one fix the real data forced (FAILURE_LOG 36): the
+first run found 25 and 36, because a payee code ending in a digit, glued to a
+numeric invoice number, lost its boundary when the reference was
+canonicalised. Linkage now also reads the reference as the source wrote it,
+at its separators.
+
 The first two rows read 8 (21.6%) until the tiebreak was confined to the
 declared member feed (FAILURE_LOG 31), which made one more settlement's
 proposal the exact set. Auto-clears and false clears did not move.

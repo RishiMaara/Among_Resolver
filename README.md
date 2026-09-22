@@ -17,6 +17,7 @@ It never writes to a ledger. It proposes; a person approves.
 | | |
 |---|---|
 | Wrong sets cleared, every measured corpus | **0** |
+| Real government payments, two public checkbooks, answer recorded by their own systems | **100 of 100** exact with the payee known; 0 wrong clears in 200 runs |
 | Third-party corpus (ReconRiver), references present | 94.6% of settlements identified exactly |
 | Same corpus, every settlement reference stripped | 24.3% → **56.8%** with learned linkage |
 | Bank narrations read right, bank formats the rules never saw | 82.7% rules → **97.5%** grounded model |
@@ -24,8 +25,10 @@ It never writes to a ledger. It proposes; a person approves.
 
 **What it does**
 
-- **Reads Razorpay directly.** The Settlement Recon API names each payout's
-  members, so the engine checks what that list does not prove: the lines sum
+- **Reads Razorpay directly** — the Settlement Recon report a merchant
+  downloads from the Dashboard (no API keys, nothing shared), or the API. It
+  names each payout's members, so the engine checks what that list does not
+  prove: the lines sum
   to the payout to the paisa; a blind re-solve without the settlement ids
   reaches the same set; the bank credit carries the UTR and exact amount;
   every order is in the books; fees, GST, TDS and TCS are right for their
@@ -131,8 +134,9 @@ do that they do: **[Industry Comparison](docs/INDUSTRY_COMPARISON.md)**.
 | **False clears, everywhere above** | **0** |
 | Confidence calibration, 180 scenarios, in-sample (`calibration.py` default) | ECE 0.0538 · MCE 0.20 · Brier 0.0439 — 103 of 103 correct at or above the 0.85 gate |
 | Confidence calibration, ReconRiver, out-of-sample (`calibration_out_of_sample.py`) | ECE 0.0901 raw, **0.026** calibrated (`fit_calibration.py`) · 42 of 42 correct above the gate, 74 predictions |
+| **Real payments** — Baton Rouge and Fulton County public checkbooks, 100 payments, each against its whole day's payment run (`public_ledger_benchmark.py`) | payee known: **100 of 100** exact, 99 auto-cleared · amounts only: 2 of 100, the rest withheld · **0** wrong clears in 200 runs |
 | Scanned bank statements, 24 noisy scans (`ocr_eval.py`) | 11 read exactly right by OCR in the browser, **23** with Gemini on the rest, **0** wrong readings accepted |
-| Tests | **724** backend · **133** frontend |
+| Tests | **733** backend · **136** frontend |
 
 Every figure in that table except the two calibration rows is re-measured by
 `python scripts/generate_benchmarks.py`, which writes
@@ -253,7 +257,7 @@ engine/        Python engine
   src/                       one module per agent — see docs/ARCHITECTURE.md
   src/api/                   the HTTP surface: models, presentation, route groups
   scripts/                   benchmarks, calibration, stress runs, data fetch
-  tests/                     724 tests
+  tests/                     733 tests
   benchmarks/                measurement snapshots
   data/                      Sanctions lists, test ledgers
 docs/                      ARCHITECTURE.md · FINAL_PITCH_SCRIPT.md · FINAL_TEST_REPORT.md · INDUSTRY_COMPARISON.md
@@ -376,8 +380,15 @@ trail a reviewer reads afterwards.
   are right for their dates. On the sample (`public/sample-data/razorpay/`,
   invented values in Razorpay's published shapes) three payouts verify, one
   has a 2.5% card fee and an unbooked order, one arrived ₹10 short at the
-  bank, and the blind solve reaches Razorpay's exact set on all five. Not yet
-  run against a live account — that needs the merchant's test keys.
+  bank, and the blind solve reaches Razorpay's exact set on all five. Not
+  run against a live account: test mode creates no settlements. A merchant can
+  instead upload the **Settlement Recon report they download from the
+  Dashboard** (`settlement_report.csv` in the sample is the same payouts in
+  that form) — no keys, and on a self-hosted engine nothing leaves their
+  machine. Without a settlements list each payout's amount is its lines' sum,
+  so the tie-out is marked as by construction and the bank credit (UTR and
+  amount) is the independent check; a report read in the wrong unit is off by
+  100x from its bank credit and is not verified.
 - **Bank statements as banks send them** (`statement_parsers.py`): SWIFT
   MT940, ISO 20022 CAMT.053, OFX and text PDFs, straight into the bank slot of
   any reconciliation, or `POST /statements/parse` to check the read on its own.
