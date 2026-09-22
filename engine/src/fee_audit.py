@@ -1,48 +1,12 @@
 """
-Indian Fee and Tax Audit — post-reconciliation fee verification.
+Indian fee and tax audit, run after reconciliation on the matched set.
 
-WHY THIS EXISTS
----------------
-Indian payment gateways charge per-method fees: UPI near 0%, cards around 2%,
-netbanking often a flat fee, wallets somewhere in between. On top of the fee,
-GST at 18% (CGST 9% + SGST 9%) applies to the FEE, not the principal. An
-e-commerce operator also deducts TDS on the gross it credits a seller —
-Section 194-O until 31 March 2026, Section 393(1) Table Sl. 8(v) of the
-Income-tax Act 2025 from 1 April 2026, 0.1% under both — and collects GST TCS
-under Section 52 of the CGST Act on net taxable supplies, 0.5% since 10 July
-2024. Rates and citations come from dated schedules in `india_tax.py`, so each
-payment is checked under the law in force on its own date. Whether either
-applies to a given merchant is a question about that merchant's arrangement,
-not about this engine, so every check is configurable and the defaults are
-starting points rather than advice.
-
-The reconciliation engine currently reconstructs a gross target from a single
-blended rate card per batch. That is the limitation the README calls "most
-likely to meet a real merchant first", because a mixed-method day produces a
-wrong gross target that ties out to nothing and the batch is withheld rather
-than mismatched.
-
-This module runs AFTER reconciliation, on the matched set, and audits each
-transaction's actual fee against what a method-aware rate card predicts.
-It catches:
-
-  * Overcharges — the gateway charged more than the agreed rate for that method
-  * Undercharges — rarer, but a fee below the contractual minimum is a
-    reconciliation risk because the net deposit will be higher than expected
-  * GST miscalculations — 18% must apply to the fee, not the principal
-  * TDS withholding errors — 194-O / 393(1), by payment date; the threshold
-    is configurable because it applies to individual and HUF sellers only
-  * TCS collection errors — Section 52 CGST, checked when the data reports TCS
-  * Settlement shortfalls — the sum of item-level fees does not equal the
-    batch-level deduction
-  * Duplicate fee deductions
-
-WHAT IT DOES NOT DO
--------------------
-This module reports. It does not adjust the reconciliation. A fee overcharge
-is a revenue-leakage finding, not a matching correction — the settlement DID
-clear at the net amount, and the finding is that the net amount was wrong by
-the overcharge.
+Checks each transaction's fee against a method-aware card (UPI, card,
+netbanking, wallet), GST at 18% on the FEE, e-commerce TDS (194-O until
+31 March 2026, 393(1) Sl. 8(v) after, 0.1%), GST TCS under Section 52 CGST
+(0.5% since 10 July 2024), batch-level fee totals and duplicate fees. Rates
+come from dated schedules in india_tax.py, by each payment's date; every
+check is configurable. It reports; it never changes the reconciliation.
 """
 
 from __future__ import annotations
@@ -459,26 +423,14 @@ def audit_tds_194o(
     rate_card: MethodRateCard | None = None,
     as_of: date | None = None,
 ) -> list[FeeAuditFinding]:
-    """Check e-commerce TDS: Section 194-O, and 393(1) Sl. 8(v) from April 2026.
+    """
+    Check e-commerce TDS: 194-O, and 393(1) Sl. 8(v) from April 2026.
 
-    An e-commerce operator deducts TDS on the gross amount of sales it
-    facilitates, at the earlier of crediting the seller or paying them. For a
-    gateway that is the payment date, so each payment is taxed under the
-    provision and rate in force on its own date in India — a batch that
-    straddles 1 April 2026 cites both Acts, each on its own share.
-
-    For individual and HUF sellers the first Rs 5 lakh of a year's gross is
-    exempt, and TDS is expected on what lies above it. Payments are taken in
-    date order, so the exempt amount is used up by the earliest ones. Other
-    sellers have no threshold (set it to 0).
-
-    Configurable, and deliberately so: the rate has moved three times since
-    2020, and a payment gateway is not automatically the e-commerce operator
-    for this provision. Setting the rate to 0 turns the check off. None of
-    this is tax advice — it is arithmetic against numbers the merchant
-    configures, on the dates the law set them.
-
-    The name keeps the section the check was written for; it covers both.
+    Each payment is taxed under the provision in force on its own IST date, so a
+    batch straddling 1 April cites both. Individual/HUF sellers are exempt on
+    the first Rs 5 lakh a year, used up by the earliest payments; set the
+    threshold to 0 for other sellers and the rate to 0 to turn the check off.
+    Arithmetic against configured numbers, not tax advice.
     """
     if rate_card is None:
         rate_card = MethodRateCard()
@@ -542,17 +494,9 @@ def audit_tcs_section52(
     rate_card: MethodRateCard | None = None,
     as_of: date | None = None,
 ) -> list[FeeAuditFinding]:
-    """GST TCS under Section 52 CGST, when the data says TCS was collected.
-
-    TCS is collected on the net value of taxable supplies — supplies less
-    returns — so refunds reduce the base rather than being ignored. The rate
-    is the one in force on each supply's date: 1% until 9 July 2024, 0.5%
-    from 10 July 2024.
-
-    It runs only when at least one row reports TCS. Whether a gateway is the
-    operator collecting it is the merchant's arrangement; an engine that
-    expected TCS on every batch would raise a finding against every merchant
-    whose gateway, correctly, collects none.
+    """
+    GST TCS under Section 52 CGST, on net taxable supplies (refunds reduce the
+    base), at the rate on each supply's date. Runs only when a row reports TCS.
     """
     if rate_card is None:
         rate_card = MethodRateCard()

@@ -1,47 +1,13 @@
 """
-Separation of duties: the person who accepted a match cannot approve its posting.
+Separation of duties: whoever accepted a match cannot approve its posting.
 
-WHY THIS AND NOT A ROLE SYSTEM
-------------------------------
-The first attempt at this shipped as an RBAC module with MAKER/CHECKER roles
-and a module-level `_current_user` global. Two things were wrong with it, and
-both are the kind that look fine until the thing runs:
-
-  * a global "current user" in a web server is a race. Two approvals arriving
-    at once read whichever identity was set last, so an approval can be
-    recorded against someone who did not make it. In a control whose entire
-    job is attributing a decision to a person, that is the one bug that
-    matters.
-  * it was never wired to anything. The endpoints a reviewer actually uses —
-    accept-fifo, the batch decision, the journal approval — did not consult
-    it, so the "SOX 4-eyes enforcement" was a class nobody called.
-
-What is enforced instead uses what the engine already has: every human
-decision is written to the audit trail, and the trail is durable and shared
-across instances. The rule reads that trail.
-
-THE RULE
---------
-Approving a posting proposal is refused when the same person already accepted
-the match it rests on — either by recording the batch decision or by
-accepting the oldest-first convention. Those are the two acts that say "this
-set of payments is right"; approving the posting says "and it may be booked".
-One person doing both is the self-approval that separation of duties exists
-to prevent.
-
-Rejections are never blocked. Refusing your own proposal needs no second
-pair of eyes, and blocking it would only teach people to route rejections
-through someone else.
-
-WHAT THIS IS NOT
-----------------
-Identity here is the name a reviewer types, so it is exactly as strong as
-that name — this engine has no session, and `API_KEY` authenticates a caller
-rather than a person. Someone who wants to approve their own work can type a
-different name. That is worth stating plainly rather than describing this as
-SOX compliance: it stops the accident and the habit, not a determined person.
-With real user identity the same rule keys on a user id instead, and nothing
-else about it changes.
+Read from the audit trail, where every human decision is recorded: approving
+a posting is refused when the same person recorded the batch decision or
+accepted FIFO for it. Rejections are never blocked. Identity is the name a
+reviewer types, so the rule is exactly as strong as that name (the engine has
+no user model): it stops the accident
+and the habit, not a determined person; with real identity the same rule
+keys on a user id.
 """
 
 from __future__ import annotations

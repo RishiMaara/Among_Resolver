@@ -1,22 +1,8 @@
 """
-The categories a finance team files breaks under, with an owner and a next step.
-
-WHY
----
-The engine's exception reasons — timing_lag, duplicate, missing_entry —
-describe what the MATCHER saw. A reviewer needs a different question
-answered: what kind of break is this in the books, whose desk does it go
-to, and what do they do first? Those are the categories reconciliation teams
-already sort by (in transit, missing in bank, missing in books, duplicate,
-amount mismatch, compliance hold), and exceptions filed under them can be
-routed without re-reading each one.
-
-Where the feed an unmatched record came from is known, it decides the
-category: a gateway payment with no bank or ledger counterpart is "missing
-in books" or "not yet paid out", a bank credit with nothing behind it is an
-"unidentified receipt". The mapping is fixed rules, not a model — a
-misfiled break costs a day in the wrong queue, and a rule can be read and
-corrected.
+The categories finance files breaks under, with an owner and a first step:
+in transit, missing in bank, missing in books, duplicate, amount mismatch,
+compliance hold. The source feed decides where it can. Fixed rules, not a
+model, so a misfiled break can be read and corrected.
 """
 
 from __future__ import annotations

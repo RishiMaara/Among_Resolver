@@ -1,41 +1,12 @@
 """
-Compliance Rulebook — the published, inspectable rule set for Agent 7.
+The published, inspectable rule set behind compliance screening.
 
-This module is deliberately separate from the detection code. It is the
-artifact a bank's compliance function, an external auditor, or a regulator
-would ask to see: for every control the engine enforces, what the control
-is, what authority it derives from, what that authority actually requires,
-what threshold THIS system applies, and where to read the source.
-
-Two fields carry most of the weight:
-
-  basis              Is this law, supervisory guidance, or our own risk
-                     appetite? Presenting an internal threshold as a
-                     statutory requirement would misrepresent the law to
-                     whoever relies on this output, so every rule must
-                     declare which it is.
-
-  threshold_applied  The concrete parameter this engine uses, stated
-                     separately from rule_text (what the source requires).
-                     Where a statute sets a number, these agree. Where the
-                     statute sets a principle and we chose a number to
-                     operationalise it, the difference is visible rather
-                     than hidden — which is exactly what an examiner needs
-                     in order to challenge the calibration.
-
-All reference URLs were confirmed reachable on 2026-08-30. A few official
-sites return 403 to non-browser clients (WAF bot protection); those were
-verified by loading them in a browser.
-
-NOTE ON SCOPE: this is a reconciliation engine's screening layer, not a
-regulated AML system of record. It does not file reports, does not
-maintain a sanctions list of record, and its determinations are advisory
-inputs to a human reviewer. See SCOPE_NOTE below, which is served with
-every rulebook response.
-
-The rulebook is published openly — there is no access gate on it. A
-published control set that only its author can read does not do the job
-a published control set exists to do.
+For every control: what it is, its authority, what that authority requires,
+and the threshold THIS system applies. `basis` says whether a rule is law,
+guidance or internal appetite; `threshold_applied` is kept apart from
+`rule_text` so a chosen number is never passed off as a statutory one.
+Advisory inputs to a human reviewer, not an AML system of record (see
+SCOPE_NOTE). Published openly.
 """
 
 from __future__ import annotations
@@ -72,16 +43,8 @@ _SCOPE_TAIL = (
 
 def scope_note() -> str:
     """
-    The scope disclaimer, describing the list ACTUALLY loaded.
-
-    This was a constant asserting "a static illustrative sanctions list rather
-    than the live official lists". That was true of the four-name placeholder
-    and became false the moment a real UN Consolidated List was fetched — so
-    the page understated the system, which is the same fault as overstating
-    it: the note stopped describing what the engine does.
-
-    Both readings still need saying, so it asks rather than assumes. The
-    exact-match caveat is unconditional, because it is true of either list.
+    The scope disclaimer, describing the list actually loaded (illustrative or
+    the UN Consolidated List). The exact-match caveat applies to either.
     """
     try:
         import compliance_agent

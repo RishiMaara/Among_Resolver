@@ -1,26 +1,8 @@
 """
-The single place this engine talks to an LLM.
-
-Everything provider-specific lives here — SDK, credentials, model names, retry
-policy. `llm_header_mapper` and `settlement_qa` call `generate()` and know
-nothing else, so changing provider means changing this file and no other.
-
-WHY RETRY IS NOT OPTIONAL HERE
-------------------------------
-Measured against a live free-tier key, three distinct failures appeared within
-a few minutes of each other:
-
-    400 INVALID_ARGUMENT   response_schema rejected `additionalProperties`
-    429 RESOURCE_EXHAUSTED `limit: 0` — the free tier grants Pro models zero
-                           requests, so gemini-pro-latest fails every call
-    503 UNAVAILABLE        "high demand", transient
-
-Only the last two are worth retrying. A 400 is a bug in our request and will
-fail identically forever; retrying it wastes the user's quota and delays an
-ingestion that could have completed on rules. So retry is restricted to
-transient statuses, capped tightly, and every path still ends in "return None"
-rather than an exception — an optional enrichment must never take down a
-reconciliation the deterministic engine can finish on its own.
+The single place this engine talks to a model (SDK, credentials, model
+names, retries). Only transient failures (429, 503) are retried, tightly; a
+400 is our bug and would fail forever. Every path ends in None, never an
+exception: an optional enrichment must not take down a reconciliation.
 """
 
 from __future__ import annotations
@@ -78,19 +60,10 @@ def generate(
     attachments: list[tuple[bytes, str]] | None = None,
 ) -> str | None:
     """
-    Ask the model. Returns the response text, or None if unavailable.
-
-    Never raises. Callers are enrichment paths on the ingestion and reporting
-    routes, and neither may fail because an optional model call did.
-
-    temperature defaults to 0: the same question about the same recorded
-    results should not produce a different answer each time it is asked. A
-    reviewer comparing two runs is entitled to read a difference as the DATA
-    having changed.
-
-    attachments are (bytes, mime type) pairs sent ahead of the prompt — a
-    scanned statement, for one. The model reads them; nothing it returns
-    about them is used until code has checked it.
+    Ask the model; returns the text, or None. Never raises. temperature 0 by
+    default, so a changed answer means changed data. `attachments` are (bytes,
+    mime) pairs such as a scanned statement; nothing returned about them is used
+    until code has checked it.
     """
     if not is_configured():
         return None

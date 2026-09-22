@@ -1,59 +1,16 @@
 """
-Fellegi-Sunter record linkage: weights from data, not from judgement.
+Fellegi-Sunter record linkage: weights from data, not judgement.
 
-WHY
----
-The linkage weights in linkage.py — 0.55 / 0.25 / 0.15 / 0.10 — were
-reasoned, not fitted, and a sweep showed their exact values barely matter
-where settlement ids are present (LINKAGE.md). Where ids are absent they have
-nothing to say about the signal that matters most: TIMING. A gateway settles
-on a cycle — Razorpay T+2 working days, the ReconRiver processor T+1 — so a
-settlement's members were captured a fixed number of days before it. Which
-number is a fact about the processor, not something to type in.
-
-Fellegi-Sunter (1969) is the standard model for this, and the one Splink and
-the US Census use. Every candidate is compared with the settlement on a few
-signals; each level has an m-probability (how often a true member shows it)
-and a u-probability (how often a non-member does); a candidate's match weight
-is the sum of log2(m/u) in bits.
-
-    anchor              reference names the settlement            yes / no
-    ref_cluster         shares a reference token with others      yes / no
-    ref_names_batch     that token also names the settlement      yes / no
-    amount_peer         same amount appears in another feed       yes / no
-    currency            same currency as the settlement           yes / no
-    lag                 days from capture to settlement      0,1,2,3,4-7,other
-
-WHERE m AND u COME FROM
------------------------
-u from the pool itself. m from whatever identifies members:
-
-  * anchors in the pool — EM (Expectation-Maximisation) learns, from the
-    records naming the settlement, how members differ on every other
-    comparison, their capture lag included; records that lost their id but
-    look like the anchored ones are lifted.
-  * the settlement cycle learned from earlier VERIFIED clears
-    (settlement_cycle.py) — for pools where nothing names the settlement.
-
-With neither, it declines to fit. That is not caution for its own sake: a
-two-component mixture over a single informative comparison is not
-identifiable, and with references gone timing is the only one left. Tried
-unsupervised on ReconRiver's stripped pools, EM collapsed to "no members" on
-every one — FAILURE_LOG entry 19.
-
-WHAT IT IS USED FOR, AND WHAT IT IS NOT
----------------------------------------
-It ranks and it narrows. The best-supported cohort — whole comparison
-patterns, highest weight first, until they cover the members the target
-implies — becomes one more solving tier after the anchor tier. The arithmetic
-still decides: a tier clears only if an exact subset sums to the target, and
-every guard downstream is unchanged. What it finds on learned timing alone is
-reported in its own confidence band, below the auto-clear gate, until enough
-measured cases say otherwise.
-
-EM runs on distinct comparison PATTERNS with counts, not rows: six small
-features have at most a few hundred patterns, so a 200,000-row pool costs
-what a 200-row one does.
+Each candidate is compared with the settlement on a few signals (anchor,
+ref_cluster, ref_names_batch, amount_peer, currency, lag in days); each
+level has m (members) and u (non-members) probabilities, and the match
+weight is the sum of log2(m/u). u comes from the pool; m from anchors in the
+pool (EM) or from the settlement cycle learned from verified clears
+(settlement_cycle.py). With neither it declines: one informative comparison
+is not identifiable, and unsupervised EM collapsed on every stripped pool
+(FAILURE_LOG 19). It ranks and narrows into one more solving tier; the
+arithmetic and every gate still decide. EM runs over distinct patterns with
+counts, so pool size barely matters.
 """
 
 from __future__ import annotations
@@ -181,28 +138,10 @@ def fit(vectors: list[dict[str, str]], expected_members: float | None = None,
     """
     Estimate lambda, m and u by EM over the pool's comparison vectors.
 
-    EM can only separate members from non-members when something identifies
-    them. A two-component mixture over a single informative comparison is not
-    identifiable — any split that reproduces the pool's marginals fits it
-    equally well — and a pool with no reference left has exactly one: timing.
-    Measured on ReconRiver with references stripped: started from any
-    neutral point, EM collapsed to "no members" on every pool.
-
-    So the model needs one of two things to fit:
-
-    * anchors in the pool — records naming the settlement identify members,
-      and EM learns from them how members differ on everything else,
-      including how many days they wait. Records whose reference was
-      truncated but which match the members' pattern are then lifted.
-    * a learned cycle (`lag_m`, from settlement_cycle.py) — the lag
-      distribution of members in settlements that verifiably cleared. It is
-      held fixed and EM estimates the rest.
-
-    With neither it returns None: there is nothing to learn from, and the
-    engine behaves exactly as it did without this model.
-
-    `expected_members` seeds lambda — the target divided by a typical amount
-    is a fair first guess at how many members to look for.
+    Needs anchors in the pool (members identify themselves and EM learns the
+    rest, lag included) or a learned cycle (`lag_m`, held fixed). With neither
+    it returns None and the engine behaves as without the model.
+    `expected_members` (target / typical amount) seeds lambda.
     """
     n = len(vectors)
     if n < 4:

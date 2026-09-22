@@ -1,44 +1,11 @@
 """
-Persistent record of each reconciliation run, for later comparison.
+A persistent record of each reconciliation run, for later comparison.
 
-Three things are deliberately bounded.
-
-The audit trail is EXCLUDED from the record. A 50K run produces ~18,500
-entries, so embedding it turns every history file into a multi-megabyte dump
-of data that already lives in the audit store — and data/history is inside the
-repo, so those files would end up committed. The entry count is kept instead,
-and the trail itself stays reachable via GET /audit/{batch_id}.
-
-The exception list is CAPPED, for the same reason and after it defeated it.
-Bounding only the audit trail left the largest field unbounded: a run over a
-pool of identical payments reports nearly all of them as exceptions, and one
-such record on disk here was 131 MB, 95 MB of it exceptions. That is not only
-disk — list_runs() parses whole files to build summaries, so a handful of them
-turned a listing into seconds of work and gigabytes of transient memory. The
-tail carries no information the head does not: past the cap the exceptions of
-an unresolved fungible pool are the same sentence with a different id.
-
-Filenames carry a sanitised batch id. Batch ids arrive from uploaded form
-fields, so they are untrusted input: "../../etc/passwd" is a valid string and
-must not be interpolated into a path unescaped.
-
-WHERE RECORDS LIVE
-------------------
-Files under HISTORY_DIR by default, which is what a single long-running
-process wants. Two situations need something else, and each is handled
-without anyone having to remember a flag:
-
-  * the default directory is not writable — a serverless deploy, where the
-    code sits on a read-only filesystem. Records then go to the system temp
-    directory instead of every write failing.
-  * REDIS_URL (or KV_URL) is set — several instances serving one app. Each
-    instance's temp directory is private to it, so a run recorded on one
-    would be missing from the history page served by the next. With a URL
-    configured, records go to Redis, which every instance shares.
-
-Redis is opt-in by URL, not picked up whenever a local Redis happens to be
-running: history quietly changing backend under a developer who started Redis
-for something else would be a surprise with no upside.
+Bounded on purpose: the audit trail is excluded (it lives in the audit
+store), the exception list is capped (one record reached 131 MB), and
+filenames carry a sanitised batch id (untrusted input). Stored as files
+under HISTORY_DIR, in the temp dir when that is read-only (serverless), or
+in Redis when REDIS_URL / KV_URL is set so every instance shares it.
 """
 
 import json

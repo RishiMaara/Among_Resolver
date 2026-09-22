@@ -1,45 +1,16 @@
 """
-Agent 10 — ERP write-back.
+ERP write-back: POSTs a balanced journal to ERP_JOURNAL_URL.
 
-WHAT THIS ACTUALLY DOES, STATED FIRST
--------------------------------------
-It POSTs a balanced double-entry journal to an HTTP endpoint. By default
-that endpoint is a local stand-in, not a real ERP: no NetSuite, Tally,
-QuickBooks or SAP instance has ever received one of these. Set
-ERP_JOURNAL_URL to point it somewhere real; the payload shape below is the
-one those systems accept, but "would be accepted" is a design claim and not
-a measurement, and this docstring is the wrong place to blur that.
-
-THE BUG THIS FILE USED TO HAVE
-------------------------------
-An unreachable ERP was caught and reported as success:
-
-    except requests.RequestException:
-        logger.info("Simulated ERP push successful (endpoint unreachable)")
-        position.journal.status = "posted_mock"
-        return True
-
-So a connection refused — the single most likely production failure —
-returned True and marked the journal posted. The books would then show a
-journal as posted that no ERP ever received, and nothing anywhere would say
-otherwise. For a finance tool that is worse than crashing: a crash gets
-investigated, a false success gets reconciled against next month.
-
-Every path now reports what happened:
+No real ERP has received one; the payload shape is a design claim. Every
+outcome is distinct and only `posted` returns True:
 
     posted                  the endpoint accepted it (2xx)
-    rejected_by_erp         it answered, and said no — status and body kept
-    unreachable             the POST failed; NOT posted, and says so
-    no_target_configured    ERP_JOURNAL_URL is unset, so nothing was tried
-    skipped_unbalanced      refused before sending, see below
+    rejected_by_erp         it answered no; status and body kept
+    unreachable             the POST failed; NOT posted
+    no_target_configured    ERP_JOURNAL_URL is unset
+    skipped_unbalanced      refused before sending
 
-and `push_to_erp` returns True only for `posted`.
-
-WHY AN UNBALANCED JOURNAL IS REFUSED BEFORE SENDING
----------------------------------------------------
-A journal whose debits and credits disagree is not a posting, it is a
-corruption, and an ERP that accepts one has a worse bug than this engine.
-Refusing locally keeps the failure where it can be read.
+It once reported an unreachable ERP as posted (FAILURE_LOG).
 """
 
 from __future__ import annotations

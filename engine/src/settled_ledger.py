@@ -1,40 +1,10 @@
 """
-Which payments have already been consumed by a cleared settlement.
+Payments already consumed by a cleared settlement, remembered across runs.
 
-WHY
----
-The queue can see a payment counted twice inside one run. It cannot see the
-case that actually happens: this week's settlement clears on 1,500 payments,
-and next week those same payments are still sitting in the pool, free to be
-matched again. Nothing carried the memory across runs, so the engine's own
-advice — "check these are not also being claimed by another settlement" —
-was addressed to a human with no way to check.
-
-That exposure is worst exactly where the engine is least able to help
-otherwise. For a merchant selling one item at one price, WHICH payments
-compose a settlement is arbitrary and the engine says so; whether one has
-been paid out twice is the only thing that can really go wrong.
-
-WHAT IS RECORDED, AND WHEN
---------------------------
-Only on a CLEAR. A withheld batch has consumed nothing — its matched set is
-a proposal, and writing proposals here would make the ledger a record of
-guesses rather than of settlements.
-
-RE-RUNNING A BATCH IS NOT A CONFLICT
-------------------------------------
-The same settlement reconciled twice must not report itself as stealing its
-own payments. Claims are keyed by batch, and a batch always yields to its own
-prior claim — re-running is how someone checks a result, and a tool that
-punished them for it would teach them not to.
-
-IT WARNS; IT DOES NOT EXCLUDE
------------------------------
-A contested payment is reported, not quietly removed from the pool. Removing
-it would change an answer on the strength of a record that could itself be
-wrong — a batch cleared in error last week would silently corrupt this week's
-reconciliation, and the failure would be invisible. Surfacing beats
-correcting when the correction cannot be verified.
+Recorded only on a CLEAR (a withheld set is a proposal). A batch never
+conflicts with its own earlier claim, so re-running is free. A payment
+another settlement already cleared withholds the new clear but is never
+removed from the pool: the earlier record could itself be wrong.
 """
 
 from __future__ import annotations

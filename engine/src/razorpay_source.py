@@ -1,65 +1,15 @@
 """
-Read settlements and their members straight from Razorpay, instead of from a
-CSV somebody exported by hand.
+Settlements and their members straight from Razorpay's Settlement Recon API.
 
-WHY THIS IS THE RIGHT FEED
---------------------------
-Every corpus this engine has been measured on is a compromise. ReconRiver is
-synthetic. A hand-exported CSV is real but arrives with whatever columns the
-merchant's export happened to use, and with whatever the person exporting it
-remembered to include.
-
-The settlement recon report has none of those problems, because it carries
-`settlement_id` on every line. That is not a reference to be fuzzy-matched —
-it is the settlement naming its own members, which is the strongest anchor
-linkage can be given, and the condition under which this engine scores
-94.59% rather than 21.62%. The reconciliation is close to trivial in that condition,
-and saying so is more useful than pretending otherwise: the value here is not
-that the engine can solve it, it is that the engine can PROVE the arithmetic
-ties out to the paisa and show which line did what.
-
-WHAT IT MAPS
-------------
-    recon item                      NormalizedTxn
-    ----------------------------    ---------------------------------
-    entity_id                       source_txn_id
-    settlement_id                   ref_id_canonical   <- the anchor
-    credit - debit                  amount_cents       <- signed, net
-    currency                        currency
-    settled_at (unix seconds)       timestamp_utc
-    type (payment/refund/...)       extra["status"], extra["type"]
-    method                          extra["payment_method"]
-    amount                          extra["gross_amount_cents"]
-    fee - tax, tax                  extra["fee_amount_cents"], ["gst_amount_cents"]
-
-Razorpay's `fee` INCLUDES the GST on it; `tax` is that GST, stated again
-separately. Its API reference shows it: a transfer of 100000 paise with fee
-296 and tax 46 is debited 100296, not 100342. So the fee before tax is
-`fee - tax`, and adding `fee + tax` anywhere counts the tax twice.
-
-Amounts arrive in subunits — paise — as integers. This engine's entire
-arithmetic is integer paise. There is no float in this path and no rounding
-step where one could enter, which is the single most valuable property of
-reading the API rather than parsing "₹1,234.56" out of a spreadsheet cell.
-
-A REFUND IS A NEGATIVE, NOT AN ABSENCE
---------------------------------------
-`type` is one of payment, refund, transfer, adjustment. A refund reduces the
-settlement, so it enters the pool as a negative amount via `credit - debit`,
-which is what orchestrator.py's forced-anchored-negatives handling already
-expects. Dropping refunds instead would make the arithmetic stop tying out.
-
-NOT VERIFIED AGAINST A LIVE ACCOUNT
-------------------------------------
-This was written against Razorpay's published API reference, and its tests run
-against recorded response shapes rather than the real service, because no test
-credentials were available when it was written. The field names, the endpoint
-paths and the subunit convention are documented; the assumption that
-`settlement.amount == sum(credit) - sum(debit)` over that settlement's recon
-items is inferred from those definitions, not observed. `verify_tie_out()`
-exists to check exactly that against a real account, and prints the discrepancy
-rather than asserting, because the first run against live data is a
-measurement, not a test.
+Every recon line carries settlement_id, the settlement naming its own
+members, so the value here is proving the arithmetic ties to the paisa, not
+solving membership. Mapping: entity_id -> source_txn_id, settlement_id ->
+ref_id_canonical (the anchor), credit - debit -> amount_cents (signed,
+integer paise), settled_at -> timestamp_utc, type/method/amount/fee/tax ->
+extra. Razorpay's `fee` INCLUDES its GST (`tax`), so the pre-tax fee is
+fee - tax. Refunds enter as negatives. Written to the published API
+reference and recorded shapes; verify_tie_out() is the first thing to run
+against a live account, and reports a residual rather than asserting one.
 """
 
 from __future__ import annotations

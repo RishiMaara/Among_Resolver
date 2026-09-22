@@ -1,35 +1,11 @@
 """
-Agent 4 — Probabilistic & Semantic Matching.
+Probabilistic and semantic matching, run only after exact subset-sum fails.
 
-Runs ONLY after Agent 3 (exact subset-sum) fails to clear a batch.
-Catches: mistyped reference numbers, split payments across multiple
-lines, semantically-similar memo fields ("Strp_py_99" ~ "Stripe Payment").
-
-This is the one place an LLM/embedding model is allowed near the money —
-and even here, it never auto-clears anything above the confidence
-threshold without logging its full reasoning. Below threshold, it MUST
-route to exceptions, never force a match to clear a queue.
-
-PERFORMANCE NOTE — same lesson as subset_sum.py and exception_diagnosis.py,
-and the most severe instance of it in this project:
-
-  The original design called match_batch_fuzzy/fuzzy_match_candidate
-  once PER UNMATCHED TRANSACTION, and each call itself looped the
-  entire remaining pool doing per-pair rapidfuzz calls. That's true
-  O(n^2) with a real per-pair cost (not just a scan) — measured via a
-  bounded extrapolation on the actual 50K stress dataset at ~112
-  MINUTES projected for a single ~20,000-item unmatched chunk. This
-  was the dominant bottleneck in the whole pipeline, well beyond the
-  ~91s exception-diagnosis issue found and fixed earlier the same day.
-
-  Fix: build ref_id and memo similarity matrices ONCE per pool
-  (SimilarityContext below) via rapidfuzz's vectorized cdist (and
-  batched sentence-transformers encoding when available), then do
-  vectorized row-max lookups instead of nested per-pair Python loops.
-  This same context serves BOTH the fuzzy-fallback recovery pass and
-  the Agent 3b tiebreak plausibility scorer — they need the identical
-  underlying signal, so they should share one batched computation
-  rather than each re-deriving it naively.
+Catches mistyped references, split payments and similar memos. Never clears
+on its own. Similarity is computed once per pool as rectangular matrices
+(rapidfuzz cdist, embeddings when installed), not per pair: the per-pair
+version projected 112 minutes on a 20K chunk. The same context serves the
+fuzzy fallback and the tiebreak scorer.
 """
 
 from __future__ import annotations
@@ -104,28 +80,10 @@ memo_semantic_similarity._tried_load = False
 @dataclass
 class SimilarityContext:
     """
-    Precomputed ref_id and memo similarity ROWS for a set of query
-    transactions against a pool — rectangular (len(query) x len(pool)),
-    NOT a full pool x pool square matrix.
-
-    A full square matrix over the whole pool was the previous design and
-    it OOM'd on the real 50K stress dataset: a 35,000-item pool needs
-    35,000^2 x 8 bytes x 2 matrices (ref + memo) = ~19.6 GB, and 50,000
-    needs ~40 GB. That's a real crash, not a hypothetical — confirmed by
-    running the actual merged 3-source dataset after fixing the earlier
-    data-loading bug (fixing that bug increased the true candidate count
-    enough to expose this). This is the same lesson as everywhere else in
-    this project, just hitting MEMORY this time instead of time: an
-    approach that looks fine at moderate scale needs its complexity
-    checked again every time the input size changes materially.
-
-    Neither actual caller needs a full square matrix:
-    - Tiebreak scoring only needs rows for the (typically small) subset
-      being scored, against the full pool.
-    - Fuzzy-fallback recovery needs rows for `unmatched`, against the
-      full pool — but `unmatched` should be processed in bounded BLOCKS
-      when it's large (see bulk_fuzzy_recover), since query size can
-      equal pool size in the worst case (nothing matched at all).
+    Reference and memo similarity rows for `query` against `pool`: a
+    rectangular len(query) x len(pool) matrix, never pool x pool (that needed
+    ~19.6 GB at 35K items). Tiebreaks query a small subset; the fuzzy fallback
+    queries `unmatched` in blocks (bulk_fuzzy_recover).
     """
     query: list[NormalizedTxn]
     pool: list[NormalizedTxn]
@@ -212,20 +170,9 @@ def bulk_fuzzy_recover(
     block_size: int = FUZZY_RECOVERY_BLOCK_SIZE,
 ) -> list[MatchResult]:
     """
-    Batched, memory-bounded replacement for calling match_batch_fuzzy
-    once per unmatched transaction. Processes `unmatched` in blocks of
-    `block_size`, computing a rectangular (block_size x len(full_pool))
-    similarity matrix per block instead of one full
-    len(full_pool) x len(full_pool) square matrix.
-
-    The square-matrix version of this function OOM'd on the real 50K
-    stress dataset (~19.6 GB at 35,000 items, ~40 GB at 50,000 — see
-    SimilarityContext's docstring). This bounds peak memory to
-    O(block_size x pool_size) regardless of how large `unmatched` gets,
-    at the cost of doing the vectorized cdist call multiple times
-    instead of once — total work is the same O(n^2) either way (that
-    part is unavoidable for an exhaustive full-pool comparison), this
-    only bounds the PEAK memory of any single step.
+    Fuzzy recovery over `unmatched` in blocks of `block_size`, so peak memory is
+    O(block_size x pool_size) however large `unmatched` is. Total work is the
+    same; only the peak is bounded.
     """
     config = config or FuzzyMatchConfig()
     if not unmatched or not full_pool:
@@ -369,29 +316,13 @@ def score_subset_plausibility(
     memo_weight: float = 0.4,
 ) -> float:
     """
-    Scores how internally coherent a proposed subset is — combining
-    ref_id consistency AND memo similarity — relative to the full
-    candidate pool. Used by the tiebreak agent (Agent 3b) to choose
-    between two arithmetically-valid subsets when CP-SAT finds multiple
-    solutions.
+    How coherent a proposed subset is, used to break ties between two
+    arithmetically valid subsets.
 
-    `context` must be built via build_similarity_context(query, pool)
-    where `query` is the UNION of every subset you plan to score (e.g.
-    primary_txns + alt_txns during a single tiebreak) — build it once
-    over that union and reuse it for each subset, rather than building a
-    fresh context per subset. `subset` here can be any list of
-    transactions whose ids appear in that query union; rows are looked
-    up by id via context.query_id_to_row, not by position, so `subset`
-    doesn't need to be `context.query` itself or in the same order.
-
-    Scoring approach, per transaction in the subset:
-    - internal = best (ref_id, memo) similarity to OTHER subset members
-    - external = best (ref_id, memo) similarity to everything NOT in
-      the subset
-    - coherence = internal - 0.5 * external
-
-    This is a heuristic: it breaks ties, it doesn't prove correctness.
-    The audit trail always records which tiebreak path was taken.
+    Build `context` once over the UNION of the subsets being compared; rows are
+    looked up by id. Per member: internal = best similarity to other members,
+    external = best similarity to non-members, coherence = internal - 0.5 *
+    external. A heuristic that breaks ties, never a proof; the trail records it.
     """
     if not subset:
         return 0.0

@@ -1,29 +1,14 @@
 """
-A budget on model calls, so that a public demo can carry a real key.
+A budget on model calls, so a public demo can carry a real key.
 
-WHY
----
-Without a key on the public site the engine's four model uses never run
-there: a judge sees the fixed-rule fallbacks and has to take the rest on
-trust. With a key and no limits, anyone who finds the URL can spend it. This
-is the middle: every call from a web request passes three checks first.
-
+Every call made while serving a web request is checked first:
   per visitor, per hour   MODEL_CALLS_PER_CLIENT_PER_HOUR   default 20
   per server, per day     MODEL_CALLS_PER_DAY               default 200
   size of what is sent    MODEL_MAX_PROMPT_CHARS            default 60,000
-
-Counts are kept in Redis when one is configured (the same store the audit
-trail uses), so serverless instances share them; otherwise in this process.
-When a limit is reached the call is not made. The caller's deterministic
-path answers — exactly as with no key at all — and the response says why,
-so a reviewer never mistakes a rules answer for a model one.
-
-Scripts run outside a web request (the evaluations) are not metered: they
-run on the operator's machine, by the operator's choice.
-
-The limit that cannot be exceeded is the provider's own. A key from a
-project without billing has a free daily quota and cannot incur charges;
-that is the key to put on a public demo.
+Counts live in Redis when configured, else in process. Over a limit the call
+is skipped, the deterministic path answers, and the response says why.
+Scripts outside a web request are not metered. Use a key without billing on
+a public demo.
 """
 
 from __future__ import annotations

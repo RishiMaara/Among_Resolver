@@ -1,41 +1,13 @@
 """
-Agent 2b — Linkage / candidate constraint.
+Linkage: which transactions are plausibly connected to this settlement.
 
-THE REFRAME THIS MODULE EXISTS FOR
-----------------------------------
-Subset-sum was being used to IDENTIFY which transactions make up a
-settlement. Measured across 120 benchmark scenarios, that does not work and
-cannot work: the solver may use any subset size, so the space competing for
-a single target is 2^n — 1.2e18 for a pool of only 60 — against a target
-that can take ~2e6 distinct paise values. Millions of subsets hit the same
-rupee value. Baseline auto-clear accuracy was 0.0%.
-
-The error was architectural, not algorithmic. A better solver does not fix
-an under-determined problem.
-
-Real reconciliation is entity resolution first and arithmetic second. What
-actually identifies a settlement's members is LINKAGE — the settlement
-reference carried on the payment, the same payment appearing as a bank
-credit and a ledger entry, temporal clustering — and the sum is then used
-to VERIFY the linked set, not to discover it.
-
-So this module runs before the solver and answers a different question:
-"which transactions are plausibly connected to this settlement at all?"
-Subset-sum then runs over tens of candidates instead of tens of thousands,
-where it is genuinely determined.
-
-DESIGN NOTES
-------------
-Blocking is high-recall by intent. Dropping a true member here is
-unrecoverable — the solver can never put back what blocking removed — while
-admitting extra candidates only costs solver time. So every block key is
-cheap and generous, and precision is recovered later by scoring and by the
-sum constraint.
-
-Confidence is deliberately conservative and is calibrated against observed
-outcomes rather than asserted: see `link_confidence`. A reconciliation
-engine that reports 0.95 and is right 60% of the time is worse than useless,
-because the number is what a human uses to decide whether to look.
+Subset-sum cannot IDENTIFY a settlement: 2^n subsets compete for ~2e6
+distinct paise values, and arithmetic alone scored 0.0% auto-clear on 120
+benchmark scenarios. Identification is entity resolution (a reference naming
+the settlement, the same payment in two feeds, clustering); the sum then
+VERIFIES the linked set. Blocking is high-recall (a dropped member is
+unrecoverable); precision comes from scoring and the sum. Confidence is
+calibrated against outcomes (link_confidence).
 """
 
 from __future__ import annotations
@@ -61,16 +33,9 @@ MAX_CANDIDATES = 400
 
 def txn_key(t: NormalizedTxn) -> str:
     """
-    A transaction's identity for linkage purposes.
-
-    `source_txn_id` alone is NOT unique. Feeds mint their own sequences and
-    they overlap constantly in real data — a gateway payment "1001" and an
-    unrelated ERP journal line "1001" are different records with the same id.
-    Keying signals by the bare id merges the two into one LinkSignals object,
-    so an unrelated record inherits the other's anchor status and can be
-    auto-cleared at 0.95 confidence on evidence that belongs to a different
-    transaction. Measured directly: an ERP record whose reference had nothing
-    to do with the settlement came back with settlement_id_match=True.
+    A transaction's identity: "{feed}:{id}". Ids are unique per feed, not
+    across feeds (gateway "1001" and ERP "1001" are different records), and
+    keying by bare id once lent one record another's anchor.
     """
     return f"{t.source.value}:{t.source_txn_id}"
 
@@ -199,24 +164,10 @@ def tokenize_ref(ref: str) -> set[str]:
 
 def _is_identifier_token(tok: str) -> bool:
     """
-    Is this token plausibly an IDENTIFIER rather than a descriptive word?
-
-    Anchoring — treating a transaction as naming the settlement — is the
-    strongest signal this module has, so it must not fire on boilerplate.
-    Real payment references are identifiers and effectively always carry
-    digits: "0042", "UTR20260818", "RZP88121". Batch IDs, by contrast,
-    routinely carry descriptive words ("SETTLE", "BATCH", "MERCHANT",
-    "DAILY") that collide with unrelated references and would anchor half
-    the pool.
-
-    This was a measured failure, not a hypothetical: a batch id of
-    "BENCH_0001_near_collision_sparse" anchored eight decoy transactions
-    whose references began "NEAR", because "near" appeared in both. The
-    solver then had two arithmetically valid subsets and correctly refused
-    to clear — losing a match it should have made.
-
-    Pure-alphabetic tokens still contribute cluster signal; they just
-    cannot anchor.
+    Can this token ANCHOR, i.e. is it an identifier rather than a word? Real
+    references carry digits; batch ids often carry words ("SETTLE", "BATCH",
+    "near") that would anchor unrelated records. Word tokens still add cluster
+    signal; they cannot anchor.
     """
     return any(ch.isdigit() for ch in tok)
 
@@ -238,26 +189,10 @@ MIN_CANONICAL_ANCHOR_LEN = 6
 
 def _contains_identifier(haystack: str, needle: str) -> bool:
     """
-    Does `haystack` contain `needle` as a WHOLE identifier rather than as the
-    truncated head of a longer one?
-
-    Plain substring containment is wrong in a way synthetic data never shows.
-    Settlement ids in the wild are sequential and unpadded — SETTLE-1,
-    SETTLE-10, SETTLE-100 — and "SETTLE1" is a substring of both "SETTLE10"
-    and "SETTLE100". Measured: batch SETTLE-1 anchored the members of
-    SETTLE-10 and SETTLE-100, and anchoring is the strongest signal this
-    module has, worth 0.55 on its own and 0.95 confidence once matched. A
-    false anchor is therefore not a near miss, it is a confident wrong answer
-    on someone else's money.
-
-    Both reference datasets hide this: they use fixed-width zero-padded ids
-    (SYNTH-BATCH-USD-2026-01-03-0000), where no id is a prefix of another.
-    That is a property of those generators, not of settlement ids.
-
-    The rule is a numeric boundary. A digit adjacent to the match on either
-    end means the number continues, so the match is a prefix of a different
-    identifier. A letter is fine: "SETTLE1" inside "SETTLE1ORDER001" is the
-    settlement id followed by a different field.
+    Does `haystack` contain `needle` as a WHOLE identifier? A digit next to the
+    match means the number continues, so "SETTLE1" does not anchor "SETTLE10"
+    or "SETTLE100"; a letter is fine ("SETTLE1ORDER001"). Padded synthetic ids
+    hide this; production ids are often unpadded.
     """
     if not needle or not haystack:
         return False
@@ -295,18 +230,11 @@ def _raw_ref(t: NormalizedTxn) -> str:
 
 def _names_by_its_separators(raw_ref: str, canon: str) -> bool:
     """
-    Does the reference, as the source wrote it, name the id as whole pieces?
-
-    The canonical form strips separators, so "VNDE960709B38-4277809164"
-    becomes one run in which a payee code ending in a digit runs straight
-    into a numeric invoice number — and _contains_identifier, rightly,
-    refuses an id followed by more digits. The separator the source system
-    wrote says where the id ends. Measured on a public checkbook: with the
-    payee readable the engine found every single-payment vendor's invoices
-    exactly; with it glued to a numeric invoice number, 15 of 51.
-
-    Whole pieces only: "SETTLE-10-ORD" does not name "SETTLE-1", because no
-    run of its pieces joins to exactly SETTLE1.
+    Does the reference, as written, name the id as whole separator-delimited
+    pieces? Canonical form glues a payee code to a numeric invoice number
+    ("VNDE960709B38-4277809164"); the source's separator says where the id ends
+    (glued, 15 of 51 vendors were found; readable, every one). "SETTLE-10-ORD" does not name
+    "SETTLE-1".
     """
     if not raw_ref:
         return False
@@ -325,27 +253,9 @@ def _names_by_its_separators(raw_ref: str, canon: str) -> bool:
 def _canonical_anchor_hits(batch: SettlementBatch, pool: list[NormalizedTxn]) -> set[str]:
     """
     Transactions whose reference contains the settlement id as a whole
-    identifier, compared in canonical form. Returns txn_key values.
-
-    Token intersection alone is not enough, and the gap is not academic.
-    Ingestion stores references with separators stripped, while `batch_id`
-    keeps whatever punctuation the source used. A settlement called
-    "SYNTH-BATCH-USD-2026-01-03-0000" therefore tokenises to fragments
-    ("2026", "0000") while the transaction that names it canonicalises to one
-    run — "SYNTHBATCHUSD202601030000SYNTHORDER000001" — whose tokens are
-    "SYNTHBATCHUSD" and "202601030000". The two never intersect, so linkage
-    found ZERO anchors on the ReconRiver dataset and every batch failed,
-    including the clean ones that tie to the cent.
-
-    Our own 50K dataset passed because its settlement id happened to contain
-    no internal separators — an untested assumption rather than a decision,
-    since nothing had compared the two sides' normalisation.
-
-    Comparing canonical forms is separator-agnostic, which is what a reference
-    field has to be: the same identifier is written "STL-2026-001",
-    "STL_2026_001" and "STL2026001" by three different systems on the same
-    payment. Containment is bounded at numeric edges so a short id cannot
-    anchor a longer one — see _contains_identifier.
+    identifier, compared in canonical (separator-free) form; returns txn_keys.
+    Token intersection alone found zero anchors on ReconRiver, whose batch ids
+    carry separators its references do not.
     """
     canon = canonical_key(batch.batch_id)
     if len(canon) < MIN_CANONICAL_ANCHOR_LEN:
@@ -469,24 +379,11 @@ def build_candidate_links(
             ),
         )
 
-    # ── source scoping, BEFORE any capping ────────────────────────────────
-    #
-    # The same payment appears in more than one feed — a gateway payment also
-    # lands as an ERP ledger entry — carrying the SAME amount. Pool both
-    # representations and subset-sum will happily select both, double-counting
-    # one payment, or swap one for the other and leave the arithmetic
-    # identical while the answer is wrong.
-    #
-    # This runs BEFORE the max_candidates cap, and the ordering is the whole
-    # point. Capping first ranks the pool by linkage score and keeps the top
-    # N — but score does not correlate with feed, so the cap can retain 400
-    # records of which NONE are in the member feed. Scoping then has nothing
-    # to filter, silently no-ops, and every out-of-feed record it was meant
-    # to remove sails through. Measured on the 50K dataset with the
-    # settlement reference stripped: the cap kept 400 candidates, scoped=0 of
-    # them were gateway, and the bank settlement credit survived as an anchor
-    # for a settlement it *is* rather than belongs to. The solver then
-    # returned a confident 67-record set that was simply wrong.
+    # ── Source scoping, BEFORE any capping ──
+    # One payment appears in several feeds with the same amount; pooling both
+    # lets the solver double-count or swap them. Scope first: capping first kept
+    # 400 records with none from the member feed, and a confident 67-record wrong
+    # set followed.
     member_source = batch.member_source
     scope_basis = "declared"
 
@@ -680,37 +577,18 @@ def confidence_band(anchored: set[str], matched_keys: set[str],
     return "arithmetic_only"
 
 
-# Set at or BELOW measured accuracy, because the two directions of error are
-# not symmetric: overconfidence tells a reviewer to skip a batch that was
-# wrong, underconfidence only wastes their time.
-#
-# Measured per band by instrumenting confidence_band across both corpora,
-# counting a band right when the matched set is EXACTLY the true set:
+# Set at or below measured accuracy: overconfidence costs money,
+# underconfidence costs review time. Measured per band (exact set = truth):
 #
 #   band               benchmark (180)      edge sweep (962)
 #   fully_anchored     n=135  obs 0.719     n=829  obs 0.837
 #   anchors_all_used   n=15   obs 1.000     n=0    no data
-#   anchors_ignored    n=0    no data       n=0    no data
-#   clustered          n=0    no data       n=0    no data
 #   arithmetic_only    n=30   obs 0.200     n=100  obs 0.000
 #
-# READ THAT TABLE CAREFULLY BEFORE CHANGING A VALUE. Two things in it are
-# easy to get wrong, and both were got wrong once already.
-#
-# First: these are NOT the confidence the engine reports. The reported figure
-# is min(arithmetic confidence, this), so a fully-anchored set whose
-# arithmetic is ambiguous is reported at the ambiguity value, not at 0.95.
-# Calibrating this table directly against "was the set right" therefore
-# measures an input, not the output a human reads — which is why
-# fully_anchored can observe 0.719 here while every prediction the engine
-# actually published at or above the 0.85 gate was correct (103 of 103
-# in-sample, 42 of 42 out-of-sample).
-#
-# Second: `anchors_ignored` and `clustered` never fired in either corpus.
-# There is no measurement behind 0.42 and 0.54, and there is no measurement
-# behind any replacement either. They are left at their reasoned values and
-# labelled unmeasured rather than given fabricated ones — a number invented
-# to look calibrated is worse than a number honestly marked as a guess.
+# These are inputs: the reported figure is min(arithmetic, band), and every
+# published prediction at or above the 0.85 gate was right (103/103
+# in-sample, 42/42 out). anchors_ignored and clustered never fired; their
+# values are reasoned and labelled unmeasured.
 CONFIDENCE_BANDS = {
     "fully_anchored": 0.95,
     "anchors_all_used": 0.88,
@@ -732,21 +610,8 @@ CONFIDENCE_BANDS = {
 def link_confidence(result: LinkageResult, matched_keys: set[str]) -> float:
     """
     Confidence that the matched set is the true set, given how it was found.
-
-    Reported alongside the arithmetic result so a human can tell a match
-    backed by a settlement-ID anchor from one that is arithmetically valid
-    but structurally unsupported. Deliberately capped below 1.0: an exact sum
-    over a narrowed pool is strong evidence, never proof, and the calibration
-    report in the benchmark is what justifies these numbers rather than the
-    numbers being asserted here.
-
-    Takes `txn_key` values, not bare `source_txn_id`s — see the `txn_key`
-    docstring for why. This function used to key on the bare id (`by_id =
-    {c.txn.source_txn_id: c ...}`, `anchored = set(result.anchor_cluster_ids)`,
-    both bare-id collections), which is exactly the confidence number a
-    cross-feed id collision would inflate, and inflating confidence is the
-    direction that costs money. Callers must resolve their matched
-    transactions to keys (`{txn_key(t) for t in ...}`) before calling this.
+    Capped below 1.0 and calibrated (see CONFIDENCE_BANDS). Takes txn_keys,
+    never bare ids: a cross-feed collision would otherwise inflate it.
     """
     if not matched_keys:
         return 0.0
@@ -762,28 +627,9 @@ def link_confidence(result: LinkageResult, matched_keys: set[str]) -> float:
     # here is the collision bug this function's docstring now warns about.
     anchored = result.anchor_keys
 
-    # These are CALIBRATED against measured outcomes, not chosen by feel.
-    # scripts/calibration.py buckets every prediction by the confidence
-    # claimed and compares it with how often that band was actually right.
-    #
-    # The first measurement (ECE 0.17, MCE 0.38) found the original values —
-    # 0.95 / 0.80 / 0.65 / 0.45 — badly overstated in the middle:
-    #
-    #   said 0.804  ->  actually right 42.9%   (partially anchored)
-    #   said 0.650  ->  actually right 54.5%   (clustered)
-    #   said 0.427  ->  actually right 19.5%   (arithmetic only)
-    #   said 0.955  ->  actually right 100%    (fully anchored)
-    #
-    # Two things came out of that. The top band was already safe — it
-    # understates, which costs review time rather than money. And PARTIAL
-    # anchoring turned out to be WORSE than clustering (42.9% vs 54.5%),
-    # the opposite of the ordering the original weights assumed: one
-    # anchored member among several unanchored ones is weak evidence, not
-    # most of the way to strong evidence.
-    #
-    # Values are set at or slightly below observed accuracy, because the two
-    # directions of error are not symmetric. Overconfidence tells a reviewer
-    # to skip a batch that was wrong; underconfidence wastes their time.
+    # Calibrated, not chosen: the first measurement found the middle bands badly
+    # overstated (0.80 was right 43%, 0.65 right 55%), and partial anchoring was
+    # worse than clustering. Values sit at or below observed accuracy.
     base = CONFIDENCE_BANDS[confidence_band(anchored, matched_keys, mean_link,
                                             result.learned_keys)]
 

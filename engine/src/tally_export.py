@@ -1,32 +1,12 @@
 """
-The approved posting, as a Tally import file.
+The approved posting as a Tally voucher import (XML).
 
-WHY TALLY
----------
-Most Indian SMEs keep their books in Tally, and Tally imports vouchers as XML
-(ENVELOPE / HEADER / BODY / IMPORTDATA / TALLYMESSAGE / VOUCHER), either as a
-file or posted to its HTTP port. A reconciliation that ends in a journal the
-accountant has to retype has not closed the loop; one that ends in an import
-file has.
-
-WHAT IT WILL AND WILL NOT EXPORT
---------------------------------
-Only a journal that balanced, from a settlement that cleared or was accepted,
-and that a named person APPROVED — the same approval separation of duties
-already guards, so whoever accepted the match cannot also be the one whose
-approval releases the file. The export is recorded in the audit trail with
-who asked for it. The engine still posts nothing: Tally does, when someone
-imports the file.
-
-TALLY'S SIGN CONVENTION
------------------------
-In a voucher's ledger entries a debit is ISDEEMEDPOSITIVE=Yes with a NEGATIVE
-amount, a credit ISDEEMEDPOSITIVE=No with a positive one, and the amounts sum
-to zero. Getting this backwards imports a mirror-image entry without an
-error, which is why it is tested rather than trusted.
-
-Ledger names default to plain ones; pass the names in the company's own chart
-of accounts, because Tally matches ledgers by exact name and creates nothing.
+Exports only a balanced journal from a cleared or accepted settlement that
+a named person approved (separation of duties applies); the export is
+audited and Tally posts it, not this engine. Tally's sign convention: a
+debit is ISDEEMEDPOSITIVE=Yes with a NEGATIVE amount, amounts sum to zero;
+it is tested, not trusted. Pass the company's own ledger names, since Tally
+matches by exact name.
 """
 
 from __future__ import annotations

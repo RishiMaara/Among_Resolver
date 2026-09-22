@@ -1,44 +1,16 @@
 """
-Razorpay-native reconciliation: Razorpay names the members; the engine checks
-everything that naming does not prove.
+Razorpay-native reconciliation: Razorpay names the members; the engine
+checks what that naming does not prove.
 
-WHY THIS IS THE PRIMARY PATH WHEN A MERCHANT IS ON RAZORPAY
------------------------------------------------------------
-The Settlement Recon API returns every payment, refund, transfer and
-adjustment with the settlement it belongs to. Re-deriving that membership by
-subset-sum would be solving a problem the gateway has already solved — and
-solving it worse. So on this path Razorpay's membership is the starting
-point, and the engine's work is the part a membership list does not do:
+  1. Arithmetic: sum(credit - debit) over members equals the payout.
+  2. A blind second opinion: re-solved with settlement ids stripped, timed by
+     creation, using only the cycle learned from OTHER settlements.
+  3. The bank: the settlement's UTR and amount among the bank credits.
+  4. The books: every payment in the merchant's ledger.
+  5. Fees and tax: Razorpay's fee includes GST; rate, GST, TDS, TCS by date.
 
-  1. THE ARITHMETIC. sum(credit - debit) over the members must equal the
-     settlement amount, to the paisa. The API's own lines have to add up to
-     the API's own payout.
-  2. AN INDEPENDENT SECOND OPINION. The engine re-solves the settlement BLIND
-     — settlement ids stripped from every line, and timed by when each
-     payment was CREATED, not when it settled (the settle time would give
-     the answer away). It may use the payout cycle, learned from the OTHER
-     settlements in the batch and never from the one being checked, the
-     same leave-one-out rule as scripts/learned_linkage_benchmark.py. If it
-     reaches the same set on its own, two methods agree. If it clears a
-     DIFFERENT set, something in the data is wrong and that is a finding.
-     If it cannot decide, that is normal for dense pools and is said so.
-  3. THE BANK. Razorpay says it paid; the bank statement says what arrived.
-     The settlement's UTR and amount are looked for among the bank credits.
-  4. THE BOOKS. Every payment in the settlement should be in the merchant's
-     ledger, by order id or payment id. Missing ones are listed.
-  5. THE FEES AND TAX. Razorpay's `fee` includes its GST; the fee audit
-     reads it that way and checks rate, GST, TDS and TCS by date.
-
-A settlement is VERIFIED when the arithmetic closes and nothing that was
-checked disagrees. The blind solve failing to decide is not a disagreement.
-
-WHAT HAS NOT BEEN CHECKED
--------------------------
-No live account. Field names, units and the fee-includes-tax convention are
-Razorpay's published contract, and the sample under public/sample-data is
-built to that contract with invented values. razorpay_source.verify_tie_out
-is the first thing to run against a real account, and it reports a residual
-rather than asserting one.
+VERIFIED when the arithmetic closes and nothing checked disagrees. Built to
+Razorpay's published contract; not yet run against a live account.
 """
 
 from __future__ import annotations

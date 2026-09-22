@@ -50,25 +50,10 @@ def _settlement_key(header: str) -> str:
 
 def _settlement_columns(rows: list[dict], headers: list[str]) -> dict[str, str]:
     """
-    Work out which column is the credited amount and which is the date, by
-    looking at the VALUES.
-
-    Synonyms cannot carry this. Tested against five bank layouts, name
-    matching alone resolved one — the one it had been tuned to. Banks differ
-    from each other in column names and from themselves across products, and
-    each new synonym matches the sample in hand and misses the next file.
-
-    Two things make a bank statement harder than a transaction feed, and both
-    are handled here rather than hoped away:
-
-      A statement has BOTH debit and credit columns. A settlement is money
-      ARRIVING, so the debit column is the wrong one and picking "the numeric
-      column" at random gets it wrong half the time.
-
-      A statement has a running balance, which is numeric, positive, and
-      present on every single row. It is the most amount-looking column in the
-      file and it is never the amount. Sparseness separates them: a credit
-      column is populated only on credit rows, a balance always.
+    Find the credited-amount and date columns from the VALUES: names resolved
+    one of five bank layouts. A statement has debit and credit columns (a
+    settlement is a credit) and a running balance that is numeric on every row;
+    sparseness separates a credit column from the balance.
     """
     filled = {h: [str(r.get(h, "") or "").strip() for r in rows] for h in headers}
 
@@ -129,21 +114,11 @@ def _settlement_columns(rows: list[dict], headers: list[str]) -> dict[str, str]:
 def parse_settlements(content: bytes, filename: str,
                       report: dict | None = None) -> list[dict]:
     """
-    Read a settlements list, or the credit lines of a bank statement.
-
-    Only the amount and the date are required. An identifier is NOT: most bank
-    statements have no column that names a settlement, and requiring one meant
-    refusing the most common file a finance team actually has. Where none is
-    found, one is derived from the date and amount and marked as derived, and
-    linkage will report that it has nothing to anchor on — which is true, and
-    which now correctly withholds rather than guessing.
-
-    Pass `report` to learn what was NOT returned. Three kinds of row are
-    dropped here and only one of them is harmless: a blank amount is a debit
-    line and genuinely is not a settlement, but a non-empty amount that will
-    not parse is a credit this parser could not read — and silently losing
-    one of those from a bank statement is the failure this whole engine
-    exists to prevent. The caller cannot report what it is never told.
+    Read a settlements list, or a bank statement's credit lines. Only amount and
+    date are required; a missing identifier is derived from them and marked
+    derived. Pass `report` to learn what was dropped: a blank amount is a debit,
+    but an unreadable one is a credit this parser could not read, and must be
+    reported.
     """
     text = content.decode("utf-8-sig", errors="replace")
     stripped = text.lstrip()

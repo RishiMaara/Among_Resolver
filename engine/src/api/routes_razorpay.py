@@ -1,18 +1,11 @@
 """
-Razorpay as the primary feed: reconcile straight from the Settlement Recon API.
+Razorpay as the primary feed: reconcile from the Settlement Recon API.
 
-  GET  /razorpay/status              are keys configured, and in which mode
-  POST /razorpay/reconcile           fetch live (keys required) and check
-  POST /razorpay/reconcile/upload    the same checks on saved API responses
+GET  /razorpay/status              are keys configured, and in which mode
+POST /razorpay/reconcile           fetch live (keys required) and check
+POST /razorpay/reconcile/upload    the same checks on saved API responses
 
-The upload route takes the JSON the two API calls return — /v1/settlements
-and /v1/settlements/recon/combined — plus, optionally, a bank statement and a
-ledger in any format the main upload accepts. It exists so the path can be
-exercised without keys, and so a merchant can reconcile an export they
-already have. Both routes run the same code (razorpay_recon.reconcile).
-
-Keys never leave the server: the status route reports the mode and the first
-characters of the Key Id, never the secret.
+Both run razorpay_recon.reconcile. Keys never leave the server.
 """
 
 from __future__ import annotations

@@ -1,21 +1,9 @@
 """
-Compliance Agent (Agent 7)
+Compliance screening (RBI, FATF, FinCEN AML/CFT), deterministic.
 
-Enforces strict RBI, FATF, and FinCEN Anti-Money Laundering (AML) 
-and Combating the Financing of Terrorism (CFT) rules deterministically.
-
-Rules Implemented:
-1. Structuring (Smurfing)
-2. CTR (Cash Transaction Reporting) Aggregates
-3. Cross-Border Wire limits
-4. High Velocity Anomalies
-5. Sanctions & PEP Screening
-6. Suspicious Keyword Screening
-7. Dormant Account Spikes
-8. Circular Flow (Layering)
-9. Duplicate Transactions
-10. Counterparty Concentration Risk
-11. Extreme Amount Blocking
+Rules: structuring, CTR aggregates, cross-border wire limits, velocity,
+sanctions/PEP, suspicious keywords, dormant-account spikes, circular flows,
+duplicates, counterparty concentration, extreme amounts.
 """
 
 import logging
@@ -80,23 +68,11 @@ INR_5CR = 50_000_000 * 100
 # rings are short; an unbounded search would hang on a dense batch.
 MAX_CYCLE_DEPTH = 4
 
-# ── Sanctions screening list ───────────────────────────────────────────────────
-#
-# SANCTIONS_HIT is the only rule in this engine that blocks funds on a
-# statutory basis, so where its list comes from matters more than any other
-# configuration here. Four names hardcoded in source is a demo, and a demo that
-# silently passes every real designated party is worse than one that admits it.
-#
-# The list is therefore loaded from SANCTIONS_LIST_PATH (one identifier per
-# line, blank lines and # comments ignored). Without that variable the engine
-# falls back to a tiny illustrative set and says so loudly at import — a
-# deployment that screens four names must never look like one that screens the
-# UN Consolidated List.
-#
-# Even a file-backed list is a point-in-time copy: designations change, and
-# real screening also needs fuzzy name matching, aliases, transliteration and
-# date-of-birth disambiguation. The rulebook states this limitation to any
-# reviewer (see compliance_rulebook.SANCTIONS_HIT.threshold_applied).
+# ── Sanctions screening list ──
+# Loaded from SANCTIONS_LIST_PATH (one identifier per line); without it a tiny
+# illustrative set is used and the engine says so loudly. Screening is exact
+# after normalisation: no fuzzy names, aliases, transliteration or DOB, as the
+# rulebook states.
 
 # Stored already folded, in the same form normalize_party produces. A constant
 # written in a different shape from the list it stands in for is a trap: the
@@ -130,17 +106,9 @@ SANCTIONS_LIST_META: dict[str, str] = {}
 
 def normalize_party(name: str) -> str:
     """
-    Fold a counterparty name to the form the sanctions list is stored in.
-
-    Without this, screening compares raw `payer_id` strings against list
-    entries by exact equality, and a real list of full names matches nothing:
-    "Al-Qaida" never equals "AL QAIDA", so the engine reports a clean screen
-    against a list it cannot hit. Punctuation and spacing are noise here;
-    folding both sides identically is what makes the comparison mean anything.
-
-    Deliberately the same rule as fetch_sanctions_list.normalize. If the two
-    drift apart the list stops matching itself and the failure is silent,
-    which is why a test asserts they agree.
+    Fold a counterparty name to the form the sanctions list is stored in
+    ("Al-Qaida" == "AL QAIDA"). Same rule as fetch_sanctions_list.normalize; a
+    test asserts they agree.
     """
     return " ".join("".join(
         ch if ch.isalnum() else " " for ch in (name or "")

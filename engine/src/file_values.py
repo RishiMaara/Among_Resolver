@@ -13,16 +13,9 @@ from ingestion import _fast_parse, clean_amount_str, AmountUnreadable
 
 def _clean_amount(value: str | int | float) -> float:
     """
-    Read an amount, or refuse to.
-
-    Thin wrapper over ingestion.clean_amount_str, which owns this because it
-    also produces the integer paise that subset-sum matches on. Both files
-    grew the same "first numeric fragment wins" bug independently; one
-    implementation cannot drift from itself.
-
-    Empty still returns 0.0: a blank cell means the field is absent — a debit
-    row on a bank statement carries no credit amount — which is a fact rather
-    than a defect.
+    Read an amount, or refuse to. Wraps ingestion.clean_amount_str so there is
+    one implementation. A blank cell is 0.0: the field is absent (a debit row
+    has no credit), which is a fact, not a defect.
     """
     if isinstance(value, bool):
         raise AmountUnreadable(f"expected an amount, got a boolean: {value!r}")
@@ -39,21 +32,9 @@ _SLASH_DATE = re.compile(r"^\s*(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})\s*$")
 
 def resolve_day_order(values: list[str]) -> tuple[str, bool]:
     """
-    Decide whether a column of d/m/y-shaped dates is day-first or month-first,
-    by looking at the WHOLE column rather than one value.
-
-    A single "09/03/2026" cannot be resolved: it is 9 March to most of the
-    world and 3 September in the US. A column can be, because one row with a
-    first component above 12 settles it for every other row.
-
-    Returns (order, proven). `proven` is False when every value in the column
-    happens to be ambiguous — the caller must not present a guess as a fact.
-
-    This exists because the date was previously handed to the browser as the
-    raw string and read with `new Date(...)`, which assumes US month-first.
-    An Indian statement's 09/03/2026 became September 3rd — a month that was
-    not in the file — and 15/03/2026 became Invalid Date, so the field
-    silently never filled at all.
+    Decide day-first or month-first from the WHOLE column: one value above 12 in
+    the first position settles it. Returns (order, proven); proven is False when
+    every value is ambiguous, and a guess must not be shown as a fact.
     """
     day_first = month_first = False
     for v in values:

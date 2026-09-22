@@ -1,24 +1,9 @@
 """
-Chargebacks: file a dispute, get a reversal that a later settlement absorbs.
-
-WHY A NEW ROW AND NOT AN EDIT
------------------------------
-When a processor claws money back, the tempting move is to reopen the
-settlement the original payment cleared in and subtract it. That destroys the
-thing the settlement is for: a record of what was true on the day it closed.
-A reconciliation that can be rewritten after the fact cannot be audited, and
-the batch that was signed off is no longer the batch anyone signed.
-
-So a chargeback produces a NEW transaction — a negative one, referencing the
-original — which waits here until a settlement takes it in. The processor
-deducts the money in some later payout; that payout is the settlement this
-reversal belongs to, and the arithmetic ties out there. The closed batch is
-left exactly as it was.
-
-Taking reversals in is opt-in per reconciliation (`include_chargebacks` on
-the upload form) rather than automatic, because which payout absorbs a
-clawback is a fact about the processor's timing, not something this engine
-should assume on a reviewer's behalf.
+Chargebacks: a dispute becomes a NEW negative row that a later settlement
+absorbs, never an edit to the settlement the payment cleared in, so a closed
+batch stays exactly as it was signed off. Taking reversals in is opt-in per
+reconciliation (`include_chargebacks`), because which payout absorbs one is
+the processor's timing, not the engine's assumption.
 """
 
 from __future__ import annotations

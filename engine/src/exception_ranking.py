@@ -1,35 +1,11 @@
 """
-Exceptions ranked by the money waiting on them.
+Exceptions ranked by the money waiting on them, largest first.
 
-WHY ORDER IS A DECISION, NOT A DISPLAY DETAIL
----------------------------------------------
-An exception list is a work queue. A reviewer with twenty minutes works it
-top to bottom, the results screen shows the first ten, run history keeps the
-first five hundred, and settlement Q&A grounds its answers on the first few.
-So whatever sits at the top is what gets looked at — and the list used to be
-in whatever order the pipeline happened to raise them, which put a ₹40 memo
-mismatch above a ₹4,00,000 unresolved leg as often as not.
-
-Now each exception carries the rupees at stake in it, and the list is sorted
-by that, largest first. A batch-level summary states the total value waiting
-on a human and what share of the settlement it is — the number a controller
-asks for first ("how much is stuck?") and the one a raw count hides.
-
-HOW "AT STAKE" IS COUNTED
--------------------------
-The absolute amount of every transaction an exception names — a refund at
-stake is as much money as a payment. Two things would inflate it, and both
-are prevented:
-
-  * one payment named by two exceptions. The per-exception figures honestly
-    each include it; the batch total counts it once.
-  * one id appearing in two feeds (a gateway payment and an unrelated ERP
-    line both called "1001"). An exception names bare ids, so it cannot say
-    which record it meant; the larger of the two is used rather than their
-    sum, so a collision can never double a figure.
-
-An exception whose transactions are not in the pool at all is kept and marked
-unpriced rather than given a zero that would read as "nothing at stake".
+An exception list is a work queue, so order decides what gets looked at.
+"At stake" is the absolute amount of every transaction an exception names;
+the batch total counts a payment once, and a bare id present in two feeds
+counts the larger record, never both. An exception with nothing in the pool
+is marked unpriced, not zero.
 """
 
 from __future__ import annotations

@@ -29,22 +29,9 @@ router = APIRouter()
 @router.get("/escalations", summary="Compliance findings escalated for follow-up")
 def list_escalations(limit: int = 200):
     """
-    Where an escalation goes.
-
-    "Escalate" is a verb that names a destination, and there was not one. The
-    button wrote a line to the batch's own audit trail and stopped, so a
-    reviewer who escalated a finding had no way to see it again, and nobody
-    downstream had any way to find it. The word promised a handoff the system
-    never performed.
-
-    This is that list: every finding escalated across every batch, newest
-    first, with what was escalated, by whom and against which payments. It
-    reads the audit trail rather than a second store, so an escalation cannot
-    exist in one place and not the other.
-
-    Escalations do not auto-resolve. Clearing one is a decision, and it goes
-    through the same compliance decision endpoint that raised it — an item
-    that disappeared on its own would be worse than one that never moved.
+    Every escalated finding across every batch, newest first, read from the
+    audit trail so an escalation cannot exist in one place and not the other.
+    Escalations do not auto-resolve; clearing one is a decision.
     """
     entries = audit.find_entries("human_reviewer", "ESCALATED", limit=limit)
 

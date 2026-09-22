@@ -1,26 +1,12 @@
 """
-Scanned bank statements: read by a model, used only if every figure balances.
+Scanned bank statements read by a model, used only if every figure balances.
 
-WHY A MODEL, AND WHY IT IS SAFE HERE
-------------------------------------
-A scan has no text layer, so the statement's table has to be read from
-pixels. A multimodal model reads a PDF or a photo directly, with no OCR
-binary to install on a serverless host already near its size limit.
-
-What makes a model acceptable for this is that a bank statement carries its
-own proof. Opening + credits − debits = closing, and each line's running
-balance is the previous one plus that line's movement. A misread digit
-breaks that arithmetic at the line where it happened, so a reading that
-balances line by line is one in which every amount and balance was read
-right — and a reading that does not is refused, with the line named, rather
-than repaired or guessed at. The model proposes the table; the balance
-check decides whether it is used.
-
-What the check cannot see: a wrong date, or a description misspelled. The
-reading says so, and its dates must at least run in order, as a statement's do.
-
-Amounts come back as the text printed on the page and are parsed here — the
-model is not asked to do arithmetic, only to copy.
+A statement carries its own proof: opening + credits - debits = closing, and
+each running balance follows from the line before. A misread digit breaks
+that at the line where it happened, so a reading that balances line by line
+has every amount right, and one that does not is refused with the line
+named. The model copies amounts as printed text; it does no arithmetic.
+Dates are only checked to run in order.
 """
 
 from __future__ import annotations

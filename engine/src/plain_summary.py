@@ -1,33 +1,8 @@
 """
-The same verdict, in the language of the person who has to act on it.
-
-WHY
----
-The engine's `reasoning` field is written for whoever has to debug the engine,
-and it shows:
-
-    "Withheld from auto-clear: linkage found no reference, cluster or
-     cross-source evidence anywhere in this pool, so the match rests on the
-     arithmetic alone. Routed for human review. Linkage: no_linkage_signal,
-     structural confidence 0.22 over 3 linked candidate(s)."
-
-Every load-bearing word in that sentence — linkage, cluster, cross-source,
-no_linkage_signal, structural confidence — is this codebase's vocabulary, not
-a finance team's. The amounts are worse: they are integer paise, so a reader
-sees "5000000c" where they think in rupees, and "-4999900c" for a shortfall
-that is really about fifty thousand rupees.
-
-The technical text is not wrong and is not removed. It is the record, and an
-engineer reading an audit trail needs exactly those words. What changes is
-which one a reviewer meets first: they get a plain statement of what happened
-and what to do, and the technical line stays one click away.
-
-WHAT THIS IS NOT
-----------------
-Not a second opinion. Every number here is read off the same report the
-technical line describes, so the two cannot disagree — if this text says the
-match is short by fifty thousand rupees, that is the same residual, divided
-by a hundred.
+The same verdict in the reviewer's language: rupees instead of paise, and
+what happened and what to do instead of engine vocabulary. The technical
+text stays one click away, and every number is read off the same report, so
+the two cannot disagree.
 """
 
 from __future__ import annotations

@@ -1,41 +1,12 @@
 """
 Which Indian tax provision applies on a given day, and at what rate.
 
-WHY DATES AND NOT A NUMBER
---------------------------
-The fee audit first shipped with a single TDS rate, and it was wrong for two
-years: 1% after the Finance (No. 2) Act 2024 cut it to 0.1% from 1 October
-2024 (FAILURE_LOG entry 14). A single number is wrong the day the law moves,
-and it is wrong for every settlement that straddles the change. So rates here
-are schedules — each entry says what applies from which day — and a payment
-is taxed under the provision in force on its own date.
-
-That matters twice in 2026. From 1 April 2026 the Income-tax Act 2025
-replaces the 1961 Act, and e-commerce TDS moves from Section 194-O to
-Section 393(1), Table Sl. 8(v). The rate did not change; the citation did,
-and a TDS certificate or a reviewer's note that cites a repealed section for
-an April payment is the kind of error an auditor circles. A batch collected
-on 31 March and settled on 2 April has payments under both.
-
-THE DATE THAT DECIDES
----------------------
-TDS under 194-O / 393(1) falls due at the EARLIER of crediting the seller or
-paying them. A gateway credits the merchant's account when the customer pays
-and pays out at settlement, so the payment date is the earlier one and it is
-the one used. Dates are taken in India Standard Time: a payment at 20:00 UTC
-on 31 March is 01:30 on 1 April in India, and is under the new Act.
-
-TCS under Section 52 of the CGST Act is collected by an e-commerce operator
-on the net value of taxable supplies made through it — supplies less returns
-— and the rate is set by the supply date: 1% from 1 October 2018, halved to
-0.5% (0.25% CGST + 0.25% SGST, or 0.5% IGST) from 10 July 2024.
-
-WHAT THIS IS NOT
-----------------
-Tax advice. Whether a gateway is the "e-commerce operator" for either
-provision depends on the merchant's arrangement, which this engine cannot
-see. The schedules make the arithmetic right for the day; whether the
-arithmetic should run at all stays the merchant's setting.
+Rates are dated schedules, so each payment is taxed under the law in force
+on its own date (IST). From 1 April 2026 e-commerce TDS moves from Section
+194-O of the 1961 Act to Section 393(1) Sl. 8(v) of the Income-tax Act 2025
+(0.1% under both); TDS falls due on the payment date. GST TCS under Section
+52 CGST: 1% from 1 October 2018, 0.5% from 10 July 2024, on net supplies.
+Whether either applies is the merchant's arrangement, not tax advice.
 """
 
 from __future__ import annotations
@@ -105,22 +76,10 @@ class GstInvoice:
 def itc_check(invoice: GstInvoice, deducted_fee_cents: int,
               deducted_gst_cents: int) -> dict:
     """
-    Compare the GST the gateway deducted across a month's settlements with
-    the GST on its invoice for that month.
-
-    Input tax credit is claimed on the invoice, not on the deductions, so the
-    invoice is what can be claimed. The comparison says what to do about the
-    difference:
-
-    - deducted more than invoiced: GST was paid that no invoice supports. That
-      part cannot be claimed until the gateway issues an invoice or a debit
-      note for it — ask for one.
-    - invoiced more than deducted: the invoice carries GST on fees that were
-      not taken from settlements. Claiming it would claim credit on a charge
-      the books do not show — ask for a credit note, or find the charge.
-
-    It also checks the invoice against itself: GST at 18% of the taxable value
-    it states, within a rupee for rounding.
+    Compare GST the gateway deducted in a month with the GST on its invoice.
+    Credit is claimed on the invoice: deducted more than invoiced means ask for
+    an invoice or debit note; invoiced more means ask for a credit note or find
+    the charge. Also checks the invoice's own 18% within a rupee.
     """
     gst_diff = deducted_gst_cents - invoice.gst_cents
     fee_diff = deducted_fee_cents - invoice.taxable_value_cents

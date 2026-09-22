@@ -1,51 +1,21 @@
 """
-The investigator: for a settlement the engine would not clear, propose what to do.
+The investigator: for a settlement the engine would not clear, propose one
+typed action.
 
-WHAT IT IS
-----------
-A withheld settlement lands on someone's desk with a question: which of these
-sets is right, or is the answer "wait", "ask the gateway", "write off the
-rounding", or "escalate"? This module prepares the case the way a senior
-reconciler would — every read-only fact the engine already has — and
-proposes ONE typed action:
+    MATCH_PROPOSAL      these transactions are the settlement
+    WAIT_FOR_DATA       the missing piece is in transit; re-run after a date
+    REQUEST_SOURCE      ask the gateway, bank or ledger owner for a document
+    WRITE_OFF_ROUNDING  the residual is rounding (at most Rs 1)
+    ESCALATE            a person must decide; here is why
 
-    MATCH_PROPOSAL        these transactions are the settlement
-    WAIT_FOR_DATA         the missing piece is in transit; re-run after a date
-    REQUEST_SOURCE        ask the gateway, bank or ledger owner for a document
-    WRITE_OFF_ROUNDING    the residual is rounding (at most Rs 1)
-    ESCALATE              a person must decide; here is why
-
-Two proposers make the same kind of proposal from the same case. `propose_rules`
-is fixed logic. `propose_model` hands the case to a language model, which can
-weigh what rules cannot — memo text, which set's dates cohere, which
-reference fragment survives — and must say why.
-
-THE TOOLS ARE RUN FOR IT, AND THEY ONLY READ
---------------------------------------------
-There is no loop in which the model calls tools and acts on the results: every
-read-only tool — the recorded result, the pool, alternative sets that also
-sum to the target (CP-SAT, bounded), exceptions by category, the due date on
-the working-day calendar — is run first, and the model is shown the case.
-Nothing it returns can change a record. That is a deliberate design for money:
-an agent that can act is an agent whose mistakes land in the books.
-
-EVERY PROPOSAL IS VERIFIED BEFORE ANYONE SEES IT
------------------------------------------------
-`verify` checks the proposal in code, whoever made it: a match must name only
-transactions in this settlement's pool, once each, in its currency, none
-already paid out by another settlement, summing to the target within the
-engine's own tolerance — not tighter, which rejected true sets; a
-wait must name a working day after the settlement and within ten working
-days; a write-off must be the actual residual and at most Rs 1; a request
-must name a party that can answer it. The reason must pass the grounding
-check — every figure and id it cites must be in the case. A proposal that
-fails is shown as REJECTED with the failed checks, never as advice.
-
-And a verified proposal is still a proposal. Accepting a match goes through
-the reviewer decision endpoint, where separation of duties applies.
-
-`scripts/investigation_eval.py` measures both proposers on benchmark
-settlements the engine withheld, with the verifier on and off.
+Every read-only tool (recorded result, pool, alternative sets, exceptions,
+working-day due date) is run first and the proposer sees the case; nothing
+it returns can change a record. `propose_rules` is fixed logic;
+`propose_model` asks a model. `verify` checks every proposal in code (pool,
+currency, feed, double counts, already paid out, sum within tolerance,
+calendar, write-off size, grounded reason); a failure is shown REJECTED,
+never as advice. A verified proposal is still only a proposal.
+scripts/investigation_eval.py measures both proposers.
 """
 
 from __future__ import annotations
@@ -302,17 +272,10 @@ _SCHEMA = {
 
 def _aliased(case: dict, redact_text: bool) -> tuple[dict, dict[str, str]]:
     """
-    The case as the model sees it: ids and the settlement's name replaced by
-    opaque aliases, and — for measurement — reference and memo text removed.
-
-    Aliases because an identifier can carry meaning it should not: the
-    benchmark names its members S19_TRUE_0 and its settlements after the
-    failure they simulate, and the first measured run showed the model
-    reading the answer off the labels. Production ids are opaque anyway.
-
-    redact_text for the evaluation only: the benchmark's memos say "decoy"
-    and "unrelated payment", which no real bank narration does. In production
-    the text is real evidence and the model sees it.
+    The case as the model sees it: ids and the settlement name as opaque
+    aliases, because benchmark labels once gave the answer away. redact_text is
+    for evaluation only (benchmark memos say "decoy"); in production the text is
+    real evidence.
     """
     pub = copy.deepcopy(_public(case))
     alias: dict[str, str] = {}
@@ -519,18 +482,12 @@ def verify(p: Proposal, case: dict) -> dict:
 def decide(case: dict, use_model: bool = False, redact_text: bool = False,
            ask=None) -> tuple[Proposal, dict, list[dict]]:
     """
-    The investigator's loop, bounded: at most two model calls.
-
-      1. The rules first. A set that alone leads on evidence is proposed with
-         no model call — deterministic evidence needs no opinion.
-      2. Otherwise the model proposes, and the verifier checks it.
-      3. Rejected, the model is told why and answers once more.
-      4. Still rejected, the rules' answer stands if it verified, and an
-         escalation with the sets listed if it did not — never a proposal the
-         checks turned down.
-
-    `ask` stands in for propose_model (the evaluation passes a cached one).
-    Returns the proposal used, its verdict, and every attempt on the way.
+    The investigator's loop, at most two model calls:
+      1. Rules first: a set that alone leads on evidence needs no model.
+      2. Otherwise the model proposes and the verifier checks it.
+      3. Rejected, the model is told why (in aliases) and answers once more.
+      4. Still rejected: the rules' answer if it verified, else an escalation.
+    `ask` stands in for propose_model. Returns proposal, verdict and attempts.
     """
     ask = ask or propose_model
     rules = propose_rules(case)

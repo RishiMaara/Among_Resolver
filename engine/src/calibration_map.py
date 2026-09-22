@@ -1,36 +1,12 @@
 """
-What a confidence figure has actually been worth, and what reviewers say it is.
+What a confidence figure has actually been worth.
 
-WHY
----
-The engine's confidence comes from named bands set at or below measured
-accuracy, and the 0.85 auto-clear gate has held: no prediction at or above it
-has been wrong, in-sample or out. Below the gate the figures are rougher, and
-the roughest measured was the low band out-of-sample: it SAYS about 0.14 and
-was right 3.1% of the time. A reviewer reading "0.14" as "one in seven" is
-being misled by a factor of four.
-
-So each result also carries `calibrated_confidence`: the raw figure mapped
-through isotonic regression — the pool-adjacent-violators fit, monotone by
-construction, so a higher raw confidence never maps lower — fitted on this
-project's benchmark and judged on ReconRiver, a corpus it never saw
-(scripts/fit_calibration.py writes the map and both scores).
-
-WHAT IT DOES NOT DO
--------------------
-Move the gate. Auto-clear still reads the raw confidence, because the raw
-figure is the one with a record at the gate. The calibrated figure is for the
-person deciding what to look at first.
-
-REVIEWERS TEACH IT TOO
-----------------------
-Every confirmed or rejected batch is an outcome: the engine proposed a set at
-some confidence, and a person said right or wrong. Those are recorded, and
-GET /calibration shows, per band, how often reviewers agreed — beside what
-the shipped map predicts. When they part company, the map is out of date for
-this merchant's data, and the report says so rather than quietly refitting:
-a calibration that retrains itself on whoever clicked last is not one an
-auditor can pin down.
+Each result carries `calibrated_confidence`: the raw figure through an
+isotonic (monotone) map fitted on the benchmark and judged on ReconRiver
+(scripts/fit_calibration.py). The auto-clear gate still reads the raw figure,
+which is the one with a record at the gate. Reviewer confirmations are
+recorded per band and shown beside the map (GET /calibration); a divergence
+is reported, never silently refitted.
 """
 
 from __future__ import annotations

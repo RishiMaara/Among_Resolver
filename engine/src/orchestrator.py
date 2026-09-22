@@ -1,21 +1,11 @@
 """
-Agent 6 — Orchestrator + Governance.
+The reconciliation pipeline for one settlement, and the N:M variant.
 
-Runs the full pipeline in order and enforces the one non-negotiable rule
-from the brief: nothing writes back to a ledger automatically. The
-orchestrator proposes matches, computes an honest match rate, and
-produces an exception report. A human approves final write-backs —
-that approval step is outside this module by design.
-
-Pipeline order:
-  1. Ingest + normalize (Agent 1) — happens before this is called
-  2. Fee decomposition (Agent 2) -> gross target for each batch
-  3. Exact subset-sum (Agent 3) -> try deterministic match first
-  3b. Ambiguity tie-breaking -> when Agent 3 finds multiple valid subsets,
-      use fuzzy ref_id/memo signal to prefer the more coherent one
-  4. Fuzzy/semantic fallback (Agent 4) -> only for what Agent 3 couldn't clear
-  5. Exception diagnosis (Agent 5) -> for what's still unresolved
-  6. Audit log every decision (audit.py)
+Order: fee decomposition (gross target), currency and status filters, the
+settlement window, linkage, exact subset-sum in evidence tiers, the refusal
+gates (recon_gates.py), tiebreak for ambiguous sets, fuzzy recovery when
+nothing sums, exception diagnosis, report and tie-out. Every decision is
+written to the audit trail. Nothing here writes to a ledger.
 """
 
 from __future__ import annotations
@@ -175,24 +165,10 @@ NON_SETTLING_STATUSES = {
     "on_hold", "held", "blocked", "frozen",
 }
 
-# DELIBERATELY NOT IN THAT LIST, and the reasoning matters more than the
-# names:
-#
-#   refunded, partially_refunded, chargeback, chargeback_lost, dispute
-#
-# These all describe money that DID move and was later clawed back. The
-# clawback is its own row — a negative amount the engine already handles as a
-# forced member when it is anchored. Excluding the original as well would
-# subtract the same reversal twice and leave the settlement short by exactly
-# the refunded amount, which is a wrong answer that ties out to nothing and
-# would be very hard to trace back to this list.
-#
-#   captured, settled, succeeded, success, paid, credited, processed,
-#   deemed_success, represented
-#
-# Money moved. `deemed_success` is UPI's "treat as successful pending
-# confirmation" and settles; `represented` is a chargeback resolved in the
-# merchant's favour, so the money is theirs again.
+# Deliberately settling: refunded, chargeback, dispute and similar describe
+# money that moved and was clawed back by its own negative row; excluding the
+# original too would count the reversal twice. captured, settled, success,
+# deemed_success (UPI) and represented all settled.
 
 
 def _count_by_reason(exceptions: list[ExceptionRecord]) -> dict:
@@ -204,16 +180,9 @@ def _count_by_reason(exceptions: list[ExceptionRecord]) -> dict:
 
 def _compute_false_positive_cost(match_result: MatchResult) -> int:
     """
-    Conservative estimate of the financial cost if this match is wrong.
-    - High-confidence exact match (confidence=1.0, not ambiguous): cost = 0
-      (the math is exact, only way it's wrong is a fee-rate error)
-    - Ambiguous exact match (confidence=0.36, re-measured — see subset_sum.py's
-      match_batch for why: calibration measured the 0.65 band right only
-      54.5% of the time and the value was moved to the observed rate): 5%
-      of matched sum (plausible restatement error if wrong subset chosen)
-    - Fuzzy/semantic match: 10% of matched sum
-      (semantic reasoning could be wrong even at high confidence)
-    - Not cleared: N/A (no auto-clear, human approves)
+    Estimated cost if this match is wrong: 0 for an exact, unambiguous clear;
+    5% of the matched sum for an ambiguous one; 10% for fuzzy; 0 when not
+    cleared.
     """
     if not match_result.cleared:
         return 0
@@ -237,28 +206,10 @@ def _tiebreak_ambiguous_match(
     time_limit_s: float = 5.0,
 ) -> Optional[list[NormalizedTxn]]:
     """
-    When CP-SAT is ambiguous (multiple valid subsets), use ref_id/memo
-    plausibility scoring to pick the more coherent subset.
-
-    Strategy: find one alternate subset via CP-SAT with forbidding constraint,
-    then score both primary and alternate against the full pool's ref_id/memo
-    signal — higher plausibility score wins.
-
-    `forced_ids` must be threaded through to this solve for the same reason
-    `_probe_for_alternate_subset` in subset_sum.py forces them: without it,
-    this probe happily "finds" an alternate that simply drops an anchored
-    refund — a set that is arithmetically valid and factually impossible —
-    and if fuzzy plausibility scores that alternate higher, the tiebreak
-    would CHOOSE it. That comment already existed next to the fix in
-    subset_sum.py; this call site was the twin it wasn't applied to.
-    `num_search_workers`/`time_limit_s` default to the same values as
-    before (1 worker, 5s) when not supplied, so this is not a behavior
-    change for any caller that doesn't pass them.
-
-    `primary_keys` (and `forced_ids`) are txn_key values, not bare
-    source_txn_id — `candidates` here is a settlement's own windowed pool,
-    which routinely merges several feeds, so a bare id is not a safe
-    identity. See subset_sum._solve_cpsat's docstring.
+    Break an ambiguous tie: find one alternate subset (forbidding the primary)
+    and keep whichever scores higher on reference/memo plausibility.
+    `forced_ids` are passed through so the alternate cannot simply drop an
+    anchored refund; keys are txn_keys, since the pool mixes feeds.
     """
     from subset_sum import _solve_cpsat
 
@@ -320,25 +271,9 @@ def _filter_to_settlement_currency(
     batch: SettlementBatch, candidates: list[NormalizedTxn]
 ) -> list[NormalizedTxn]:
     """Drop candidates denominated in a currency the settlement is not in."""
-    # Currency first, because amount_cents carries no unit.
-    #
-    # Every amount in this engine is an integer of minor units, and nothing
-    # downstream re-checks what those units are. The solver will therefore
-    # happily add 100 USD to 100 INR and report 200 — and it did: a three-leg
-    # settlement of INR 300 cleared at 0.97 confidence against two INR legs
-    # and one USD leg, because 10000 + 10000 + 10000 is 30000 whatever the
-    # currencies were.
-    #
-    # That is a false clear at the top confidence band, and no other guard
-    # catches it. The anchors were real, the arithmetic was exact, the tie-out
-    # was zero. Every signal the engine reasons with said yes. The unit was
-    # simply never part of the comparison.
-    #
-    # An FX-aware version would convert at the settlement's rate and carry the
-    # rate as evidence. That is real work and is not done. Excluding
-    # foreign-currency candidates is the honest interim: a settlement whose
-    # members are in another currency now reports that rather than silently
-    # summing across the boundary.
+    # Currency first: amounts are integer minor units with no unit attached, so
+    # the solver once cleared INR 300 from two INR legs and a USD leg at 0.97.
+    # Foreign-currency candidates are excluded until FX conversion exists.
     settlement_ccy = (batch.currency or "").strip().upper()
     if settlement_ccy:
         same_ccy = [
@@ -373,20 +308,9 @@ def _filter_out_non_settling(
     batch: SettlementBatch, candidates: list[NormalizedTxn]
 ) -> list[NormalizedTxn]:
     """Drop candidates whose status says the money never moved."""
-    # Pre-filter to a realistic settlement window BEFORE running CP-SAT.
-    # Money that never moved is not a settlement member.
-    #
-    # `status` was not mapped at all until now, so a FAILED payment entered
-    # the pool as a spendable amount. Two things followed. It could be named
-    # as a member of a settlement it was never part of. And on a merchant
-    # whose prices repeat, the failures created alternate subsets that were
-    # arithmetically valid and factually impossible — ten captured payments
-    # of Rs 1,000 beside five failed ones meant "any ten of fifteen", and the
-    # batch was withheld as ambiguous when the real answer was unique.
-    #
-    # Only EXPLICITLY non-settling states are dropped. A blank or unrecognised
-    # status is kept: most feeds carry none, and inventing a reason to discard
-    # a payment is the opposite of what this engine is for.
+    # Money that never moved is not a settlement member. Failed payments once
+    # entered the pool as spendable and created impossible alternate subsets. Only
+    # explicitly non-settling states are dropped; blank or unknown stays.
     dropped_status: dict[str, int] = {}
     settling = []
     for _t in candidates:
@@ -435,30 +359,11 @@ def _solve_in_tiers(
     cfg: SubsetSumConfig,
 ) -> _SolveOutcome:
     """Agent 3 end to end: tiered solve, empty-linkage fallback, safety net."""
-    # Agent 3: exact subset-sum, solved in tiers of decreasing evidence.
-    #
-    # Transactions that NAME the settlement are far stronger evidence than
-    # transactions that merely cluster near it, so they get solved on their
-    # own first. If four transactions cite settlement X and sum exactly to
-    # X's target, that is the answer — admitting weakly-linked candidates
-    # alongside them can only manufacture ambiguity.
-    #
-    # Measured: without this tier the near-collision family scored 0%. Decoys
-    # summing within tolerance entered on cluster signal, gave the solver a
-    # second arithmetically valid subset, and it correctly refused to clear —
-    # losing a match it should have made. Solving anchors first recovers it
-    # without loosening the ambiguity check that makes the refusal correct.
-    # Tiers, strongest evidence first. Each tier is solved on its own and the
-    # first one that CLEARS wins.
-    #
-    # The tiers matter because a weak signal admitted alongside strong ones
-    # does not add information, it adds degeneracy. Cross-source amount
-    # peering scores only 0.10 on its own — real but feeble, since unrelated
-    # payments share amounts constantly. Admitting every amount-peered record
-    # into the same solve as the anchored ones re-creates exactly the
-    # under-determination this module exists to remove. Measured: it took
-    # ref_partial from 100% to 13%, with truth scoring 0.35 and diluting
-    # noise scoring 0.10 — separable, but only if they are solved separately.
+    # Exact subset-sum in tiers of decreasing evidence, first tier to CLEAR wins:
+    # records naming the settlement, then the learned cohort, then strong links,
+    # then everything linked. Weak signals admitted beside strong ones add
+    # degeneracy, not information (solving anchors first took near-collision from
+    # 0% to solved; one pooled tier took ref_partial from 100% to 13%).
     STRONG_LINK = 0.25
 
     # Keyed by txn_key, not by the bare id. Feeds mint overlapping id
@@ -501,25 +406,11 @@ def _solve_in_tiers(
 
         tier_result = match_batch(batch.batch_id, tier_txns, gross_target, cfg)
 
-        # Substitutability guard.
-        #
-        # The same payment arrives in more than one feed carrying the same
-        # amount, so a solution can be swapped member-for-member with the
-        # other feed's copies and the arithmetic will not notice. Narrowing
-        # to a tier can hand the solver only ONE side of that pair, at which
-        # point the solve looks unique when it is not — and it clears,
-        # confidently, on possibly the wrong system of record.
-        #
-        # This is not hypothetical. Introducing the strong_link tier produced
-        # the first false clears this engine has ever recorded: whole matched
-        # sets of "..._MIRROR" records standing in for their originals, in
-        # ref_missing and ref_truncated where nothing distinguishes the two.
-        #
-        # So before accepting a tier's clear, check whether an equal-amount
-        # record from a DIFFERENT feed exists outside the tier for any
-        # matched member. If one does, the answer is not unique, it only
-        # looked unique because of where the tier boundary fell — refuse to
-        # auto-clear and let a human choose the system of record.
+        # Substitutability guard: a tier can hide one copy of a payment that exists
+        # in another feed with the same amount, so a solve looks unique when it is
+        # not. This produced the first false clears ever recorded ("_MIRROR" records),
+        # so a member with an equal-amount twin in another feed outside the tier
+        # withholds the clear.
         if tier_result.cleared and tier_result.matched_txn_ids:
             # Keys, not bare ids — a bare-id collision across feeds could
             # make an `o` that IS in this tier look like it isn't (or vice
@@ -528,23 +419,10 @@ def _solve_in_tiers(
             tier_ids = {txn_key(t) for t in tier_txns}
             matched_txns = members_of(tier_result, tier_txns)
 
-            # An ANCHORED member is safe: it names the settlement, so even
-            # though a copy of it exists in another feed, we know which
-            # record belongs here. An unanchored member with a cross-feed
-            # twin is not safe — nothing distinguishes the two, and the tier
-            # boundary may simply have hidden the alternative.
-            #
-            # Scoring the two copies against each other was tried and is
-            # worse than useless: with the true record's reference stripped,
-            # its ERP copy scored HIGHER (feed-level prefixes cluster), so
-            # the comparison actively endorsed the wrong record and produced
-            # 30 false clears. Cluster rank is evidence about which system
-            # produced a record, not about which settlement it belongs to.
-            # A member from the DECLARED member feed is not substitutable by
-            # a copy in another feed: we already know which feed is
-            # authoritative, so the copy was never a candidate. Without that
-            # declaration an unanchored member with a twin is genuinely
-            # undetermined and must be withheld.
+            # Exempt: anchored members (they name the settlement) and members of the
+            # declared member feed (the other copy was never a candidate). Scoring the
+            # two copies against each other was tried and endorsed the wrong one (30
+            # false clears).
             substitutable = [
                 t for t in matched_txns
                 if txn_key(t) not in anchor_keys
@@ -713,26 +591,9 @@ def _collect_unmatched(
     unmatched: list[NormalizedTxn] = []
 
     if result.cleared:
-        # Happy path: deterministic exact match, no ambiguity.
-        #
-        # The residual pool is deliberately NOT routed to exception
-        # diagnosis. The candidate pool intentionally contains every
-        # uncleared ledger entry in the settlement window — entries that
-        # belong to other settlements, or that haven't settled yet.
-        # "Not part of this batch" is the normal state of the world, not
-        # something a human needs to investigate.
-        #
-        # Routing the residual here previously produced 20,078 exceptions
-        # on a flawless 5-transaction match against the 50K stress
-        # dataset, which (a) buried genuinely actionable exceptions under
-        # 20K rows of noise, defeating the entire purpose of the
-        # exception queue, and (b) flipped requires_human_approval to
-        # True on a 100%-confidence exact match, because summary() ORs in
-        # `len(exceptions) > 0`. A perfect match must not ask for human
-        # review.
-        #
-        # Exceptions raised elsewhere (e.g. the Compliance Agent's blocks,
-        # appended by the pipeline) are unaffected — those are real.
+        # Exact, unambiguous clear. The rest of the window belongs to other
+        # settlements and is NOT an exception: routing it produced 20,078 exceptions
+        # on a perfect 5-transaction match and demanded review of a certain answer.
         matched_ids = set(result.matched_txn_ids)
         residual_count = len(windowed_candidates) - len(matched_ids)
         unmatched = []
@@ -806,19 +667,8 @@ def _collect_unmatched(
             )
             result.method = MatchMethod.FUZZY_SEMANTIC
             result.confidence = FUZZY_RECOVERY_CONFIDENCE
-            # Finish the sentence rather than replace it. reasoning ended at
-            # "Routing to fuzzy pass." — written BEFORE this pass ran and never
-            # updated once it had, so a reader saw a recovered count and a
-            # confidence beside a line that stopped at "routing to".
-            #
-            # APPENDED, because the existing text says WHY subset-sum found
-            # nothing ("No candidate survived linkage", and others) and that is
-            # the more useful half. Overwriting it threw that away — a test
-            # caught it doing exactly that.
-            #
-            # The gap matters most here: a fuzzy set does not have to sum to
-            # the target, so the batch can carry a large residual the old text
-            # never mentioned.
+            # Append to the reasoning rather than replace it: the earlier text says why
+            # subset-sum found nothing, and a fuzzy set need not sum to the target.
             shortfall = result.matched_sum_cents - gross_target
             result.reasoning = (
                 f"{result.reasoning.rstrip()} "
@@ -1005,67 +855,17 @@ def reconcile_many(
     rate_card: FeeRateCard = DEFAULT_RATE_CARD,
 ) -> list[ReconciliationReport]:
     """
-    N:M pathway — several settlement batches solved SIMULTANEOUSLY against
-    one shared candidate pool, so a transaction that could plausibly belong
-    to more than one settlement is assigned by the solver rather than by
-    whichever batch happens to be processed first.
+    N:M: several settlements solved at once against one shared pool, so a
+    payment two settlements could claim is assigned by the solver, not by order.
 
-    This is not reconcile_batch called in a loop, and it is not
-    /reconcile/queue with a different name. The queue's batches are
-    reconciled one after another, and a payment claimed by the first is
-    simply unavailable to the second (settled_ledger records the claim) —
-    correct, and order-dependent: a batch processed later can lose a
-    transaction to an earlier one that could ALSO have been satisfied a
-    different way, and the outcome depends on queue order rather than on
-    the evidence. The joint CP-SAT solve below removes the ordering
-    dependency: every batch's assignment is decided at once, with a
-    transaction eligible for more than one target resolved by the solver
-    rather than by processing order. See subset_sum_nm.py's module
-    docstring for the solver itself.
-
-    WHAT THIS REUSES FROM THE 1:N PATH, AND WHAT IT DOES NOT
-    ----------------------------------------------------------
-    Per batch: linkage narrows its candidates before the joint solver ever
-    runs (build_candidate_links, unchanged, called once per batch against
-    that batch's own window); an anchored refund is forced rather than
-    optional (_anchored_negatives, unchanged); the joint assignment is
-    probed for alternates and a batch whose OWN matched set varies across
-    the probe is marked ambiguous
-    (subset_sum_nm.probe_for_alternate_nm_assignment, the per-target
-    sibling of subset_sum._probe_for_alternate_subset); and
-    _withhold_if_unevidenced / _apply_confidence_gate — the exact functions
-    reconcile_batch calls — decide whether each batch's result is evidenced
-    and confident enough to auto-clear, reused verbatim, per batch.
-
-    What it does NOT reuse: _solve_in_tiers' anchor/strong_link/all_linked
-    tiering, and its cross-feed substitutability guard. Both are real
-    refinements on top of the core safety net above, measured and tuned for
-    one target at a time. Generalising substitutability correctly — is a
-    member substitutable by a twin, now that the twin could belong to a
-    DIFFERENT target instead of simply being excluded — is a materially
-    different analysis that has not been built. Said here rather than
-    shipped silently under the same name as full parity.
-
-    THE JOINT SOLVE, AND ITS FALLBACK
-    ----------------------------------
-    A single infeasible target — one batch's leg genuinely missing, say —
-    makes the joint CP-SAT model infeasible for every target at once; one
-    CP-SAT solve has no notion of partial credit. Rather than fail the
-    whole group for one batch's sake, an infeasible (or empty-pool) joint
-    solve falls back to running every batch through the full, proven
-    reconcile_batch independently against the ORIGINAL shared pool. That
-    can never be worse than calling reconcile_batch on each batch
-    separately in the first place — the same "never worse than the
-    unconstrained pool" principle _solve_in_tiers already applies to one
-    batch's own linkage narrowing, extended here to the whole group.
-
-    Deliberately NOT integrated: settled_ledger's cross-run double-claim
-    ledger. The joint solve already prevents double-claiming BY
-    CONSTRUCTION within this one call (AddAtMostOne per candidate), which
-    is the problem settled_ledger exists to catch across SEPARATE calls —
-    a real gap (this call cannot see a payment /reconcile/queue claimed a
-    moment ago) but a different one, left for the queue's own use of it
-    rather than folded in here without being asked for.
+    Reused per batch from the 1:N path: linkage narrowing, forced anchored
+    refunds, a per-target ambiguity probe, and the same refusal gates. Not
+    reused: the evidence tiers and the substitutability guard, which have not
+    been generalised to several targets. If the joint model is infeasible (one
+    batch's leg missing makes the whole model infeasible), every batch falls
+    back to reconcile_batch against the original pool, with siblings' anchored
+    records withheld, and double claims across the group are then withheld.
+    The joint solve prevents double claims by construction (AddAtMostOne).
     """
     if not batches:
         return []
@@ -1218,19 +1018,10 @@ def reconcile_many(
                 "through the full 1:N pipeline against the shared pool."
             ),
         )
-        # Anchor evidence binds in the fallback too, not only in the joint
-        # solve. Each batch is reconciled alone here, so on its own it cannot
-        # know that a candidate names one of its siblings — it sees an
-        # unanchored record of the right size and takes it.
-        #
-        # Measured: a batch whose own leg had not arrived reached for a
-        # sibling's equal-valued leg and reported 0.91, the "partially
-        # anchored, used every anchor available" band. Every anchor available
-        # TO IT was indeed used; the evidence it ignored belonged to the batch
-        # next to it, which a single-batch view has no way to consult. Only
-        # the double-claim guard below caught those, and only because the
-        # sibling happened to claim the same record — take that coincidence
-        # away and it is a false clear at 0.91.
+        # Anchor evidence binds in the fallback too: a batch alone cannot see that a
+        # record names its sibling, and once took a sibling's equal-valued leg at
+        # 0.91. Records anchored to another settlement in the group are withheld
+        # from this batch's pool.
         for i, p in enumerate(prep):
             foreign_anchors: set[str] = set()
             for j, sibling in enumerate(prep):
@@ -1340,19 +1131,9 @@ def reconcile_batch(
     # request field: this is a demonstration harness, not a mode anyone should
     # be able to reach through the API.
     if os.environ.get("AMONGRESOLVER_NO_LINKAGE", "").strip() == "1":
-        # Discard the EVIDENCE, not just the narrowing.
-        #
-        # This originally only widened the pool back to the windowed set and
-        # left link_result intact, which meant the anchors, the scores and the
-        # tiers built from them all survived. The solver was still handed
-        # anchored candidates first, so the flag that exists to reproduce
-        # "subset-sum alone scores 0.0%" measured 62.0% — the same number as
-        # with linkage on, to the decimal. The one claim this project most
-        # wants a reader to be able to check was the one it could not.
-        #
-        # Arithmetic alone means no reference, no cluster, no cross-feed
-        # correspondence: one tier holding everything in the window, and no
-        # evidence for the auto-clear guard to weigh.
+        # Discard the EVIDENCE, not just the narrowing: keeping anchors and tiers made
+        # this flag measure 62.0%, identical to linkage on. Arithmetic alone means one
+        # tier and nothing for the guards to weigh.
         solver_candidates = windowed_candidates
         link_result = LinkageResult(
             candidates=windowed_candidates,

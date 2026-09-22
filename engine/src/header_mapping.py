@@ -77,25 +77,11 @@ def _constrain(proposed: dict[str, str], headers: list[str]) -> dict[str, str]:
     return out
 
 
-# ── Inference from the data, when the column NAMES give nothing ───────────
-#
-# A synonym list cannot keep up with the world. Measured against eight
-# plausible export formats, name matching alone rejected half of them — and a
-# rejection is the worst outcome available, because the alternative to a
-# slightly uncertain mapping is no reconciliation at all.
-#
-# So when a REQUIRED field has no name match, the values are inspected. A
-# column of parseable dates is a timestamp whatever it is called; a column of
-# decimal numbers is a candidate amount; a column of high-cardinality opaque
-# strings is an identifier. This is what llm_header_mapper does, done
-# deterministically and without needing a key — the model stays available for
-# the genuinely ambiguous cases, but it is no longer the only thing standing
-# between an unfamiliar file and a rejection.
-#
-# The same structural constraints still apply afterwards: a fee or tax column
-# is still disqualified from becoming `amount`, single-valued targets still
-# take one column, and the schema gate still runs. Inference proposes; the
-# rules dispose.
+# ── Inference from the values, when the column NAMES give nothing ──
+# Names alone rejected half of eight real export formats. When a REQUIRED
+# field has no name match the values are read: dates are a timestamp, decimals
+# a candidate amount, high-cardinality opaque strings an identifier. The same
+# structural constraints and schema gate still apply afterwards.
 
 _INFER_SAMPLE = 25
 
@@ -155,16 +141,9 @@ def infer_mapping_from_values(
 
 def composite_key_partner(mapping: dict, headers: list[str]) -> str | None:
     """
-    The sibling column that, with the id, actually identifies a row.
-
-    Real ledgers key line items on a pair — (trans_id, trans_line_no) — and
-    reading only the first half merges genuinely separate rows. Cincinnati's
-    published feed holds 1,225 identities across 4,000 rows for exactly this
-    reason.
-
-    Detecting that and then doing nothing about it, which is what happened
-    before, is the worst of both: the warning tells a reviewer their data is
-    ambiguous while the engine goes on treating it as if it were not.
+    The sibling column that, with the id, identifies a row: ledgers key line
+    items on (trans_id, trans_line_no), and reading only the id merges separate
+    rows (Cincinnati: 1,225 identities in 4,000 rows).
     """
     id_col = next((c for c, t in mapping.items() if t == "txn_id"), None)
     if id_col is None:
@@ -184,31 +163,13 @@ def composite_key_partner(mapping: dict, headers: list[str]) -> str | None:
 def check_identity_column(mapping: dict, rows: list[dict] | None,
                           headers: list[str]) -> list[str]:
     """
-    Is the column we called txn_id actually an identifier?
+    Is the column mapped to txn_id actually an identifier?
 
-    Amount and timestamp are well defended: an ambiguous match warns, an
-    unrecognised name falls back to reading the values, and a missing column
-    refuses the file. txn_id had none of that, and on real public feeds it
-    quietly accepted free text. Vermont's "description" column became the
-    transaction id (88.9% of ids duplicated); Mesa's "commodity_description"
-    became it too (82.3%), so thousands of distinct payments shared a handful
-    of identities.
-
-    That is not cosmetic. The id is how a matched payment is named back to the
-    reviewer, how a payment is kept from being claimed by two settlements, and
-    how the audit trail refers to anything at all. An id that repeats 220
-    times cannot do any of those.
-
-    Three things are checked, all from the data rather than the name:
-      - how often the values repeat
-      - whether they look like prose (spaces, long strings)
-      - whether a sibling column suggests a COMPOSITE key, which is the
-        Cincinnati case: a real trans_id, correctly mapped, but the table is
-        keyed on (trans_id, trans_line_no), so 4000 rows held 1225 identities
-
-    Returns warning strings; it never rejects. A repeating id is bad but it is
-    not proof the file is unusable, and refusing here would block feeds that
-    reconcile perfectly well on references and amounts.
+    Checked from the data: how often values repeat, whether they read as prose,
+    and whether a sibling column suggests a composite key. Public feeds mapped
+    free-text descriptions to txn_id (82-89% duplicated), and the id is how a
+    payment is named, kept from double claims, and referred to in the trail.
+    Returns warnings; never rejects.
     """
     warnings: list[str] = []
     # Check whichever column actually supplies identity, not just txn_id.
@@ -388,18 +349,9 @@ def _score_pairs(headers: list[str]) -> tuple[dict, dict, dict]:
                 continue
             m = process.extractOne(c, syns[target], scorer=fuzz.token_set_ratio)
             if m and m[1] > 75:
-                # An exact synonym hit outranks a fuzzy one of the same numeric
-                # score, so fuzzy matches are nudged below 100.
-                #
-                # The second element is SPECIFICITY: the length of the synonym
-                # that matched. token_set_ratio scores any subset match as 100,
-                # so a bare synonym like "id" ties with "order id" on every
-                # *_id column in the file — and the tie was being broken
-                # alphabetically, which is to say arbitrarily. On the ReconRiver
-                # processor feed that handed merchant_order_id to txn_id and
-                # dropped settlement_batch_id entirely, discarding the anchor
-                # linkage depends on. Preferring the longer matched synonym
-                # makes "order id" beat "id", which is the intended reading.
+                # Exact synonym hits outrank fuzzy ones, and the longer matched synonym wins a
+                # tie ("order id" beats "id"); alphabetical tie-breaks once handed
+                # merchant_order_id to txn_id and dropped the settlement anchor.
                 scores[(raw, target)] = (min(float(m[1]), 99.0), len(m[0]))
 
     return clean, scores, disqualified
@@ -466,19 +418,8 @@ def map_headers_with_report(actual_headers: list[str]) -> HeaderMappingReport:
                 f"confidently wrong reconciliation."
             )
 
-    # Two columns with the SAME NAME.
-    #
-    # The competition check above catches 'amount' losing to 'amt' — different
-    # names contending for one target. It cannot catch 'amount' twice, because
-    # `mapping` is keyed by raw header name, so the duplicates collapse into a
-    # single entry and there is no competition left to see. csv.DictReader
-    # collapses them the same way, last column winning.
-    #
-    # Left alone this is quiet and wrong in the worst direction: a ledger
-    # exported with a stale and a corrected amount column reconciles against
-    # whichever happens to sit further right. The arithmetic then fails to
-    # tie out and the batch is withheld — safe, but for a reason the reader
-    # cannot see. So say which column won and which was discarded.
+    # Two columns with the SAME name collapse into one, last column winning, so a
+    # stale and a corrected amount column can silently swap. Say which won.
     seen: dict[str, int] = {}
     for h in actual_headers:
         key = str(h).strip().lower()

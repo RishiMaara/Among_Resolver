@@ -1,44 +1,17 @@
 """
-Read a bank narration: UTR, settlement reference, counterparty, payment rail.
+Read a bank narration: UTR, settlement reference, counterparty, rail.
 
-WHY
----
-A bank statement line is a date, an amount and a narration a bank wrote for
-itself: "NEFT CR-YESB0000001-RAZORPAY SOFTWARE PVT LTD-SETTL setl_Kx92...-
-YESBN12026090112345". Everything that links the credit to a payout is in that
-string — the UTR the gateway quotes, its settlement id, who paid — and every
-bank formats it differently, then truncates it at forty-odd characters.
-
-TWO READERS, ONE RULE
----------------------
-`regex_read` is deterministic and always runs: known rails, UTR shapes (NEFT
-16, RTGS 22, IMPS/UPI 12-digit RRN), settlement-id shapes, and the payer name
-between the separators. It is fast, auditable and brittle: a format it was
-not written for defeats it.
-
-`llm_read` asks a model to read the same narrations, in batches. It is held
-to one rule, checked in code rather than requested in a prompt: every value
-it returns must appear in the narration it came from (compared without case,
-spaces or separators). A value that does not is dropped and counted as
-ungrounded — a UTR the model made up is worse than none, because it looks
-like evidence.
-
-WHICH GOES FIRST WAS MEASURED, AND IT WAS NOT THE ORDER FIRST WRITTEN
---------------------------------------------------------------------
-`scripts/narration_eval.py`, 240 narrations, damaged as statements damage
-them, in 4 formats the regex was written against and 5 it never saw:
+`regex_read` is deterministic and always runs. `llm_read` reads batches with
+a model, and every value it returns must appear in the narration it came
+from (ignoring case and separators) or it is dropped as ungrounded.
+Measured (scripts/narration_eval.py, 240 damaged narrations):
 
                                   written-for   held-out
     regex only                        88.5%       82.7%
     regex first, model fills gaps     96.9%       94.0%
     model first, regex fills gaps     97.7%       97.5%
 
-Regex-first was the design; it loses on formats the regex does not know,
-because a regex that returns the WRONG counterparty leaves no gap for the
-model to fill. So with a model configured, its grounded answer comes first
-and the regex covers what it left empty. The grounding rule dropped 14
-values the model returned that were not in the narration. Two model passes
-at temperature 0 differed by about half a point.
+so with a model configured its grounded answer goes first.
 """
 
 from __future__ import annotations

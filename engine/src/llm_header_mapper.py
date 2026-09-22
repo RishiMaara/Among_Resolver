@@ -1,59 +1,13 @@
 """
-Agent 0b — LLM-assisted header mapping.
+Model-assisted header mapping, for when rules cannot find a required field.
 
-WHY THIS EXISTS
----------------
-Agent 0's fuzzy matcher works off a hand-maintained synonym list, and a list
-cannot keep up with the world. Every bank, processor and ERP invents its own
-column names, and the failure is silent: an unrecognised timestamp column
-does not error, it empties the field, and the rows are discarded downstream.
-Measured on the ReconRiver dataset, `occurred_at` and `booked_at` were not in
-the list and 107 of 207 records disappeared. The fix at the time was to add
-two more synonyms — which fixes that dataset and not the next one.
-
-Semantic understanding is the right tool for this specific problem, and only
-this one. Deciding that "booked_at" is a date is a language question. Deciding
-which transactions make up a settlement is a money question, and stays
-deterministic.
-
-THE SAFETY PROPERTY
--------------------
-The model PROPOSES; the deterministic layer DECIDES. Specifically:
-
-  * It only runs when the deterministic mapper has already failed to find a
-    required field. A working rule-based mapping is never overridden — it is
-    free, instant, reproducible and auditable, and those are worth more than a
-    marginally better guess.
-
-  * Its output is filtered through the same structural constraints as any
-    other mapping: fee/tax/discount columns still cannot become `amount`,
-    single-valued targets still take exactly one column, unknown field names
-    are dropped. The model cannot talk its way past a rule.
-
-  * Its output then goes through the SAME `_validate_schema` gate. If the
-    model's mapping is still missing a required field, the file is rejected
-    exactly as it would have been.
-
-  * Every LLM-derived mapping is flagged `llm_assisted=True` so it is visible
-    in the audit trail rather than indistinguishable from a deterministic one.
-
-So the worst case is that this module wastes a few cents and changes nothing.
-It cannot cause a wrong reconciliation on its own.
-
-PRIVACY
--------
-Column names alone are often ambiguous; sample VALUES are what disambiguate
-"2026-01-02T23:27:38Z" from "16775.23". That means sending a few real cell
-values to an external API, which is a genuine consideration for financial
-data. So: at most 3 values per column, each truncated, and the whole feature
-is off unless GEMINI_API_KEY is configured. Set LLM_HEADER_MAPPING=0 to
-disable it even when it is.
-
-PROVIDER
---------
-Google Gemini via the google-genai SDK. The provider is an implementation
-detail of this module: everything outside it sees only propose_mapping, and
-swapping providers means changing this file alone.
+Deciding that "booked_at" is a date is a language question; deciding which
+payments make up a settlement is not, and stays deterministic. The model
+proposes, the rules dispose: it runs only after the rule mapper fails, its
+output passes the same structural constraints and schema gate, and every
+such mapping is flagged `llm_assisted=True`. Privacy: at most 3 truncated
+sample values per column, off without GEMINI_API_KEY, LLM_HEADER_MAPPING=0
+disables it. Provider details stay in llm_provider.py.
 """
 
 from __future__ import annotations

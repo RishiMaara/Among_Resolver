@@ -1,45 +1,11 @@
 """
-Agent 1 — Ingestion & Normalization.
+Ingestion: source records to the unified NormalizedTxn schema. No model.
 
-Turns disparate source formats (gateway export, bank feed, ERP export)
-into the unified NormalizedTxn schema. Deterministic code only — no LLM.
-Everything downstream assumes this has already run.
-
-Key jobs:
-  1. Amount -> integer cents (never trust source float formatting)
-  2. Timestamp -> UTC, with an explicit confidence flag
-  3. Reference ID -> canonical truncation-tolerant key
-  4. Memo -> normalized string for the fuzzy/semantic pass later
-  5. payer_id / payee_id -> canonicalized counterparty keys
-  6. AML flags -> is_cash, is_wire_transfer extracted from raw record
-
-TIMEZONE HANDLING
------------------
-When a timestamp carries an explicit tz offset it is converted to UTC and
-confidence is HIGH. When it does not, the per-source timezone from
-SOURCE_TZ_MAP is applied via zoneinfo and confidence is INFERRED — this is
-a best-effort assumption, not a fact, and downstream can filter on it.
-
-If the source is not in SOURCE_TZ_MAP at all (e.g. a new feed not yet
-registered), confidence is LOW and UTC is used as a conservative fallback.
-LOW-confidence timestamps MUST route to the exception queue, not be
-silently matched — a 5.5-hour error (IST vs UTC) will misplace a
-transaction outside its settlement window on real Indian bank statements.
-
-DROPPED RECORDS
----------------
-normalize_batch previously silently swallowed all failures with a bare
-`continue`. This made a file with a broken timestamp column look like a
-successful ingestion of an empty pool — no error, no count, no diagnosis.
-
-The new behaviour:
-  - Every failure is logged at WARNING with the txn_id (or record index)
-    and the exception message.
-  - Callers that need structured drop counts use normalize_batch_with_report
-    which returns a NormalizationReport alongside the good records.
-  - normalize_batch keeps the original list[NormalizedTxn] return type for
-    backward compatibility; callers that already count drops by comparing
-    before/after lengths keep working unchanged.
+Amounts to integer paise via Decimal; timestamps to UTC with a confidence
+flag (HIGH: offset present; INFERRED: per-source zone from SOURCE_TZ_MAP;
+LOW: unknown, assumed UTC and must go to review); references to a canonical
+key; memos normalised; counterparties and AML flags extracted. Every dropped
+record is logged, and normalize_batch_with_report returns them structured.
 """
 
 from __future__ import annotations
@@ -56,18 +22,8 @@ from schema import NormalizedTxn, SourceType, TzConfidence
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Per-source timezone registry.
-#
-# In production this is a versioned config table keyed by actual source
-# system ID and effective date — the same feed can change timezone conventions
-# across an export format upgrade. For now, one entry per source type covers
-# the common case.
-#
-# IANA tz names are used (not UTC offsets) because India's +05:30 offset is
-# not uniquely named and zoneinfo handles DST transitions correctly for feeds
-# whose history predates or spans a DST change.
-# ---------------------------------------------------------------------------
+# Per-source timezone registry, as IANA names (DST-safe). In production this
+# is a versioned table per source system and effective date.
 SOURCE_TZ_MAP: dict[SourceType, str] = {
     SourceType.GATEWAY: "UTC",         # payment gateways typically export UTC
     SourceType.BANK: "Asia/Kolkata",   # IST — standard for Indian bank exports
@@ -156,25 +112,12 @@ _AMOUNT_STRICT = re.compile(
 
 def clean_amount_str(value) -> str:
     """
-    Reduce an amount to a bare numeric string, or refuse.
+    Reduce an amount to a bare numeric string, or raise.
 
-    The previous rule here deleted every character that was not a digit, dot,
-    comma or minus, then dropped the commas. It is the same "strip it and hope" shape that let file_agent
-    read "4,2OO.OO" as a number, and on this path it decides the integer paise
-    that subset-sum matches on. Measured against its own docstring:
-
-        "Rs. 1,234.50"  -> RAISED    the '.' in "Rs." survived into ".1234.50"
-        "1 234,50"      -> 12345000  100x too large; the docstring claimed
-                                     European format was supported
-        "4,2OO.OO"      -> 4200      OCR damage read as a number
-        "(1,500.00)"    -> 150000    accounting negative, sign dropped
-
-    The first is the function failing the example written directly above it.
-    The last turns a debit into a credit.
-
-    A string is returned rather than a float so the caller can hand it to
-    Decimal untouched — going through float would reintroduce exactly the
-    representation error this module exists to avoid.
+    Handles currency symbols, Western and Indian grouping, CR/DR markers and
+    accounting parentheses. Refuses OCR damage such as "4,2OO.OO" instead of
+    reading it as a number. Returns a string so the caller's Decimal never sees
+    a float.
     """
     raw = str(value).strip()
     if not raw:
@@ -206,18 +149,8 @@ def clean_amount_str(value) -> str:
 
 def normalize_amount_to_cents(raw_amount) -> int:
     """
-    Accepts str, int, or float from source data; returns exact integer cents.
-
-    Rules:
-      - Parse via Decimal, never via float — float("1234.56") is not exactly
-        1234.56 and the rounding error compounds across thousands of records.
-      - str inputs may carry currency symbols, thousands separators (western
-        or Indian grouping), whitespace and a trailing CR/DR marker, and may
-        use accounting parentheses for a negative. Anything else raises rather
-        than being coerced into a plausible number — see clean_amount_str.
-      - ROUND_HALF_UP: the standard accounting rounding rule. int() truncates
-        toward zero, which introduces a systematic -1 cent bias on positive
-        amounts and is not acceptable for financial data.
+    str, int or float to exact integer paise: parsed via Decimal (never float),
+    ROUND_HALF_UP, anything unreadable raises (see clean_amount_str).
     """
     if isinstance(raw_amount, str):
         raw_amount = clean_amount_str(raw_amount)
@@ -264,26 +197,11 @@ def _fast_parse(raw_ts: str) -> datetime | None:
 
 def normalize_timestamp(raw_ts: str, source: SourceType) -> tuple[datetime, TzConfidence]:
     """
-    Parse a timestamp string and convert to UTC, returning an explicit
-    confidence flag so downstream agents know how much to trust the result.
-
-    Confidence levels:
-      HIGH     — the source string carried an explicit UTC offset or 'Z'.
-                 The conversion is exact; no assumption was made.
-      INFERRED — no offset in the source string, but SOURCE_TZ_MAP has a
-                 known timezone for this source type. The conversion is a
-                 best-effort assumption (could be wrong if the feed's export
-                 convention changed). Downstream should not reject these
-                 outright but should be aware that a 5.5-hour IST/UTC
-                 difference can move a transaction outside its settlement
-                 window.
-      LOW      — no offset in the source string AND no entry in SOURCE_TZ_MAP
-                 for this source. UTC is used as a conservative fallback.
-                 These MUST route to the exception queue; do not auto-match
-                 them — a wrong timezone is a wrong answer.
-
-    Raises ValueError for timestamps that cannot be parsed at all. The caller
-    (normalize_batch) catches this and logs it as a dropped record.
+    Parse a timestamp to UTC with a confidence flag:
+      HIGH      the string carried an offset or Z
+      INFERRED  no offset; the source's zone from SOURCE_TZ_MAP was applied
+      LOW       no offset and no known zone; UTC assumed, route to review
+    Raises ValueError when it cannot be parsed at all.
     """
     raw_ts = (raw_ts or "").strip()
     if not raw_ts:
@@ -339,19 +257,10 @@ def normalize_timestamp(raw_ts: str, source: SourceType) -> tuple[datetime, TzCo
 
 def normalize_ref_id(raw_ref: str) -> str:
     """
-    Canonical key tolerant of bank truncation (e.g. 20-char limits) and
-    separator differences (hyphens, underscores, spaces).
-
-    The canonical form is alphanumeric-only and uppercased. This means
-    "STL-2026-001", "STL_2026_001", and "STL2026001" all canonicalize to
-    "STL2026001" and compare equal — which is the intended behaviour, because
-    the same identifier is written differently by different systems.
-
-    SHORT IDs: if the result is shorter than REF_ID_MIN_LEN, the reference
-    is probably truncated by the source system. The returned value is still
-    usable as a prefix-match key for linkage tokenisation, but it CANNOT
-    support an exact-match assertion on its own. The caller records this via
-    the `ref_truncated` flag in `extra` (set in normalize_record).
+    Canonical reference key: alphanumeric, uppercased, so "STL-2026-001",
+    "STL_2026_001" and "STL2026001" compare equal. Shorter than REF_ID_MIN_LEN
+    is probably truncated by the source; it is flagged `ref_truncated` and never
+    used alone for an exact assertion.
     """
     cleaned = re.sub(r"[^A-Za-z0-9]", "", raw_ref or "").upper()
     return cleaned
@@ -390,18 +299,9 @@ def normalize_memo(raw_memo: str) -> str:
 
 def normalize_record(raw: dict, source: SourceType) -> NormalizedTxn:
     """
-    Normalize one raw source record into the unified NormalizedTxn schema.
-
-    Required fields: txn_id (or ref_id as fallback), amount, timestamp.
-    Optional but extracted if present: currency, memo, payer_id, payee_id,
-    is_cash, is_wire_transfer.
-
-    All other source-specific fields go into `extra` untouched, so the full
-    raw record is preserved in the audit trail even if the engine never uses
-    those fields.
-
-    Raises ValueError for any field that cannot be parsed — callers should
-    catch this and route the record to the exception queue.
+    One raw record to NormalizedTxn. Requires txn_id (or ref_id), amount and
+    timestamp; source-specific fields are kept in `extra`. Raises ValueError on
+    anything unparseable.
     """
     # ── Identity ──────────────────────────────────────────────────────────
     # txn_id is the primary identifier; ref_id is the settlement-linkage key.
@@ -488,16 +388,8 @@ def normalize_batch(
     source: SourceType,
 ) -> list[NormalizedTxn]:
     """
-    Normalize a list of raw records, logging every failure.
-
-    Returns only the successfully normalized records — the same contract as
-    before. Every record that could not be normalized is logged at WARNING
-    with its index, best-effort txn_id, and the failure reason, so a broken
-    timestamp column no longer produces a silent empty result.
-
-    For structured drop counts or routing drops to the exception queue, use
-    normalize_batch_with_report instead. This function is kept for backward
-    compatibility with all existing callers.
+    Normalise a list of records, logging every failure at WARNING. Returns only
+    the good records; use normalize_batch_with_report for structured drops.
     """
     report = normalize_batch_with_report(raw_records, source)
     return report.normalized
@@ -508,17 +400,8 @@ def normalize_batch_with_report(
     source: SourceType,
 ) -> NormalizationReport:
     """
-    Normalize a list of raw records and return a full NormalizationReport.
-
-    Use this when you need:
-      - A structured list of every dropped record with its reason (for routing
-        to the exception queue rather than just counting the loss).
-      - An honest drop rate to surface in audit notes or a UI warning.
-      - Diagnosis of systemic failures (e.g. all records dropped on timestamp
-        parse → the timestamp column is broken, not individual records).
-
-    The returned NormalizationReport.normalized is identical to what
-    normalize_batch returns.
+    Normalise a list of records and return a NormalizationReport: the good
+    records, every dropped one with its reason, and the drop rate.
     """
     normalized: list[NormalizedTxn] = []
     dropped: list[DroppedRecord] = []

@@ -1,50 +1,13 @@
 """
-Check an AI answer against the facts it was given — after it is written.
+Check an AI answer against the facts it was given, after it is written.
 
-WHY A PROMPT IS NOT ENOUGH
---------------------------
-Settlement Q&A already hands the model only the engine's recorded results and
-tells it, in the system prompt, never to invent a figure. That is a request.
-A model that ignores it — because a memo in an uploaded file said to, because
-it rounded something into a different number, because it "helpfully" added a
-total the engine never computed — produces an answer that reads exactly as
-authoritative as a correct one. The reviewer cannot tell which figures came
-from the ledger and which came from the model.
-
-So every answer is checked before it is shown. Each figure, transaction id and
-date in it must be traceable to the grounding the model was given (or to the
-question the person asked). Anything that is not traceable means the answer
-is withheld, the reason is logged, and the reviewer gets the engine's own
-deterministic summary instead.
-
-WHAT COUNTS AS TRACEABLE
-------------------------
-A number in the answer matches a number in the grounding if it is that number,
-or that number rounded to the precision the answer used. Two unit changes are
-understood, because a correct answer uses them constantly:
-
-  * paise to rupees — a field ending in _cents or _paise holding 6646636 is
-    grounding for "66,466.36" and for "66,466";
-  * a fraction to a percentage — 0.95 is grounding for "95%".
-
-Indian and Western digit grouping are both read ("1,00,000" and "100,000").
-
-WHAT IS DELIBERATELY NOT CHECKED
---------------------------------
-Numbered-list markers at the start of a line ("1. The batch ...") are layout,
-not claims. Ordinals ("2nd") are words. Numbers spelled out in words are not
-read at all — a model that writes "fourteen" is not caught here.
-
-Two limits worth stating plainly, because each is a way to over-read a pass:
-
-  * A figure is traced by VALUE, not by meaning. "3 exceptions" passes if a 3
-    appears anywhere in the results, even as a match count. The check catches
-    invented numbers, not a real number attached to the wrong noun.
-  * The grounding includes text that arrived in uploaded files. A figure
-    planted there reaches the grounding and so counts as traceable. The Q&A
-    prompt fences that text as untrusted; this check does not second-guess it.
-
-It is a strong filter, not a proof, and the tests pin both edges.
+Every figure, transaction id and date in an answer must trace to the
+grounding (or the question); otherwise the answer is withheld and the
+engine's deterministic summary is shown. A number traces if it equals a
+grounded number or its rounding; paise-to-rupees and fraction-to-percent are
+understood, in Indian or Western grouping. Limits: figures are traced by
+VALUE, not by meaning, and text from uploaded files is part of the grounding. A
+strong filter, not a proof; the tests pin both edges.
 """
 
 from __future__ import annotations

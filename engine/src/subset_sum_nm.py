@@ -1,24 +1,8 @@
 """
-Agent 3 (N:M) — joint many-batch subset-sum matching.
-
-Several settlement batches solved SIMULTANEOUSLY against one shared
-candidate pool, so a transaction that could plausibly belong to more than
-one settlement is assigned by the solver rather than by whichever batch
-happens to be processed first. This is the joint sibling of subset_sum.py's
-1:N solve, not a replacement for it — see orchestrator.reconcile_many's
-docstring for what this reuses from the 1:N path (linkage narrowing per
-batch, anchored-refund forcing, ambiguity probing, evidence-based
-withholding, confidence gating — all real) and what it does not (the
-anchor/strong_link/all_linked tiering and the cross-feed substitutability
-guard, both genuine refinements that have not been generalised to a joint
-multi-target assignment).
-
-IDENTITY: every set here is keyed by txn_key (linkage.txn_key), never the
-bare source_txn_id. N:M is exactly the shape where a bare-id collision is
-most likely to bite — the whole point is a pool merging several settlements'
-worth of gateway, bank and ERP records at once, and source_txn_id is unique
-only within one feed. See subset_sum._solve_cpsat's docstring for the
-concrete failure this avoids.
+Joint N:M subset-sum: several settlements solved at once against one pool,
+so a payment two settlements could claim is assigned by the solver. What
+carries over from the 1:N path is listed in orchestrator.reconcile_many.
+Every set is keyed by txn_key; bare ids repeat across feeds.
 """
 
 from __future__ import annotations
@@ -46,45 +30,13 @@ def build_union_pool(
     anchor_keys_per_target: List[set[str]] | None = None,
 ) -> tuple[List[NormalizedTxn], List[set[int]]]:
     """
-    Merge each target's OWN linkage-narrowed candidate pool into one
-    (candidate, eligible-targets) structure for the joint solver.
+    Merge each target's own linkage-narrowed pool into one union with, per
+    candidate, the targets it is eligible for. Nothing is narrowed further.
 
-    Every target's pool has already been through build_candidate_links
-    independently before this is called — this function narrows nothing
-    further, it only merges. A transaction eligible for more than one
-    target (a weak cluster signal pointing at two settlements closing in
-    the same window, say) appears once in the union, eligible for every
-    target whose own narrowing admitted it: that shared claim is exactly
-    the case a joint solve exists to resolve. A transaction outside every
-    target's narrowed pool never reaches the union at all, same principle
-    as the 1:N path's "narrow before the solver runs" — applied per target
-    before the merge rather than once for a single batch.
-
-    ANCHORING BINDS A CANDIDATE TO THE TARGET IT NAMES
-    ---------------------------------------------------
-    `anchor_keys_per_target[t]` is the set of txn_keys that reference
-    target t directly. A candidate carrying one is not a shared claim at
-    all — the evidence already says whose it is — so its eligibility is
-    restricted to the target(s) it names rather than left open to every
-    target whose narrowing happened to admit it.
-
-    Without this the joint solve resolved contention on ARITHMETIC ALONE,
-    and arithmetic cannot see a reference. Measured on 88 joint batches
-    with two settlements each holding an equal-valued leg: 11 auto-cleared
-    a set containing the OTHER settlement's anchored leg, at 0.91
-    confidence. Swapping two equal amounts leaves both targets satisfied,
-    so nothing downstream could detect it — every gate after the solve
-    sees a set that sums correctly and contains an anchored member, and
-    the anchored member it contains belongs to a different settlement.
-    That is a false clear, and it is the failure this engine exists to
-    prevent.
-
-    This is narrower than generalising the 1:N substitutability guard,
-    which is still not built: it constrains only candidates that carry
-    direct reference evidence, and says nothing about twins that are
-    merely plausible. A candidate anchored to two targets at once stays
-    eligible for both and is left to the solver, which is the genuine
-    shared claim the joint path is for.
+    A candidate anchored to a target is eligible only for the target(s) it
+    names: resolving contention on arithmetic alone once gave a settlement the
+    other's equal-valued anchored leg (11 of 88 batches, at 0.91). A candidate
+    anchored to several targets stays eligible for each.
     """
     by_key: dict[str, NormalizedTxn] = {}
     order: List[str] = []
@@ -267,23 +219,10 @@ def probe_for_alternate_nm_assignment(
     outcome: dict | None = None,
 ) -> List[bool]:
     """
-    Bounded PER-TARGET ambiguity check for the joint solve. Returns one
-    bool per target: True if that target's own matched set varied across
-    any alternate FULL joint assignment found within the probe budget,
-    False if it stayed identical every time (or no alternate was found).
-
-    Per target, not one flag for the whole group: forbidding the baseline
-    only guarantees the GLOBAL assignment differs somewhere, not that every
-    target is contested. A settlement whose matched set never moved across
-    every alternate CP-SAT found within budget is real evidence that ITS
-    assignment is stable, even while a different target in the same solve
-    keeps reshuffling — punishing it for a neighbour's ambiguity would
-    withhold matches this engine can actually stand behind.
-
-    Same caveat as subset_sum._probe_for_alternate_subset: bounded, not
-    exhaustive. "No alternate found in probe_limit tries" is evidence of
-    stability, never a uniqueness proof — exact subset-sum counting is
-    #P-complete regardless of solver choice.
+    Per-target ambiguity for the joint solve: True where that target's own set
+    varied across the alternate joint assignments found within budget. A
+    target whose set never moved is not punished for a neighbour's ambiguity.
+    Bounded, not exhaustive; a timeout is recorded in `outcome`.
     """
     baseline_keys = [{txn_key(t) for t in group} for group in baseline.matched]
     forbidden = [baseline_keys]

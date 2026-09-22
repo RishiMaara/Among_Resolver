@@ -1,40 +1,14 @@
 """
-The processor's settlement cycle, learned from settlements that verifiably cleared.
+The processor's settlement cycle, learned from settlements that cleared.
 
-WHY
----
-When a settlement's references are gone — a bank statement that drops them, a
-feed that never had them — the strongest evidence left is timing. A gateway
-pays out on a cycle: Razorpay T+2 working days, others T+1, some weekly. The
-members of a payout were captured a fixed number of days before it.
-
-Which number is a property of the processor, and it can be read off the
-settlements this engine has already CLEARED: each exact, verified clear says
-"these members were captured N days before their payout". This module keeps
-that histogram. linkage_em.py then uses it as the m-probability of the lag
-comparison — the Fellegi-Sunter weight for timing learned from verified
-outcomes, never typed in — for pools where nothing names the settlement.
-
-WHAT TEACHES IT
----------------
-Only clears: an exact sum that passed every gate, or a person's acceptance.
-A withheld proposal teaches nothing, for the same reason it settles nothing
-in settled_ledger — learning from guesses would make the cycle a record of
-guesses. A profile needs MIN_SETTLEMENTS clears before it is used, so one
-unusual payout cannot set the cycle for everything after it.
-
-It learns inside a run too. The queue reconciles settlements in order, so a
-run where some payouts carry references and some do not learns the cycle
-from the first and applies it to the second, with no history at all.
-
-SCOPE
------
-Kept per merchant, member feed and currency — a USD processor and an INR one
-may run different cycles, and so may two merchants on one processor: one on
-T+1, another on T+2. A settlement names its merchant (SettlementBatch.merchant,
-the upload's merchant_id); without one it belongs to the deployment's single
-merchant, whose history keeps the key it always had. SETTLEMENT_CYCLE_STORE=memory keeps it in-process only,
-which is what the benchmarks use so that one run cannot leak into the next.
+Where references are gone, timing is the evidence left: members of a payout
+were captured a fixed number of days before it (Razorpay T+2 working days).
+Each verified clear adds to a lag histogram, which linkage_em.py uses as the
+m-probability for lag. Only clears teach it, and a profile needs
+MIN_SETTLEMENTS clears before use; it also learns within a queue run. Kept
+per merchant, member feed and currency (SettlementBatch.merchant, the
+upload's merchant_id); no merchant keeps the deployment's single key.
+SETTLEMENT_CYCLE_STORE=memory keeps it in-process (benchmarks).
 """
 
 from __future__ import annotations

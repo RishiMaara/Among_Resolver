@@ -1,18 +1,12 @@
 """
-FastAPI entrypoint for the AI Finance Controller — Reconciliation Engine.
+FastAPI entrypoint for the reconciliation engine.
 
-Endpoints:
-  POST /reconcile            — single gateway source + one settlement batch
-  POST /reconcile/multi      — gateway + bank + ERP sources in one call
-  POST /reconcile/joint      — N:M: several settlement batches solved at once
-                               against one shared pool (see orchestrator.reconcile_many)
-  POST /reconcile/queue      — a day's settlements, reconciled one after another
-                               against one shared pool (see settled_ledger)
-  GET  /audit/{batch_id}     — pull full audit trail for a batch
-  GET  /demo                 — runs the 10K-scale demo and returns timing + results
-  GET  /health               — liveness check
-
-Run: uvicorn main:app --reload --app-dir src
+  POST /reconcile, /reconcile/multi   one settlement, one or several feeds
+  POST /reconcile/joint               N:M, several settlements at once
+  POST /reconcile/upload, /queue      files; one settlement, or a day's
+  GET  /audit/{batch_id}[/verify]     the trail, and its hash-chain check
+  GET  /health                        readiness, with what is not durable
+Route groups live in api/. Run: uvicorn main:app --reload --app-dir src
 """
 
 from __future__ import annotations
@@ -35,18 +29,8 @@ from ingestion import normalize_batch, normalize_batch_with_report, normalize_am
 from orchestrator import reconcile_batch, reconcile_many
 import audit
 import file_agent
-# Load .env before anything reads os.environ.
-#
-# The engine reads GEMINI_API_KEY, API_KEY, AUDIT_DB_PATH and CORS_ORIGINS
-# from the process environment, and nothing was reading a .env file — so a
-# key put in one was silently ignored and the LLM features stayed off with no
-# indication why. Exporting the variable in the shell works too, but only if
-# it happens before the server starts, which is not obvious and is easy to
-# get wrong after a restart.
-#
-# override=False: a variable already set in the real environment wins. A
-# deployment's secrets must not be overridden by a file someone left in the
-# working tree.
+# Load .env before anything reads os.environ. override=False: a real
+# environment variable always wins over a file left in the working tree.
 try:
     from dotenv import load_dotenv
     for _candidate in (
@@ -117,18 +101,9 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# CORS.
-#
-# This was allow_origins=["*"] with allow_credentials=True, which is two
-# problems. It lets any site on the internet a user visits read this engine's
-# settlement data, audit trails and compliance findings if it can reach the
-# host — and for a finance tool that is the wrong default even in a demo. It
-# is also an invalid pair: the CORS spec forbids a wildcard origin alongside
-# credentials, so browsers reject it and the credentials flag never did
-# anything.
-#
-# The default now names the local dev servers, which is what the demo
-# actually needs. Set CORS_ORIGINS (comma-separated) to deploy elsewhere.
+# CORS: explicit origins (the local dev servers by default; CORS_ORIGINS to
+# deploy). A wildcard with credentials let any site read settlement data and
+# is invalid under the spec anyway.
 _DEV_ORIGINS = [
     "http://localhost:8080", "http://127.0.0.1:8080",   # this project's vite port
     "http://localhost:5173", "http://127.0.0.1:5173",   # vite default
@@ -148,19 +123,9 @@ CORS_ORIGINS = (
 # Starlette (fullmatch), so "https://my-app.*\.vercel\.app" cannot be satisfied
 # by an attacker's "https://my-app.evil.example/.vercel.app".
 CORS_ORIGIN_REGEX = os.environ.get("CORS_ORIGIN_REGEX", "").strip() or None
-# Upload ceiling.
-#
-# Every read below used to be a bare `await file.read()`, which buffers the
-# whole upload into memory before anything looks at it. Three of them run on
-# a single /reconcile/upload request, so a large file does not need to be
-# malicious to matter — a controller exporting a year of gateway traffic can
-# produce one honestly, and the process dies with an OOM rather than a message
-# that says what went wrong.
-#
-# 64 MB is generous for the intended input: the 50,000-record stress corpus is
-# about 5 MB, so this leaves an order of magnitude of headroom over anything a
-# real settlement export produces. Override with MAX_UPLOAD_MB where a genuine
-# larger feed exists.
+# Upload ceiling (MAX_UPLOAD_MB, default 64 MB; the 50K corpus is about
+# 5 MB), enforced while reading in chunks so an oversized file fails with a
+# message rather than an out-of-memory crash.
 MAX_UPLOAD_BYTES = int(os.environ.get("MAX_UPLOAD_MB", "64")) * 1024 * 1024
 
 # Chunked, because the point is to STOP before the memory is spent. Reading it
@@ -322,23 +287,10 @@ def reconcile_multi(req: MultiSourceReconcileRequest):
 @app.post("/reconcile/joint", summary="Reconcile several settlements at once against one shared pool")
 def reconcile_joint(req: JointReconcileRequest):
     """
-    N:M reconciliation. Solves every settlement batch in the request
-    SIMULTANEOUSLY against one shared candidate pool — see
-    orchestrator.reconcile_many's docstring for the full reasoning and for
-    what safety logic it carries over from /reconcile's 1:N path (linkage
-    narrowing, anchored-refund forcing, per-target ambiguity probing,
-    evidence-based withholding, confidence gating) versus what it does not
-    (the 1:N tiering and cross-feed substitutability refinements).
-
-    Compliance screening runs once over the full shared pool before any
-    batch is solved, exactly as /reconcile/multi does for one batch — a
-    transaction the firm may not touch must not become part of ANY cleared
-    settlement here either.
-
-    Returns one result per batch, each shaped exactly like /reconcile's
-    response (cash position, matched transactions, exceptions, compliance
-    review, audit trail) via the same _format_report used everywhere else,
-    in the same order settlement_batches was given.
+    N:M: every settlement in the request solved at once against one shared pool
+    (see orchestrator.reconcile_many for what carries over from the 1:N path).
+    Compliance screening runs once over the whole pool first. One result per
+    batch, in request order, shaped like /reconcile's.
     """
     candidates: list[NormalizedTxn] = []
     if req.gateway_txns:
@@ -657,18 +609,10 @@ async def reconcile_upload(
                     f"into an earlier settlement. {prior['summary']}"),
         )
 
-        # A batch built mostly from payments a previous settlement already
-        # paid out must not carry the word "cleared". The first version left
-        # the clear standing and printed a warning underneath it, which is
-        # the arrangement every alert-fatigue story starts with: the headline
-        # says safe, the detail says otherwise, and the headline wins.
-        #
-        # This withholds rather than excludes. The payments stay in the pool
-        # and the arithmetic is untouched — silently dropping them would
-        # change an answer on the strength of a record that could itself be
-        # wrong, and a batch cleared in error last week would then corrupt
-        # this week's invisibly. Refusing to clear is visible; rewriting the
-        # sum is not.
+        # A batch whose payments an earlier settlement already paid out must not read
+        # "cleared". It is withheld, not rewritten: the payments stay in the pool and
+        # the arithmetic is untouched, because the earlier record could itself be the
+        # wrong one.
         summ = formatted.get("summary") or {}
         # Any payment, not most of them. This waited until half the set was
         # already paid out, so a batch with a third of its payments spent by
@@ -784,20 +728,9 @@ async def reconcile_upload(
 @app.post("/settlements/detect", summary="Read settlements out of a statement")
 async def detect_settlements(file: UploadFile = File(...)):
     """
-    Pull the settlement rows out of an uploaded file.
-
-    WHY
-    ---
-    The batch id, credited amount and settlement date were fields a user typed
-    — and they were retyping what a bank statement already states. That is the
-    manual work this engine exists to remove, reintroduced at the front door.
-
-    A bank statement's credit lines ARE the settlements list. This reads them
-    with the same parser /reconcile/queue uses, so a statement can populate
-    the form instead of being transcribed into it.
-
-    Returns candidates, not decisions. The user confirms which row is the
-    settlement they mean; nothing is reconciled here.
+    Read the settlement rows (credit lines) out of an uploaded statement, with
+    the same parser /reconcile/queue uses, so the form is filled from the file
+    rather than retyped. Returns candidates; nothing is reconciled here.
     """
     raw = await read_upload_capped(file)
     report: dict = {}
@@ -869,23 +802,9 @@ async def reconcile_queue(
     """
     A day's settlements against one candidate pool.
 
-    WHY THIS EXISTS
-    ---------------
-    /reconcile/upload handles ONE settlement, and a controller does not have
-    one settlement. They have a morning's worth — tens or hundreds — and the
-    question they actually need answered is not "did this batch clear" but
-    "which of today's batches need me". A tool that answers the first question
-    one batch at a time is a demo; answering the second is the job.
-
-    The candidate feeds are parsed and normalised ONCE and reused across every
-    settlement in the queue. That is not just a speed trick: parsing a 50,000
-    row export per settlement would make a queue of fifty batches quadratic in
-    the thing that is already the most expensive stage.
-
-    Each settlement is reconciled independently and its failure is contained.
-    One malformed row in one batch must not cost a controller the other
-    forty-nine results, so a batch that raises is reported as an error entry
-    beside the batches that succeeded rather than taking down the request.
+    Feeds are parsed and normalised once and reused for every settlement. Each
+    settlement is reconciled independently and its failure is contained: an
+    error is reported beside the results that succeeded.
     """
     settlements_raw = await read_upload_capped(settlements_file)
     try:

@@ -1,27 +1,13 @@
 """
-The gates that refuse to auto-clear.
+The gates that refuse to auto-clear a set the arithmetic likes:
 
-Three independent refusals, extracted from orchestrator.py because they are
-one concern and it was not: given a set the arithmetic likes, each asks a
-different question about whether releasing it is defensible.
+  _withhold_if_unevidenced            does anything tie these records to
+                                      THIS settlement?
+  _apply_confidence_gate              is structural confidence high enough?
+  _withhold_cross_batch_double_claims do two settlements claim one payment?
 
-  _withhold_if_unevidenced          does anything tie these records to THIS
-                                    settlement, or does the sum just happen
-                                    to work?
-  _apply_confidence_gate            is the structural confidence high enough
-                                    to release without a human?
-  _withhold_cross_batch_double_claims  are two settlements claiming the same
-                                    payment?
-
-Each mutates the MatchResult in place, as the inline blocks they replace did,
-and each appends its reasoning — the caller reads every field straight
-afterwards. The thresholds live here too, beside the guards that read them,
-rather than three hundred lines away from them.
-
-Every comment in this file records a measured failure rather than an
-intention. That is deliberate: these are the rules standing between a
-plausible sum and someone else's money, and "why is this here" is the
-question a reviewer will ask about each one.
+Each mutates the MatchResult in place and appends its reasoning. Every rule
+answers a measured failure (FAILURE_LOG.md).
 """
 
 from __future__ import annotations
@@ -55,61 +41,18 @@ UNANCHORED_AUTOCLEAR_LIMIT = int(
     os.environ.get("UNANCHORED_AUTOCLEAR_LIMIT", "20")
 )
 
-# Minimum structural confidence required to auto-clear without review.
-#
-# Set where the measured reliability actually begins, not at a round number.
-# calibration.py buckets every prediction against its outcome:
-#
-#     [0.93, 1.01)   n=62   said 0.955   actual 1.000
-#     [0.85, 0.93)   n=41   said 0.876   actual 1.000
-#     [0.70, 0.85)   n=5    said 0.800   actual 1.000
-#     [0.50, 0.70)   n=11   said 0.540   actual 0.364   <- overconfident
-#     [0.00, 0.50)   n=61   said 0.176   actual 0.098   <- overconfident
-#
-# Everything at or above 0.85 was correct in all 103 observations; below 0.70
-# it is a coin flip or worse. 0.85 is therefore the boundary the data draws.
-#
-# These counts were n=31 and "93 observations" until the benchmark was pinned
-# to a single CP-SAT worker. They were not wrong then, they were one sample of
-# a measurement that moved: the parallel solver picks differently between runs
-# on scenarios where more than one subset is valid. See benchmark.run_scenario.
-#
-# This was 0.90 briefly, which is the kind of round number that looks careful
-# and is not: the 50K stress run scores 0.87 — fully anchored, penalised for a
-# large pool — finds all 55 members with precision and recall of 1.0, and was
-# withheld for being three hundredths under an arbitrary line. Override with
-# AUTOCLEAR_MIN_CONFIDENCE to re-measure the trade-off.
+# Minimum structural confidence to auto-clear, set where measured reliability
+# begins: every prediction at or above 0.85 was right (103/103), while the
+# 0.50-0.70 band was right 36%. 0.90 withheld a fully anchored 50K set scored
+# 0.87 that was exactly right. Override: AUTOCLEAR_MIN_CONFIDENCE.
 MIN_AUTOCLEAR_CONFIDENCE = float(
     os.environ.get("AUTOCLEAR_MIN_CONFIDENCE", "0.85")
 )
 
-# What the fuzzy recovery bundle is worth, as a number rather than as a
-# configuration constant that happened to be in scope.
-#
-# This field used to be set to `fuzz_cfg.confidence_threshold` — 0.90, the
-# value that decides whether a fuzzy PAIR is good enough to act on. Assigning
-# a threshold to a confidence is a category error, and the number it produced
-# was the single worst-calibrated thing this engine reported:
-#
-#     scripts/edge_case_suite_1000.py, 1,050 scored batches
-#     167 fuzzy_semantic results, every one of them saying 0.900
-#       exact set == truth        0.0%      <- said 0.90
-#       mean precision            0.041     <- 4% of the bundle is the answer
-#       mean recall               0.692
-#       truth fully inside set    39.5%
-#       median bundle size        63 transactions
-#
-# It also sat ABOVE MIN_AUTOCLEAR_CONFIDENCE. Nothing cleared on it, because
-# `cleared` is already False by the time this path runs — but the only thing
-# standing between a 63-record dragnet and an auto-clear was that no code read
-# the two fields in the other order. That is not a safety property, it is an
-# accident, and the assertion below turns it into one.
-#
-# The floor mirrors link_confidence's own 0.05: a set the arithmetic could not
-# reach is a place to start looking, not a claim. What the bundle is actually
-# good for — the truth is somewhere inside it 39.5% of the time — is reported
-# in the reasoning, where a reviewer can act on it, instead of being flattened
-# into a score that means something else.
+# What a fuzzy recovery bundle is worth. It once reported the pair threshold
+# (0.90); over 167 bundles the exact set was never right and 4% of a bundle
+# was the answer. A bundle is a place to look; the assertion keeps it below
+# the gate by construction.
 FUZZY_RECOVERY_CONFIDENCE = 0.05
 assert FUZZY_RECOVERY_CONFIDENCE < MIN_AUTOCLEAR_CONFIDENCE, (
     "A fuzzy recovery bundle must never be reportable as clearable; "
@@ -131,123 +74,29 @@ def _withhold_if_unevidenced(
     one, and every field it sets - cleared, ambiguous, withheld_reason and
     the appended reasoning - is read by the caller straight afterwards.
     """
-    # Unanchored auto-clear guard.
-    #
-    # Auto-clearing needs either evidence that these records belong to this
-    # settlement, or a pool small enough that the arithmetic is genuinely
-    # determined. With neither, an exact sum is not a match — it is a
-    # coincidence, and there are astronomically many available: the space
-    # competing for one target is 2^n against ~2e6 distinct paise values, so
-    # uniqueness stops being plausible somewhere around n=20-25 and is gone
-    # entirely beyond that. The solver's ambiguity probe only samples a
-    # couple of alternates, so "not ambiguous" over a large pool is weak
-    # evidence, not proof.
-    #
-    # Measured: with the settlement reference stripped from every true
-    # member, linkage still narrowed 50,000 -> 400 on cluster signal alone
-    # while every anchor was scoped away, and the solver returned a
-    # confident 67-record set that was simply wrong. That is a false clear —
-    # the one outcome this engine is built to never produce.
-    #
-    # Small pools are exempt because there the subset-sum really is
-    # determined, which is why a 5-candidate batch with no references still
-    # clears correctly.
-    # The test is whether the MATCHED SET is anchored, not whether the batch
-    # has anchors anywhere.
-    #
-    # Those are different questions and the difference is a false clear. A
-    # settlement whose members DO name it, but where one leg has not arrived
-    # yet, has anchors in the pool and no reachable correct answer. The old
-    # condition saw the anchors, concluded the batch was well-evidenced, and
-    # stood aside while the solver cleared five unrelated noise records that
-    # happened to sum to the target. Measured on the realistic benchmark:
-    # anchors ['S7_TRUE_0','S7_TRUE_1','S7_TRUE_2'] present, matched set
-    # ['S7_N_20','S7_N_24','S7_N_44','S7_N_51','S7_N_52'], intersection empty,
-    # cleared=True. Pure noise, auto-cleared, confidently.
-    #
-    # Evidence does not transfer between records. An anchor vouches for the
-    # transaction carrying it and for nothing else, so what matters is whether
-    # the records being cleared are themselves evidenced.
-    #
-    # Neither existing corpus could show this. benchmark.py's batch ids share
-    # no canonical form with its references, so anchors were never found and
-    # the guard always fired; ReconRiver's ids do match, but its data is clean
-    # enough that the true set is always reachable. It needs both at once —
-    # anchors present AND the true answer absent from the pool — which is what
-    # a late leg does in production every day.
+    # Clearing needs evidence that the MATCHED records belong to this settlement,
+    # or a pool small enough for the sum to be determined (2^n subsets against
+    # ~2e6 paise values stops being unique around n=20-25). An anchor vouches only
+    # for the record carrying it: a late leg leaves anchors in the pool and no
+    # reachable answer, and noise that sums was once cleared beside them.
     matched_id_set = set(result.matched_txn_ids)
     matched_keys = {txn_key(t) for t in members_of(result, solver_candidates)}
     matched_anchored = bool(anchor_keys & matched_keys)
 
-    # Two distinct situations, and the small-pool exemption is only sound in
-    # one of them:
-    #
-    #   no anchors anywhere      the settlement is simply not referenced. Over
-    #                            a small pool the arithmetic really is
-    #                            determined, and this clears correctly.
-    #
-    #   anchors exist, but NONE  the settlement IS referenced, and the solver
-    #   are in the matched set   chose a set containing none of the records
-    #                            that reference it. The evidence points
-    #                            somewhere other than the answer. Pool size
-    #                            does not rescue that, because the problem is
-    #                            not degeneracy — it is that the one signal
-    #                            available was ignored.
-    #
-    # Measured: the second case cleared five unrelated noise records over a
-    # pool of 21 while three anchored members sat outside the matched set,
-    # because 21 was under the small-pool limit. It is the only false clear
-    # the realistic benchmark produced.
+    # The small-pool exemption holds only when nothing is referenced. If anchors
+    # exist and the matched set uses none, the evidence points elsewhere and pool
+    # size does not rescue it (21 records of noise, cleared).
     evidence_ignored = bool(anchor_keys) and not matched_anchored
     pool_too_large = len(solver_candidates) > UNANCHORED_AUTOCLEAR_LIMIT
 
-    # Linkage saying it found NOTHING is itself a finding, and it must not be
-    # overridden by a small pool.
-    #
-    # `no_linkage_signal` is not "weak evidence" — it is linkage reporting
-    # that no reference, no cluster and no cross-source peer exists anywhere
-    # in the pool. The only thing left is the arithmetic, and the arithmetic
-    # is what this engine exists to say is insufficient. Calibration puts that
-    # band at 27.6% accurate.
-    #
-    # The small-pool exemption assumed a unique sum over few candidates means
-    # the answer is determined. That holds only if the answer is IN the pool.
-    # Give the engine a window of unrelated traffic and a unique sum is a
-    # coincidence, not a determination.
-    #
-    # Found on a real SBI statement: eight genuine UPI debits, no settlement
-    # reference among them because a UPI RRN identifies the payment and not
-    # any settlement. Four of them summed to a Rs 500 credit to the paisa and
-    # the engine cleared it at 0.22 confidence. Those four payments went to
-    # four unrelated people and have nothing to do with that credit. Across
-    # the same statement 69 of 189 credits have such a subset, 57 of them
-    # have more than one, and one debit is claimed by ten different "matches"
-    # — so the coincidence rate is not incidental, it is the norm for retail
-    # payment data where amounts are round and repeat.
+    # No linkage signal at all is a finding a small pool cannot override: a unique
+    # sum is only a determination if the answer is in the pool. On a real SBI
+    # statement 69 of 189 credits had some coincidental subset of UPI debits.
     no_evidence_at_all = link_result.method == "no_linkage_signal"
 
-    # PARTIAL anchoring is its own case, and the measured worst one.
-    #
-    # A matched set where some members name the settlement and others do not
-    # sits in the 0.42 confidence band, which calibration measures at 43%
-    # correct — worse than the unanchored-but-clustered band. The instinct
-    # that "at least one member is anchored, so the set is probably right" is
-    # exactly backwards: an anchor vouches for the record carrying it and for
-    # nothing else, so the unanchored members are unevidenced regardless of
-    # the company they keep.
-    #
-    # Measured: with the fee target perturbed by 1.5bps, a set of five was
-    # cleared on the strength of one anchored member and four that were simply
-    # wrong. Pool size did not save it — 23 candidates, under the small-pool
-    # limit — because the problem is not degeneracy, it is that four of the
-    # five records had no evidence at all.
-    # Partial anchoring only blocks when the match LEFT ANCHORS UNUSED.
-    #
-    # Blocking every partially-anchored match cost ten correct answers to
-    # prevent two wrong ones. The two wrong ones had a property the ten did
-    # not: anchors sat in the pool that the matched set did not include. A
-    # match that uses every available anchor and adds unanchored members is
-    # reading the evidence; one that ignores anchors is contradicting it.
+    # Partial anchoring blocks only when the match LEFT ANCHORS UNUSED: blocking
+    # every partly anchored match cost ten right answers to stop two wrong ones,
+    # and the wrong ones were those that ignored anchors.
     anchors_in_pool = anchor_keys & {txn_key(t) for t in solver_candidates}
     partially_anchored = (
         bool(anchor_keys)
@@ -323,19 +172,8 @@ def _apply_confidence_gate(
         f"{structural:.2f} over {link_result.pool_after} linked candidate(s)."
     )
 
-    # The gate used to apply only above UNANCHORED_AUTOCLEAR_LIMIT (20)
-    # candidates, on the reasoning that an exact sum over a small pool is
-    # unlikely to be coincidence. That is true of the ARITHMETIC, but the
-    # gate reads `result.confidence` — the LINKAGE confidence — and a small
-    # pool with a weak-but-nonzero signal (a two-record shared token, method
-    # "reference_cluster") still produces a low structural confidence that
-    # this bypass let straight through uncontested. `_withhold_if_unevidenced`
-    # only catches the zero-evidence case (`method == "no_linkage_signal"`);
-    # a two-record cluster is not zero evidence, so it slipped past both
-    # guards and could auto-clear at a structural confidence around 0.22 —
-    # the exact shape of the SBI-statement scenario referenced elsewhere in
-    # this file. The gate now applies unconditionally; pool size no longer
-    # exempts a match from it.
+    # Applies at every pool size: a small pool with a weak signal (a two-record
+    # shared token) once cleared at 0.22 past both guards.
     if (
         result.cleared
         and result.confidence < MIN_AUTOCLEAR_CONFIDENCE
@@ -364,23 +202,10 @@ def _withhold_cross_batch_double_claims(
     reports: list[ReconciliationReport],
 ) -> None:
     """
-    Refuse to auto-clear two settlements that both claim the same payment.
-
-    The joint solve prevents this BY CONSTRUCTION (AddAtMostOne per
-    candidate). The independent fallback above does not: each batch is
-    reconciled against the whole shared pool with no knowledge of what its
-    siblings took, so one payment can satisfy two targets at once and both
-    can clear. Measured on 88 joint batches: 28 transactions claimed twice.
-
-    A payment cannot fund two settlements. When it happens, at least one of
-    the two answers is wrong and nothing here can say which — so neither is
-    released. Both are demoted to review with the conflict named, which is
-    the same principle the rest of this file applies to ambiguity: an
-    answer the evidence does not determine is a proposal, not a clearance.
-
-    Only CLEARED reports are considered. A batch already withheld is
-    already going to a human, and listing a conflict against a proposal
-    nobody is about to act on would bury the real one.
+    Refuse to auto-clear two settlements that claim the same payment. The joint
+    solve prevents this by construction; the independent fallback does not (28
+    double claims in 88 joint batches). Neither side is released, since nothing
+    here can say which is wrong. Only cleared reports are considered.
     """
     claimed_by: dict[str, list[MatchResult]] = {}
     for report in reports:

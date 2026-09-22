@@ -1,44 +1,13 @@
 """
-Bank statements in the formats banks actually send: MT940, CAMT.053, OFX, PDF.
+Bank statements in the formats banks send: MT940, CAMT.053, OFX, PDF.
 
-WHY
----
-A CSV export is what a person makes by hand. What a treasury system receives
-from the bank is SWIFT MT940, ISO 20022 CAMT.053, OFX from an online-banking
-download, or a PDF. Asking for a CSV first puts a person between the bank and
-the reconciliation — the step where columns get renamed, rows get filtered
-and a statement quietly stops being the bank's.
-
-EVERY PARSE PROVES ITSELF
--------------------------
-A parser that misreads one amount produces a reconciliation that is wrong
-with a straight face. So every statement is checked against the rule the bank
-itself guarantees, borrowed from the open-source bankstatementparser project
-(Apache-2.0 / MIT), which calls it the Golden Rule:
-
-    opening balance + credits - debits = closing balance
-
-and, where the statement prints a running balance on each line, every line is
-checked against the one before it. For a PDF this does double duty: a text
-layer does not say which column an amount came from, and the running balance
-does — if the balance went up by the amount it was a credit, if down a debit.
-A statement that does not balance is REFUSED with the arithmetic shown,
-never partly used.
-
-bankstatementparser itself is not a dependency: its core pulls lxml and pins
-pandas below 3, and this engine ships inside a serverless bundle within a few
-megabytes of its limit. The parsers here use the standard library, with
-defusedxml for XML from outside and pypdf for PDF text.
-
-WHAT IS NOT HANDLED
--------------------
-Scanned PDFs and photographed statements have no text layer. They are read
-by the model (statement_ocr) and used only if the reading balances line by
-line; with no model configured they are refused with that reason.
-PDF layouts vary by bank: the reader here handles the common single-line
-table (date, narration, reference, withdrawal, deposit, balance), and the
-balance check is what stops a layout it does not understand from getting
-through.
+Every parse proves itself against the bank's own rule (opening + credits -
+debits = closing, the "Golden Rule" from bankstatementparser) and, where
+printed, each line's running balance; a statement that does not balance is
+refused with the arithmetic shown. For a PDF the running balance also says
+whether an amount was a credit or a debit. Standard library plus defusedxml
+and pypdf, to stay inside the serverless size limit. Scans go to
+statement_ocr; unusual PDF layouts are stopped by the balance check.
 """
 
 from __future__ import annotations

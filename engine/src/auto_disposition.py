@@ -1,40 +1,12 @@
 """
 Decide what a person actually needs to look at.
 
-WHY
----
-A controller with two hundred settlements does not want two hundred
-decisions. Most findings are the same finding: a customer double-clicked
-checkout, a regular wholesale account placed its usual orders. Asking a human
-to click through those is not oversight, it is data entry, and a reviewer who
-clears forty identical items in a row stops reading the forty-first.
-
-So the engine dispositions what it defensibly can and reports the rest.
-
-WHERE THE LINE IS, AND WHY IT IS THERE
---------------------------------------
-Auto-clearing is allowed only where the rule is this firm's own, the severity
-is low, and the pattern is a data artifact rather than a judgement. Three
-categories are never auto-cleared, and each for a different reason:
-
-  STATUTORY findings. Clearing one asserts that a reporting obligation did
-  not apply. That is a legal determination and this engine has no standing to
-  make it — the whole reason the rulebook separates statutory from internal is
-  that the two carry different authority.
-
-  ANYTHING BLOCKED, or HIGH severity. The severity is the engine's own
-  estimate that a person should look. Auto-clearing on the strength of that
-  same estimate is the system marking its own homework.
-
-  REGULATORY GUIDANCE where the pattern is genuinely ambiguous. A structuring
-  pattern and a wholesale customer's ordinary restocking are indistinguishable
-  from the arithmetic — that is what the rule's own text says — so the
-  decision is a judgement, and judgements go to people.
-
-AN AUTO-DISPOSITION IS NOT A HUMAN DECISION, and is never recorded as one.
-It is written to the audit trail under its own agent name so the trail never
-implies a person looked at something nobody looked at. That distinction is
-the entire value of the attribution work it sits next to.
+Auto-dispositions only what is this firm's own rule, low severity, and a data
+artifact (a double-clicked checkout). Never auto-cleared: statutory findings
+(a legal determination), anything BLOCKED or HIGH (the engine grading its own
+homework), and regulatory patterns that are genuinely ambiguous. An
+auto-disposition is logged under its own agent name, never as a human
+decision.
 """
 
 from __future__ import annotations

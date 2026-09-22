@@ -1,39 +1,11 @@
 """
-Agent 8 — Cash Position & Posting Proposals.
+Cash position and posting proposals from a reconciliation result.
 
-WHY THIS EXISTS
----------------
-The track statement opens "Run the books and the cash position." Everything
-upstream of this module answers "which transactions make up this
-settlement?" — which is the matching problem, not the finance-ops loop. A
-controller does not want a matched set; they want to know what the cash
-position is and what to post to the ledger. Without this the loop stops one
-step short of the thing the question actually asked for.
-
-So this module turns a reconciliation result into the two artifacts a
-finance function actually consumes:
-
-  1. A CASH POSITION — where the money is right now, split into buckets that
-     mean something operationally: confirmed in bank, sitting unexplained in
-     bank, captured at the gateway but not yet settled, held by compliance,
-     and deducted as fees/withholding.
-
-  2. A POSTING PROPOSAL — balanced double-entry journal lines for the
-     settlement.
-
-GOVERNANCE
-----------
-Nothing here posts. Entries are PROPOSED and carry status="proposed"
-permanently; there is no code path in this module that marks one posted,
-because the orchestrator's governing rule is that no automated component
-writes back to a ledger. A human approves, and that approval lives outside
-this system.
-
-The balance check is not decorative. An unbalanced journal entry is not a
-cosmetic defect — it is a corrupt book. `JournalEntry.is_balanced` is
-asserted before any entry is returned, and an entry that cannot be balanced
-is returned as a REJECTED proposal with the discrepancy stated, rather than
-being quietly rounded into shape.
+Turns a matched set into what finance consumes: where the money is (in bank,
+unexplained in bank, captured not yet settled, held by compliance, deducted
+as fees/tax) and a balanced double-entry proposal. Nothing here posts;
+entries stay "proposed". Balance is asserted, and an entry that cannot
+balance is returned REJECTED with the discrepancy, never rounded into shape.
 """
 
 from __future__ import annotations
@@ -171,28 +143,15 @@ def build_settlement_journal(
     rate_card: FeeRateCard = DEFAULT_RATE_CARD,
 ) -> JournalEntry:
     """
-    Propose the double-entry for a settled gateway batch.
+    Propose the double entry for a settled gateway batch:
 
-    The economics: the gateway collected `gross` on our behalf, kept a fee,
-    withheld tax, and remitted the remainder to the bank. So the bank
-    increase, the fee expense and the withheld-tax receivable together
-    discharge the gateway clearing balance:
+        Dr Bank              net received
+        Dr Gateway fees      expense
+        Dr Tax withheld      receivable (recoverable, not a cost)
+        Cr Gateway clearing  gross collected
 
-        Dr Bank                     (net actually received)
-        Dr Gateway fees             (expense we incurred)
-        Dr Tax withheld             (receivable — recoverable, not a cost)
-            Cr Gateway clearing     (gross the gateway collected for us)
-
-    Tax withheld is a DEBIT to a receivable rather than an expense on
-    purpose: it is money we are owed back, and booking it as a cost would
-    understate assets and overstate expenses.
-
-    The gross is taken from the MATCHED TRANSACTIONS, not from the fee model.
-    Reconstructing gross from net via the rate card is an estimate the
-    tolerance band absorbs; the matched sum is the observed fact. Where the
-    two disagree the difference is surfaced as an unexplained residual line
-    rather than being absorbed silently — a book that balances because a
-    plug was inserted is worse than one that visibly does not.
+    Gross comes from the matched transactions, not the fee model; any gap is an
+    explicit unexplained-residual line rather than a silent plug.
     """
     gross = sum(t.amount_cents for t in matched)
     net = batch.net_amount_cents
@@ -289,20 +248,8 @@ def build_cash_position(
     deductions = fees.total_deductions_cents
 
     buckets = [
-        # `cleared` decides what this bucket is allowed to CLAIM.
-        #
-        # matched_txn_ids is populated on a failed match too — it holds the
-        # best candidate set the solver could assemble, which the engine
-        # deliberately does not treat as a clearance. This bucket read it
-        # unconditionally, so a settlement the engine had just refused was
-        # reported here as "confirmed against the bank credit... received and
-        # explained". Measured on a three-settlement pool: the verdict said
-        # cleared=False against a target of Rs 51,546, and this line said Rs
-        # 1,30,000 was reconciled — the whole pool, including two other
-        # settlements' payments, at 2.5x the target.
-        #
-        # The posting proposal below already gates on `cleared`. The buckets
-        # did not, so the panel contradicted the verdict directly above it.
+        # Only a CLEARED result may claim money as reconciled: a withheld result still
+        # carries its best candidate set, which this bucket once reported as confirmed.
         CashBucket(
             key="reconciled_settled",
             label=("Reconciled & settled" if cleared

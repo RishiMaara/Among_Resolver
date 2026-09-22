@@ -1,98 +1,20 @@
 """
-Audit trail. Every automated decision made anywhere in the pipeline gets
-logged here — which agent made the call, what it decided, why. This is
-what makes the system's match rate "honest" rather than a black box, and
-it's explicitly called out in the track's judging bar.
+Audit trail: every automated decision, which agent made it, and why.
 
-STORAGE TIERS
--------------
-The audit trail is written to the first available backend — four tiers, not
-three; this list used to stop at three and go stale the day SQLite was added
-below Redis, which is exactly the kind of drift the rest of this project
-tries not to have:
+STORAGE, first available wins (storage_status() reports which):
+  1. Redis, when configured - shared across processes and instances.
+  2. SQLite (WAL) at data/audit.sqlite3 or AUDIT_DB_PATH - durable, one host.
+  3. JSON Lines, one file per batch, in the temp dir - read-only filesystems.
+  4. In-memory - last resort, process-local, warns on first use.
 
-  1. Redis (first choice, IF configured — see the note below)
-     Sub-10ms writes, cross-process, survives restarts if Redis is
-     persistent. The right choice for a multi-worker deployment because it
-     is shared across processes without a shared filesystem.
-
-     In practice: nothing in this repo starts a Redis server, so unless one
-     is separately run and reachable at localhost:6379, this tier is always
-     skipped and tier 2 is what actually serves every run — including every
-     run a reviewer does from a fresh clone. `storage_status()` reports
-     which backend is actually in use, so this is never a guess.
-
-  2. SQLite, WAL mode (durable, single-host — this is the tier that runs)
-     Transactional, needs no server to install or keep healthy, ships with
-     Python, and survives a process restart or an OS reboot the way tier 3
-     (below) cannot. WAL so a reader (the flow canvas polling /audit) never
-     blocks the writer (the reconciliation still running). Defaults to
-     `data/audit.sqlite3` inside the engine directory rather than the
-     system temp dir, so "where is my audit trail" has an answer that does
-     not depend on the OS's cleanup policy; `AUDIT_DB_PATH` overrides it.
-
-  3. JSON Lines files, ONE PER BATCH (secondary fallback)
-     Newline-delimited JSON under a per-user directory in the system temp
-     directory. Reached only if SQLite could not be opened (e.g. a
-     read-only filesystem). Each log_decision call appends exactly one
-     line; `open(..., "a")` appends are atomic at the OS level on both Linux
-     (O_APPEND write syscall) and Windows, so concurrent writers do not
-     corrupt each other's lines. An RLock protects the in-process handle
-     cache and the write+flush sequence.
-
-     Splitting per batch is not tidiness. A single shared file made
-     get_audit_trail O(all history ever logged on the host) — measured at
-     12 MB / 60,289 lines and 4.59 SECONDS per read after only a few runs,
-     paid on EVERY API response because _format_report calls it. Per-batch
-     files make a read O(that batch), and clear_trail a delete instead of a
-     read-filter-rewrite of everything. Its one genuine limitation — it does
-     not survive a host reboot or a /tmp wipe — is why tier 2 exists.
-
-  4. In-memory list (last resort)
-     Process-local. A reconciliation processed by worker A is invisible to
-     worker B. The FIRST write to this backend logs a WARNING so an operator
-     knows the trail is incomplete, rather than the old behaviour of silently
-     accumulating entries that silently vanish on the next request. Reached
-     only if the engine directory itself is not writable.
-
-TAMPER-EVIDENT: EVERY ENTRY CARRIES THE HASH OF THE ONE BEFORE
--------------------------------------------------------------
-A log that can be edited quietly is a log of whatever the last editor wanted.
-Each batch's trail is a hash chain: an entry stores `prev_hash`, the hash of
-the entry before it (64 zeros for the first), and `hash`, the SHA-256 of its
-own content with that link included. Change a word in an old entry and its
-hash no longer matches; delete or reorder one and the next entry's link no
-longer points at what precedes it. `verify_chain()` walks the trail and names
-the first entry that breaks, and GET /audit/{batch_id}/verify serves it.
-
-A chain alone cannot see its own tail being cut off — the shortened chain is
-still a valid chain. So every reconciliation returns the head hash to the
-caller (`audit_head`), and verifying against a receipt checks that the entry
-it names is still there. Whoever keeps the receipt can prove the trail was
-not truncated after they read it.
-
-This is tamper-EVIDENT, not tamper-proof: someone with write access to the
-store can rewrite a whole chain from the first entry on. What they cannot do
-is make it agree with a head hash somebody else already holds, which is why
-the receipt goes out with every response.
-
-Appends are serialised so two writers cannot both extend the same head:
-SQLite inside BEGIN IMMEDIATE, Redis by compare-and-set in a Lua script, the
-file and memory tiers under the process lock. Entries written before the
-chain existed carry no hash and are reported as unchained, never as verified.
-
-WHY A FILE (OR SQLITE) BEATS AN IN-MEMORY STORE
-------------------------------------------------
-The original in-memory list failed in any multi-process deployment (gunicorn
---workers N, uvicorn --workers N). The audit entries existed in one worker's
-heap and were invisible to every other worker and to any process started
-after the first. A `get_audit_trail` call served by the "wrong" worker
-returned an empty list for a batch that had been fully reconciled.
-
-A file, or SQLite, on local disk is shared across all workers on the same
-host. Both add no infrastructure dependency and work in a bare demo
-environment just as well as the old list did, while being visible across
-processes.
+TAMPER-EVIDENT
+Each batch's trail is a hash chain: an entry stores prev_hash and the SHA-256
+of its own content with that link. verify_chain() names the first entry that
+breaks; every reconciliation returns the head hash (audit_head) as a receipt,
+so a truncated tail is detectable too. Appends are serialised (BEGIN
+IMMEDIATE, a Lua compare-and-set, or the process lock). Evident, not proof:
+whoever can write the store can rewrite a chain, but not to match a receipt
+someone else holds.
 """
 
 from __future__ import annotations
@@ -411,21 +333,10 @@ def _memory_read(batch_id: str) -> list[dict]:
 # Public API
 # ---------------------------------------------------------------------------
 
-# ── Durable local store ───────────────────────────────────────────────────
-#
-# The fallback chain was Redis → file → memory, and both fallbacks lose data:
-# the file store writes under tempfile.gettempdir(), which the OS is entitled
-# to clear on reboot, and memory obviously does not survive the process. An
-# audit trail that a restart can erase is not an audit trail — it is a log.
-#
-# SQLite sits between them. It is durable, transactional, needs no server to
-# install or keep healthy, and ships with Python. Redis stays the first
-# choice for a multi-worker deployment because it is shared across processes;
-# SQLite is what makes a single-host deployment honest rather than a demo.
-#
-# The path is configurable and defaults inside the engine directory rather
-# than the system temp dir, so "where is my audit trail" has an answer that
-# does not depend on the OS's cleanup policy.
+# ── Durable local store ──
+# SQLite between Redis and the lossy tiers: durable, transactional, no server.
+# Defaults inside the engine directory, not the temp dir, so a reboot cannot
+# erase the trail.
 _DB: "sqlite3.Connection | None" = None
 _DB_WARNED = False
 
@@ -689,18 +600,11 @@ def verify_chain(batch_id: str, receipt: str = "") -> dict:
 
 def get_audit_trail(batch_id: str) -> list[dict]:
     """
-    Return all recorded decisions for batch_id, in insertion order.
+    All recorded decisions for batch_id, in insertion order.
 
-    Reads in the order log_decision writes: Redis when it is configured and
-    holds this batch, then SQLite, then the file, then memory. This read
-    SQLite first, so with Redis configured a batch that also had older local
-    rows came back as those rows instead of what was written since.
-
-    NOTE: if Redis became unavailable mid-session, some entries may be in
-    Redis and some in the file. This implementation does not merge them —
-    it returns whichever backend the current session is writing to. A
-    production deployment should keep Redis healthy rather than relying on
-    partial fallback merging.
+    Reads in the order log_decision writes: Redis if configured and it holds the
+    batch, then SQLite, the file, memory. Entries split across backends by a
+    mid-session Redis failure are not merged.
     """
     client = _get_redis()
     if client:
@@ -767,16 +671,8 @@ def clear_trail(batch_id: str) -> None:
 
 def find_entries(agent: str, contains: str = "", limit: int = 200) -> list[dict]:
     """
-    Entries across EVERY batch, not just one.
-
-    get_audit_trail answers "what happened to this batch". Nothing answered
-    "what is outstanding across all of them", which is the question an
-    escalation is asking by definition — a reviewer who escalates a finding is
-    sending it somewhere, and until this existed there was nowhere for it to
-    go. The word promised a destination the system did not have.
-
-    Reads the durable store where there is one and falls back to memory, so
-    the answer is the same wherever entries were written.
+    Entries across every batch for one agent (e.g. escalations), newest first.
+    Reads the durable store where there is one, else memory.
     """
     needle = (contains or "").lower()
 
@@ -797,18 +693,7 @@ def find_entries(agent: str, contains: str = "", limit: int = 200) -> list[dict]
         except sqlite3.Error as e:
             logger.warning("Cross-batch audit query failed: %s", e)
 
-    # The in-memory last resort, reached when there is no durable store or the
-    # query above failed.
-    #
-    # This read `_MEMORY.values()` — a name defined nowhere in this module —
-    # so the fallback raised NameError instead of falling back, and every
-    # caller of find_entries got a 500 rather than a degraded answer.
-    # /escalations is the one that matters: the page a reviewer is sent to
-    # would have broken precisely when the audit store was already in trouble.
-    #
-    # Two faults in one line, which is why nothing caught it by reading:
-    # the name is wrong, AND the shape is wrong. _FALLBACK_LOG is a flat list
-    # of entries, not a mapping of batch id to entries.
+    # In-memory last resort, when there is no durable store or the query failed.
     out = []
     for e in _FALLBACK_LOG:
         if e.get("agent") != agent:

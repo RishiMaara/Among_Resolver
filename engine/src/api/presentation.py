@@ -198,26 +198,9 @@ def contested_payments(results: list[dict]) -> dict:
     """
     Payments claimed by more than one settlement in the same run.
 
-    This is the only check that REQUIRES the queue. A single settlement can
-    never see it: the question is not "are these the right payments for this
-    deposit" but "has this payment already been spent on a different one",
-    and only a run that holds every settlement at once can answer it.
-
-    It matters most exactly where the engine is otherwise least useful. When
-    payments are fungible — a merchant selling one item at one price, 2,000
-    apples at Rs 5 — WHICH payments compose a settlement is arbitrary and the
-    engine says so. What is not arbitrary is whether the same payment has
-    been counted twice, and that is the real exposure for that business.
-
-    Measured before this existed: two weekly settlements over one pool of
-    identical payments, 1,200 and 700, and 700 payments appeared in both
-    matched sets with nothing in the response mentioning it. The plain-English
-    text was already telling reviewers to "check these are not also being
-    claimed by another settlement" while the only system able to check it
-    stayed silent.
-
-    Reported, never auto-resolved. Deciding which settlement legitimately owns
-    a contested payment needs facts this engine does not have.
+    Only a run holding every settlement can see this, and it matters most where
+    payments are fungible: which payments compose a settlement is arbitrary
+    there, but counting one payment twice is not. Reported, never auto-resolved.
     """
     from collections import defaultdict
     owners: dict[str, list[str]] = defaultdict(list)
@@ -275,23 +258,10 @@ def contested_payments(results: list[dict]) -> dict:
 
 def compliance_review(candidates, batch_id_for_audit: str = "") -> dict:
     """
-    What compliance found, for the person who has to review it.
+    What compliance found, grouped by rule for the reviewer.
 
-    Findings were being computed and then thrown away. compliance_agent
-    attaches a full ComplianceFinding to every transaction a rule hits —
-    rule, severity, authority, citation, what was observed, what to do — and
-    the API only ever built exceptions from the BLOCKED list. Everything
-    FLAGGED, which is most of what a reviewer actually needs to look at,
-    reached no screen at all.
-
-    Measured on one realistic merchant day: 41 payments, 6 of them flagged by
-    two rules — a customer who paid twice in the same second, and a reseller
-    whose four sub-Rs 50,000 orders in a day match the structuring pattern.
-    The engine found both. The reviewer was shown neither.
-
-    Grouped by rule rather than by transaction, because a reviewer decides
-    per pattern, not per row: "these four payments are one wholesale customer
-    restocking" is a single judgement covering four transactions.
+    FLAGGED findings used to reach no screen at all; only BLOCKED ones did.
+    Grouped by rule because a reviewer decides per pattern, not per row.
     """
     from collections import defaultdict
     by_rule: dict[str, dict] = {}
@@ -369,28 +339,12 @@ def compliance_review(candidates, batch_id_for_audit: str = "") -> dict:
 
 def interchangeable_note(match_result, pool) -> dict | None:
     """
-    Is the choice the solver made actually a choice?
+    Is the solver's choice actually a choice?
 
-    A settlement of three Rs 500 payments, drawn from ten Rs 500 payments that
-    share a timestamp, a reference and a memo, is reported as ambiguous — and
-    it is, arithmetically. But the advice that followed, "someone needs to
-    look at the candidates and choose", is wrong here in a way worth catching:
-    there is nothing to choose between. The ten are indistinguishable in every
-    field a reviewer can see, so any three of them are the same answer, and
-    asking a person to pick produces an arbitrary result wearing the costume
-    of a decision.
-
-    That is a different situation from two genuinely different sets of
-    payments that happen to sum alike, where the choice is real and matters.
-    Collapsing the two into one message tells the reviewer to do busywork in
-    the first case and under-warns them in the second.
-
-    What actually carries risk when payments are fungible is not WHICH three
-    were picked — the settlement total is right either way — but whether the
-    same payment is claimed again by another settlement. That is the thing to
-    say, and it is what this reports.
-
-    Returns None when the matched set is not interchangeable with anything.
+    When the picked payments are indistinguishable in every field a reviewer can
+    see, any N of them are the same answer; asking a person to pick is busywork.
+    The real risk there is the same payment being claimed by another settlement,
+    and that is what this reports. None when the set is not interchangeable.
     """
     wanted = set(match_result.matched_txn_ids or [])
     if not wanted or not pool:
@@ -398,20 +352,9 @@ def interchangeable_note(match_result, pool) -> dict | None:
 
     def signature(t):
         """
-        What makes two payments substitutable FOR THIS SETTLEMENT.
-
-        The timestamp used to be part of this, which made the check almost
-        useless: real payments never share a timestamp to the second, so it
-        only ever fired on genuinely duplicated rows. A merchant selling one
-        item at one price — 2,000 apples at Rs 5 — got told "more than one
-        set adds up, someone needs to choose" when every payment in the pool
-        was interchangeable with every other and there was nothing to choose
-        between. That is the exact advice this check exists to prevent.
-
-        Dropping the timestamp is safe because the pool reaching here has
-        already been filtered to the settlement window. Everything in it is
-        in-window by construction, so the timestamp was not distinguishing
-        candidates, only preventing them from being recognised as alike.
+        What makes two payments substitutable for THIS settlement. No timestamp:
+        the pool is already inside the settlement window, and real payments never
+        share a timestamp to the second.
         """
         return (t.amount_cents, t.currency,
                 t.ref_id_canonical or "", (t.memo_normalized or ""))
@@ -439,23 +382,10 @@ def interchangeable_note(match_result, pool) -> dict | None:
 
     wholly = sum(g["picked"] for g in groups) == len(picked)
 
-    # A REPRODUCIBLE proposal for the case where the choice is arbitrary.
-    #
-    # When every picked payment is interchangeable, the solver returned one
-    # subset out of an enormous number of equally correct ones, and which one
-    # depends on solver internals. Run the same file twice and you can get a
-    # different set of ids for the same settlement — which is indefensible in
-    # an audit even though every set is arithmetically right.
-    #
-    # So propose the OLDEST N instead. FIFO is the convention accounting has
-    # used for fungible units for a century: you do not identify which unit
-    # left, you consume in a stated order and track the balance. It makes the
-    # answer stable, explains itself, and is honest that it is a convention
-    # rather than an identification.
-    #
-    # Note this proposes only. Nothing here clears a batch — a person accepts
-    # the convention through /settlement/{id}/accept-fifo, and that acceptance
-    # is what records consumption.
+    # A reproducible proposal when the choice is arbitrary: the OLDEST N (FIFO, the
+    # accounting convention for fungible units), so the same file always gives the
+    # same ids. It only proposes; a person accepts it via
+    # /settlement/{id}/accept-fifo, and that acceptance records consumption.
     fifo = None
     if wholly:
         sigs = {(g["amount_cents"], g["currency"]) for g in groups}
@@ -487,18 +417,8 @@ def interchangeable_note(match_result, pool) -> dict | None:
 
 def matched_rows(match_result, pool) -> list[dict]:
     """
-    The payments the engine picked, with enough detail to judge them.
-
-    matched_txn_ids was already returned on both paths and no screen rendered
-    it, so a reviewer was told "confirm these are the right payments" and
-    shown nothing — sent back to the source file to find them by hand. That
-    inverts the point of the tool. Summing a column is the easy half; naming
-    WHICH payments sum, so a person can agree or disagree in seconds, is the
-    half worth building.
-
-    Ids alone are not enough to decide on. A reviewer needs the amount, the
-    date and the reference to recognise a payment, so those travel with it,
-    ordered by amount because that is how a person scans a list like this.
+    The payments the engine picked, with amount, date and reference, largest
+    first, so a reviewer can agree or disagree without opening the source file.
     """
     wanted = set(match_result.matched_txn_ids or [])
     # `candidates` is optional on _format_report's signature even though every
@@ -525,24 +445,11 @@ def matched_rows(match_result, pool) -> list[dict]:
 
 def _settlement_instant(value) -> datetime:
     """
-    Read a settlement timestamp without letting the SERVER's timezone decide.
+    Read a settlement timestamp without letting the server's timezone decide.
 
-    This was `dp.parse(x).astimezone(timezone.utc)`. When the string carries an
-    offset that is correct, but a settlements file routinely holds a bare date
-    — "2026-03-03" — and dp.parse returns a NAIVE datetime. astimezone() then
-    interprets naive as the machine's local zone, so the anchor moved by the
-    server's offset: on an IST host "2026-03-03" became 2026-03-02T18:30Z.
-
-    Two things follow, and both are worse than the shift itself. The same file
-    reconciles differently in Mumbai and in Virginia, which makes a result
-    unreproducible. And the anchor is compared against transaction timestamps
-    that ingestion normalises by a different rule — it never uses server-local,
-    falling back to UTC with TzConfidence.LOW — so the settlement and its own
-    members were being placed on two different clocks.
-
-    Measured on a queue of 12 real settlements: the window kept 20 of 126
-    candidates and excluded true members dated after 18:30 on the anchor day,
-    so nothing could sum and every batch came back unmatched.
+    A bare date parsed naive and was then read in the server's local zone, so
+    the same file reconciled differently in Mumbai and Virginia and true members
+    fell outside the window. A bare date is never read in the server's zone.
     """
     parsed = dp.parse(str(value))
     if parsed.tzinfo is None:
@@ -554,17 +461,9 @@ def _settlement_instant(value) -> datetime:
 
 def _rate_card(gateway_bps, tax_bps, flat) -> FeeRateCard:
     """
-    The processor's terms for THIS run.
-
-    DEFAULT_RATE_CARD is 2% + 1%, which is a plausible guess and nobody's
-    actual contract. Where deductions are not declared outright, the engine
-    reconstructs the gross target from this card — and subset-sum is exact, so
-    a card that is wrong by a fraction of a percent does not degrade the match,
-    it eliminates it. Measured: a 1.5 basis point error takes auto-clear to 0%.
-
-    Versioning by merchant and effective date is the real answer and is not
-    built. Accepting the numbers per run is the difference between "this tool
-    works for the one merchant we hardcoded" and "tell it your terms".
+    The processor's terms for this run. The default card (2% + 1%) is nobody's
+    contract, and subset-sum is exact: a 1.5 bp error takes auto-clear to 0%.
+    Versioned per-merchant cards are not built; per-run terms are.
     """
     if gateway_bps is None and tax_bps is None and flat is None:
         return DEFAULT_RATE_CARD

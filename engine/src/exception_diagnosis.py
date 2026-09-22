@@ -1,48 +1,11 @@
 """
-Agent 5 — Exception Diagnostics & Routing.
+Exception diagnosis: give each unmatched record a root-cause category.
 
-Anything that Agent 3 and Agent 4 couldn't clear lands here. The job is
-NOT to dump these into an undifferentiated error queue — it's to diagnose
-a root cause category so a human reviewer can act fast instead of
-re-investigating from scratch.
-
-Rule-based classification first (cheap, deterministic, auditable).
-LLM only writes the human-readable narrative on top of an already-decided
-category — it does not choose the category itself.
-
-PERFORMANCE NOTE — same lesson as subset_sum.py and fuzzy_match.py:
-
-  The original version of classify_exception scanned the ENTIRE pool for
-  every single unmatched transaction (ref_id match scan + timestamp
-  window scan). Fine at hackathon scale (62 transactions), catastrophic
-  at real scale: measured at ~91 SECONDS for a single 10,173-transaction
-  chunk (~103 million comparisons) from the actual 50k stress dataset.
-  This is the third instance of the same trap in this project — naive
-  DP, naive per-pair fuzzy scoring, and now naive per-transaction
-  exception scanning. The pattern is always the same: an approach that
-  looks correct and fast on a 60-item demo silently becomes unusable
-  the moment real transaction volume shows up.
-
-  Fix: build an index ONCE per batch (dicts keyed by ref_id and by
-  amount, both O(1) lookup) and reuse it across every unmatched
-  transaction. O(n^2) -> O(n).
-
-CLASSIFICATION NOTE — why timing_lag requires a real counterpart:
-
-  timing_lag originally fired whenever ANY record existed within
-  +/- 3 days. That is vacuous at real scale: the 50K stress dataset
-  spans 4.9998 days total against a 3-day window, so the test was true
-  for every transaction and timing_lag captured 100% of unmatched
-  records. Every exception carried the identical "20082 record(s)"
-  note — it was reporting pool density, not diagnosing a root cause.
-  With all ref_ids unique in that dataset, the duplicate and
-  partial_payment branches could never fire and missing_entry was
-  unreachable, so the whole cascade collapsed to a single meaningless
-  label.
-
-  It now requires a *plausible counterpart*: the same amount, in a
-  DIFFERENT source, within the window — i.e. the same payment's other
-  leg. See _find_plausible_counterparts.
+Rules decide the category; a model may only word the narrative. Indexed once
+per batch (by reference and amount) so diagnosis is O(n), not O(n^2): the
+per-record scan took 91 s on a 10K chunk. timing_lag requires a real
+counterpart (same amount, other feed, in window), not merely any record
+nearby, which was true for every record at scale.
 """
 
 from __future__ import annotations
@@ -80,27 +43,9 @@ def _find_plausible_counterparts(
     window_days: int,
 ) -> list[NormalizedTxn]:
     """
-    A *plausible counterpart* is the same payment appearing in a DIFFERENT
-    source (gateway payment <-> bank credit <-> ERP entry): same amount,
-    different source, within the settlement-lag window.
-
-    This replaces the previous test, which asked only "does any record at
-    all exist within +/- window_days?". That question is vacuous at real
-    scale: on the 50K stress dataset the entire pool spans 4.9998 days
-    against a 3-day window, so it returned thousands of records for EVERY
-    transaction and timing_lag fired 100% of the time. The tell was that
-    every exception carried the identical "20082 record(s)" note — it was
-    reporting pool density, not diagnosing a root cause.
-
-    Requiring a same-amount, cross-source counterpart makes the signal
-    actually discriminating, and keeps the rule deterministic and
-    auditable (no fuzzy scoring in the exception path).
-
-    NOTE: matches on EXACT amount. A counterpart leg whose amount differs
-    by gateway fees or FX will not be detected here and will classify as
-    missing_entry instead. That's the conservative direction — better to
-    under-claim "awaiting its leg" than to assert a counterpart exists
-    when the amounts don't actually tie out.
+    The same payment in a DIFFERENT feed: same amount, other source, within the
+    lag window. Exact amounts only, so a leg that differs by fees or FX reads as
+    missing_entry, which is the conservative direction.
     """
     same_amount = index.by_amount.get(unmatched.amount_cents, [])
     if not same_amount:

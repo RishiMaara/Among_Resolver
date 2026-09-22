@@ -1,16 +1,7 @@
 """
-The hand-set linkage weights, overridable by environment variable.
-
-These are reasoned, not fitted (LINKAGE.md, FAILURE_LOG entry 2), and the
-override exists so scripts/sweep_linkage_weights.py can vary one at a time
-without editing source.
-
-There used to be a second path here, behind ENABLE_DYNAMIC_WEIGHTS, described
-elsewhere as "machine-learned weights". It counted how often the words
-"settlement_id_anchor" and "reference_cluster" appeared in the audit log and
-nudged two weights by a fixed step. That is not learning, it was off by
-default, and nothing measured it. Weights that ARE learned from data live in
-linkage_em.py, where they are fitted per pool and reported with every run.
+The hand-set linkage weights, overridable by environment variable so
+scripts/sweep_linkage_weights.py can vary them. Reasoned, not fitted
+(FAILURE_LOG 2); weights learned from data live in linkage_em.py.
 """
 
 import os

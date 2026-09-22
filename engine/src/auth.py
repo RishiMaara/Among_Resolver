@@ -1,33 +1,10 @@
 """
-API authentication.
+API authentication: one shared key, sent as `X-API-Key` or
+`Authorization: Bearer ...`, compared in constant time.
 
-WHY THIS EXISTS
----------------
-Every endpoint was open. Settlement amounts, matched transaction ids, audit
-trails and compliance findings — including which counterparties were blocked
-and under which rule — were readable by anything that could reach the port.
-For a tool whose whole subject is money movement, that is the wrong default
-even on a laptop.
-
-THE SHAPE OF IT
----------------
-A shared API key, sent as `X-API-Key` or `Authorization: Bearer …`. Not OAuth,
-not per-user sessions: this engine has no user model and inventing one to look
-thorough would be worse than a key that is honestly a key. What it does buy is
-that a deployment can be locked, and that the decision to run it open becomes
-explicit rather than accidental.
-
-DISABLED BY DEFAULT, AND LOUD ABOUT IT
---------------------------------------
-With no API_KEY set the engine runs open, because a reconciliation demo that
-refuses to start until you export a secret is a worse first experience than
-one that works and warns. But it warns at every startup, and /health reports
-`auth: "disabled"` so the state is visible to whoever is looking rather than
-only to whoever configured it.
-
-The comparison is constant-time. A key check that returns faster for a wrong
-first character leaks the key one character at a time, and `==` on a str does
-exactly that.
+Off unless API_KEY is set, so the demo runs without a secret; it warns at
+startup and /health reports `auth: "disabled"`. The engine has no user
+model, so a key authenticates a caller, not a person.
 """
 
 from __future__ import annotations
@@ -44,19 +21,10 @@ logger = logging.getLogger(__name__)
 # one, and a locked-out operator still needs to see why.
 PUBLIC_PATHS = {"/health", "/docs", "/openapi.json", "/redoc"}
 
-# Exempt from the API-key check because it authenticates STRONGER, not
-# weaker: every delivery must carry a valid HMAC-SHA256 over the raw body
-# (see webhook.py), and one without it is refused with 401 there instead.
-#
-# This is not a hole, it is a different door. Razorpay signs with the webhook
-# secret from the dashboard and has no way to send this deployment's API key,
-# so leaving the path behind the key check would 401 every genuine delivery
-# before verification ever ran — a webhook that looks configured and silently
-# receives nothing.
-#
-# Only the receiving path. /webhooks/pending stays behind the API key: it is
-# an internal read of what has arrived, it carries no signature of its own,
-# and it has no reason to be reachable without a key.
+# Webhook deliveries prove themselves by HMAC-SHA256 over the raw body
+# (webhook.py) and are refused there without it. Razorpay cannot send this
+# deployment's API key, so the key check would 401 every genuine delivery.
+# Only the receiving path; /webhooks/pending stays behind the key.
 HMAC_AUTHENTICATED_PATHS = {"/webhooks/razorpay"}
 
 

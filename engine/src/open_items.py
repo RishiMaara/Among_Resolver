@@ -1,39 +1,13 @@
 """
-Open items: money that has not reconciled yet, carried from run to run.
+Open items: money not yet reconciled, carried from run to run and aged in
+working days (india_calendar.py).
 
-WHY
----
-A reconciliation answers one question about one payout: which payments are
-in it. The question a finance team is actually asked on the first of the
-month is different — what has not been paid out yet, and how late is it?
-Until now that answer lived nowhere. Each run looked at its own settlement
-and forgot everything else in the pool, so a payment that never settled was
-invisible in every run it failed to appear in.
+    unsettled_payment       member-feed payment not in a cleared settlement
+    refund_not_deducted     refund not yet taken out of a payout
+    withheld_settlement     a payout that arrived and did not clear
 
-This keeps the list. Every reconciliation adds the payments it saw that are
-not yet paid out, and closes the ones a cleared settlement just took. What is
-left is the open-items ledger, aged in WORKING days against the date each
-item was due (india_calendar.py) — a payment captured on a Friday before a
-second Saturday and a festival is not late on the Monday.
-
-WHAT COUNTS AS OPEN
--------------------
-  unsettled_payment        a payment from the member feed, captured, not yet
-                           in a cleared settlement
-  refund_not_deducted      a refund not yet taken out of a payout; the payout
-                           it lands in will be smaller than the payments say
-  withheld_settlement      a payout that arrived and did not clear; the whole
-                           deposit is unreconciled until a person decides
-
-WHAT CLOSES AN ITEM
--------------------
-Only a CLEARED settlement, the same rule as settled_ledger: a withheld
-batch's matched set is a proposal, and closing items on a proposal would make
-the ledger report guesses as settlements. Re-running a withheld batch until it
-clears closes its payments and the batch item together.
-
-Closed items are kept, marked closed, so "when did this one settle, and in
-which payout" has an answer.
+Only a CLEARED settlement closes items (a withheld set is a proposal).
+Closed items are kept, marked closed, with the payout that closed them.
 """
 
 from __future__ import annotations

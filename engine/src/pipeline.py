@@ -1,54 +1,14 @@
 """
-Reconciliation pipeline — the single entry point above the orchestrator.
+Reconciliation pipeline, the single entry point above the orchestrator:
+compliance screening (blocked records leave the pool), then reconcile_batch
+(linkage, fee decomposition, subset-sum, tiebreak, fuzzy, exceptions).
 
-Runs, in order:
-  Agent 7  Compliance screening       (blocked records leave the pool)
-  Agent 2b Linkage                    (which records belong to this batch)
-  Agents 2-5 via reconcile_batch      (fee decomposition, subset-sum,
-                                       tiebreak, fuzzy fallback, exceptions)
-
-WHAT REPLACED WHAT, AND WHY
----------------------------
-This module replaces the time-based sharding agent. That agent split a large
-pool into 48-hour chunks, ranked them by proximity to the settlement date,
-and reconciled each in turn.
-
-Chunking by time is what you do when you have no idea which records belong
-to a settlement: it makes an intractable search tractable by *guessing* that
-members cluster in time. Linkage removes the need for the guess — records
-that name the settlement identify themselves — and the guess was not free:
-
-  * Members can straddle a chunk boundary or land in a chunk the ranking
-    never reaches. On the 50K dataset the members span the first 48 hours
-    while noise starts two days earlier, so the top-ranked chunk held almost
-    none of them and the run returned 71 unrelated ERP journal records that
-    happened to sum to the target.
-
-  * It halted on the first ambiguous chunk, ending the search before the
-    chunk holding the real members was ever examined.
-
-  * It was slow. Measured on the same dataset: 25-72s chunking, versus
-    2.4-3.0s once linkage identifies the 55 members directly out of 50,000
-    (the exact figure from the last run is in benchmarks/latest.json).
-
-  * Its ranking heuristic — chunk end-time nearest the settlement date — had
-    no evidence behind it.
-
-The old implementation is preserved on the `archive/time-based-sharding`
-branch rather than deleted outright, because the fallback question it was
-trying to answer is real: what do you do when NOTHING names the settlement?
-The answer this pipeline gives is "decline and route to a human", which is
-correct but unsatisfying, and a future non-arithmetic signal (timestamp
-precedence between a payment and its ledger entry, amount+window pairing
-across feeds) may do better than either approach.
-
-SCALE
------
-No chunking is needed because linkage narrows before the solver ever runs —
-50,000 candidates to 55 on the reference dataset. Where linkage finds
-nothing, the pool is passed through whole and the orchestrator's unanchored
-guard prevents a large unconstrained solve from auto-clearing on a
-coincidence.
+It replaced time-based sharding, which guessed that members cluster in time:
+it missed members across chunk boundaries, stopped at the first ambiguous
+chunk, and took 25-72 s where linkage takes 2.4-3.0 s on the 50K dataset
+(archive/time-based-sharding). Linkage narrows 50,000 candidates to 55
+there; where nothing links, the unanchored guard keeps a large solve from
+clearing on a coincidence.
 """
 
 from __future__ import annotations

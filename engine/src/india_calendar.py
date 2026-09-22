@@ -1,34 +1,11 @@
 """
-Working days for Indian settlement: when a payout is due, and how late it is.
+Working days for Indian settlement: when a payout is due, and how late.
 
-WHY A CALENDAR AND NOT A DAY COUNT
-----------------------------------
-A gateway pays out on T+2 working days, and "working" is doing the work in
-that sentence. A card payment captured on Friday 11 September 2026 is not due
-on Sunday the 13th: Saturday the 12th is the second Saturday of the month,
-when banks are shut under the RBI's rule since September 2015; Sunday is a
-Sunday; Monday the 14th is Ganesh Chaturthi in Maharashtra. It is due on
-Wednesday the 16th. Ageing that counts calendar days would call it two days
-overdue on the Tuesday, and an ageing report that cries wolf every long
-weekend is one people learn to ignore.
-
-WHERE THE HOLIDAYS COME FROM
-----------------------------
-The `holidays` package's India calendar, for one state — Maharashtra by
-default, because Mumbai is where settlement banks clear. Set BANK_HOLIDAY_STATE
-to another state code to change it. Festival dates on a lunar calendar are
-the package's own, some marked estimated until they are gazetted, so the
-RBI's published list is the authority and the calendar can be corrected
-without a release:
-
-    EXTRA_BANK_HOLIDAYS=2026-03-19,2026-11-09   # add declared holidays
-    NOT_BANK_HOLIDAYS=2026-08-26                # remove one banks worked
-
-If the package is missing the calendar falls back to the three national
-holidays, and `source()` says so — /health reports it rather than letting a
-thinner calendar pass for the real one.
-
-Sundays and the second and fourth Saturdays are closed whatever the list says.
+T+2 means working days: Sundays, second and fourth Saturdays and bank
+holidays are skipped. Holidays come from the `holidays` package for one
+state (BANK_HOLIDAY_STATE, default Maharashtra), corrected without a
+release via EXTRA_BANK_HOLIDAYS / NOT_BANK_HOLIDAYS. Without the package it
+falls back to the three national holidays, and source() says so.
 """
 
 from __future__ import annotations

@@ -1,47 +1,16 @@
 """
-Push-based settlement notification, with the signature actually checked.
+Razorpay settlement webhooks, with the signature checked.
 
-WHAT THIS CLOSES, AND WHAT IT DOES NOT
---------------------------------------
-Ingest was polling only: `razorpay_source.fetch_settlements` asks
-`/v1/settlements` on a schedule. The docs claimed a webhook once, the code
-had none, and the claim was withdrawn rather than faked. This is the claim
-made true — but only the part that is true, so read the boundary carefully.
+A verified delivery is a NOTIFICATION that settlement X processed, not a
+reconciliation: its payments still come from the pulled feeds. Settlements
+are pushed, transactions are pulled.
 
-A verified delivery here means: Razorpay says settlement X has processed, and
-the HMAC proves the message is from whoever holds the shared secret. That is
-a NOTIFICATION. It is not a reconciliation, because the payments the
-settlement decomposes into do not arrive in the webhook payload — they come
-from the gateway/bank/ERP feeds, which are still pulled. So the honest
-description of the pipeline after this change is: settlements are pushed,
-transactions are pulled.
+    no secret configured    503 - fail loudly, never accept unsigned
+    bad/missing signature   401 - the body is never parsed
+    replayed event id       accepted and ignored (Razorpay retries)
+    oversized body          413 before buffering
 
-What that buys is real: the lag between a settlement landing and the engine
-knowing about it drops from the poll interval to the delivery latency, and
-the engine stops asking an API for things that have not happened.
-
-WHY THE SIGNATURE IS THE WHOLE FEATURE
---------------------------------------
-An endpoint that accepts unsigned settlement notifications is strictly worse
-than polling. Polling at least talks to an authenticated API; an open webhook
-lets anyone who finds the URL assert that a settlement of any amount has
-processed. Every refusal below exists for that reason:
-
-  * no secret configured        503, not 200. A deployment that forgot the
-                                secret must fail loudly, not quietly accept
-                                unauthenticated instructions about money.
-  * bad or missing signature    401, and the body is never parsed. Nothing
-                                reads an unverified payload, because parsing
-                                is already acting on it.
-  * replayed event id           accepted-and-ignored. A redelivery is normal
-                                (Razorpay retries), but processing one twice
-                                would record the same settlement twice.
-  * oversized body              413 before buffering, same reasoning as
-                                main.read_upload_capped.
-
-`hmac.compare_digest`, not `==`. String comparison short-circuits on the
-first differing byte, which leaks how much of a guess was right through
-timing. That is a textbook finding in a security review and free to avoid.
+Signatures are compared with hmac.compare_digest.
 """
 
 from __future__ import annotations
@@ -70,24 +39,9 @@ SIGNATURE_HEADER = "x-razorpay-signature"
 # too small to be a memory problem.
 WEBHOOK_MAX_BYTES = 1024 * 1024
 
-# Replay suppression and the pending queue: where they live.
-#
-# Per-process memory used to be the only option, stated as a limitation: a
-# restart forgot, and two processes behind a load balancer did not share it —
-# so "replay protected" quietly stopped being true the moment the engine
-# scaled out. On a serverless host that is not "scaling out", it is every
-# deploy: consecutive requests land on different instances, and a Razorpay
-# retry reaching a second instance would be processed a second time.
-#
-# With REDIS_URL / KV_URL set (the same shared store the audit trail and run
-# history use), both live in Redis. Without it they stay in memory, which is
-# correct for one long-running process and is what /health warns about on
-# Vercel. Opt-in by URL, like history, so a local Redis that happens to be
-# running does not silently change behaviour.
-#
-# How many to remember in memory: Razorpay retries a failed delivery for up to
-# 24 hours, so this needs to outlive a retry storm, not a week. An
-# OrderedDict gives eviction in insertion order for free.
+# Replay suppression and the pending queue live in Redis when REDIS_URL /
+# KV_URL is set (shared across instances), else in memory, remembered long
+# enough to outlive Razorpay's 24-hour retry window.
 REPLAY_MEMORY = 4096
 
 # In Redis, seen ids expire instead: 48 hours comfortably outlives Razorpay's

@@ -43,25 +43,13 @@ def compute_fee_breakdown(
     candidates: list[NormalizedTxn] | None = None,
 ) -> FeeBreakdown:
     """
-    Reconstruct the deductions that must be added back to net to reach the
-    gross target.
+    The deductions to add back to net to reach the gross target.
 
-    Two paths, and which one ran is recorded on the result:
-
-      DECLARED   `batch.declared_deductions_cents` was supplied, so the exact
-                 figure from the settlement advice is used. This is the
-                 preferred path — the gross target is then a fact rather than
-                 an inference, and no tolerance is being spent on fee drift.
-
-      ESTIMATED  Reconstructed from the rate card. The subset-sum tolerance
-                 band absorbs the error, but that error is real: if the
-                 processor's actual deductions differ from the card, the
-                 target moves and the true subset stops summing to it. The
-                 match then fails, or worse, a different subset fits the
-                 wrong target.
-
-    The declared path is why the target survives contact with a processor
-    whose rate card you do not have exactly right.
+    DECLARED   batch.declared_deductions_cents from the settlement advice: the
+               target is a fact. Preferred.
+    ESTIMATED  from the rate card: if the processor's real deductions differ,
+               the target moves and the true set stops summing to it.
+    The basis is recorded on the result.
     """
     # A stated figure always beats a reconstructed one. The split between fee
     # and withheld tax is NOT inferred here — attributing a lump sum to one

@@ -15,36 +15,16 @@ from ingestion import _fast_parse
 logger = logging.getLogger("file_agent")
 
 
-# The target schema fields we need to map to
-# The six fields reconciliation needs, plus the four the COMPLIANCE rules
-# need. Those four were missing, and the effect was not subtle: ingestion
-# reads payer_id, NormalizedTxn carries it, and compliance_agent groups by it
-# — but Agent 0 never passed the column through, so every uploaded file
-# arrived with payer_id empty. Compliance then grouped all 41 payments of a
-# real merchant day under one "payer" (the batch id, its fallback), which is
-# why a file containing a deliberate duplicate charge, a four-order
-# structuring pattern and a Rs 12.5 lakh CTR-threshold payment produced
-# exactly zero findings.
-#
-# Rules that cannot see a counterparty cannot do their job. SANCTIONS_HIT is
-# published as statutory and BLOCKED, and with no payer or payee to screen it
-# could never fire on an uploaded file at all.
+# The six fields reconciliation needs plus the four compliance needs
+# (payer/payee, cash, wire). Without the counterparty columns every uploaded
+# file screened as one payer and no rule could fire.
 TARGET_FIELDS = ["txn_id", "ref_id", "amount", "currency", "timestamp", "memo", "status",
                  "payer_id", "payee_id", "is_cash", "is_wire_transfer"]
 
 
-# Known synonyms to help the fuzzy matcher anchor correctly.
-#
-# NOTE: "value" was removed from amount's synonyms. fuzz.token_set_ratio
-# scores ANY token-subset match as a perfect 100 -- so a column literally
-# named "Value Date" (tokens {value, date}) was matching amount's "value"
-# synonym at 100, tied with timestamp's "date" synonym at 100, with amount
-# winning the tie purely because it's checked earlier in TARGET_FIELDS.
-# This silently corrupted the amount field with a date fragment and left
-# timestamp empty, which caused 100% of the affected source's rows to be
-# dropped downstream (empty timestamp fails to parse). Single generic
-# words like "value" are exactly the kind of synonym that's dangerous
-# under a subset-based fuzzy scorer -- prefer specific multi-word phrases.
+# Synonyms anchor the fuzzy matcher. Single generic words are dangerous under
+# token_set_ratio: "value" once matched "Value Date" as the amount and
+# emptied the timestamp. Prefer specific phrases.
 HEADER_SYNONYMS = {
     "txn_id": [
         "transaction_id", "txn_id", "id", "payment_id", "bank_ref_num", "utr",
@@ -71,21 +51,9 @@ HEADER_SYNONYMS = {
         "transaction_reference", "customer_reference", "end_to_end_id",
         "transactionreferences", "transactionattributes", "transaction references", "transaction attributes",
     ],
-    # Widened after measuring rejection on plausible exports: of eight
-    # realistic column schemes (Razorpay, Stripe, SBI, Tally, SAP, PayPal, a
-    # generic ledger, a UPI statement), four were refused outright — a coin
-    # flip for anyone uploading their own file. Names are cheap to add and
-    # each one removes a rejection.
-    # Widened after measuring rejection on plausible exports — but NOT with
-    # "gross" or "net", and that exclusion is the important part.
-    #
-    # Adding them looked harmless and silently flipped ReconRiver's processor
-    # feed from net_amount to gross_amount, taking it from 94.59% to 8.11%.
-    # A feed carrying BOTH gross_amount and net_amount poses a real modelling
-    # question — which figure does the settlement credit equal? — and a
-    # synonym list must not answer it by alphabetical accident. Where only one
-    # numeric column exists, value inference maps it anyway; where several do,
-    # the choice stays with the name rules that were tuned against real feeds.
+    # Widened to cover real export schemes, but deliberately NOT with "gross" or
+    # "net": that flipped ReconRiver's feed to gross_amount and took it from
+    # 94.59% to 8.11%. With several numeric columns, the name rules decide.
     "amount": [
         "amount", "net_amount", "credit", "debit", "amt", "amount (inr)",
         "value", "transaction_amount", "txn_amount", "paid_amount",
@@ -175,18 +143,9 @@ MULTI_VALUED_TARGETS = {"ref_id"}
 COMPLEMENTARY_AMOUNT_TOKENS = {"debit", "credit", "dr", "cr", "withdrawal", "deposit"}
 
 
-# Fields without which reconciliation is not possible.
-#
-# The distinction matters because a missing REQUIRED field does not produce a
-# bad answer, it produces a silent absence. A row with no timestamp fails to
-# parse during normalisation and is discarded, so a file whose date column was
-# not recognised does not error — it reconciles against nothing and reports
-# that nothing matched. Measured on the ReconRiver dataset: 107 of 207 records
-# disappeared exactly this way, and the run looked like a matching failure
-# rather than an ingestion failure.
-#
-# So Agent 0 refuses the file instead. A stated rejection a human can act on
-# beats a clean-looking run over data that is not there.
+# Fields without which reconciliation is impossible. A missing one does not
+# produce a bad answer, it produces silent absence (rows dropped, "nothing
+# matched"), so the file is refused instead.
 REQUIRED_FIELDS = ("amount", "timestamp")
 
 

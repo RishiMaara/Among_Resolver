@@ -69,18 +69,10 @@ class MultiSourceReconcileRequest(BaseModel):
 
 class JointReconcileRequest(BaseModel):
     """
-    N:M reconciliation: two or more settlement batches solved SIMULTANEOUSLY
-    against one shared candidate pool, so a transaction that could
-    plausibly belong to more than one settlement is assigned by the solver
-    rather than by whichever batch happens to be considered first.
-
-    Not the same job as /reconcile/queue. The queue reconciles many
-    settlements one after another against a shared pool, and a payment
-    claimed by the first is simply unavailable to the second — correct, and
-    order-dependent. This endpoint decides every batch's assignment at
-    once; see orchestrator.reconcile_many's docstring for the full
-    reasoning and for what it does and does not carry over from the 1:N
-    path.
+    N:M reconciliation: several settlement batches solved at once against one
+    shared pool, so a transaction two settlements could claim is assigned by the
+    solver, not by processing order. Unlike /reconcile/queue, which is
+    order-dependent. See orchestrator.reconcile_many.
     """
     gateway_txns: list[TxnIn] = Field(default_factory=list)
     bank_txns: list[TxnIn] = Field(default_factory=list)
