@@ -33,10 +33,11 @@ def _install(monkeypatch, answers):
                 text=a, candidates=[pytypes.SimpleNamespace(finish_reason="STOP")])
 
     class Client:
-        def __init__(self, api_key):
+        def __init__(self, api_key, http_options=None):
             self.models = Models()
 
     types_mod = pytypes.SimpleNamespace(
+        HttpOptions=lambda **kw: kw,
         GenerateContentConfig=lambda **kw: kw,
         ThinkingConfig=lambda **kw: kw,
         Part=pytypes.SimpleNamespace(from_bytes=lambda **kw: kw),
@@ -81,3 +82,24 @@ def test_every_model_overloaded_ends_on_the_rules(monkeypatch):
     calls = _install(monkeypatch, {m: _Err(503) for m in chain})
     assert llm_provider.generate("q") is None
     assert calls[:len(chain)] == chain
+
+
+def test_a_model_retired_for_this_key_is_skipped(monkeypatch):
+    # A new key gets 404 for gemini-2.5-flash; the next model must still be tried.
+    chain = _chain()
+    answers = {m: _Err(404) for m in chain}
+    answers[chain[-1]] = "answer"
+    calls = _install(monkeypatch, answers)
+    assert llm_provider.generate("q") == "answer"
+    assert calls == chain
+
+
+def test_a_request_stops_asking_once_its_model_time_is_spent(monkeypatch):
+    calls = _install(monkeypatch, {m: "answer" for m in _chain()})
+    token = model_budget.REQUEST.set({"client": "t", "calls": 0, "skipped": "",
+                                      "model_deadline": 0.0})
+    try:
+        assert llm_provider.generate("q") is None
+        assert calls == []
+    finally:
+        model_budget.REQUEST.reset(token)

@@ -27,7 +27,21 @@ DEFAULT_MODEL = os.environ.get("GEMINI_MODEL", "gemini-flash-latest")
 # time, and every model use then fell back to rules in silence; a second model
 # answering now beats three backed-off retries of one that will not.
 FALLBACK_MODELS = [m.strip() for m in os.environ.get(
-    "GEMINI_FALLBACK_MODELS", "gemini-2.5-flash,gemini-flash-lite-latest").split(",") if m.strip()]
+    "GEMINI_FALLBACK_MODELS",
+    "gemini-3-flash-preview,gemini-3.6-flash,gemini-2.5-flash,gemini-flash-lite-latest",
+).split(",") if m.strip()]
+
+# Statuses that say "not this model, not now" rather than "your request is
+# wrong": overloaded, rate-limited, timed out, or retired for this key (a new
+# key gets 404 for gemini-2.5-flash). The next model is tried at once. 400,
+# 401 and 403 stop: another model would refuse the same request.
+MOVE_ON_STATUS = (404, 408, 429, 499, 500, 502, 503, 504)
+
+# A slow model must not hold a web request past the host's limit (Vercel: 60s).
+# Each call gets MODEL_TIMEOUT_S, and one request gets MODEL_REQUEST_BUDGET_S of
+# model time in all; past it the deterministic path answers.
+CALL_TIMEOUT_S = float(os.environ.get("MODEL_TIMEOUT_S", "12"))
+REQUEST_BUDGET_S = float(os.environ.get("MODEL_REQUEST_BUDGET_S", "30"))
 
 MAX_ATTEMPTS = 3
 BASE_BACKOFF_S = 1.5
@@ -143,13 +157,29 @@ def generate(
         config_kwargs["response_mime_type"] = "application/json"
         config_kwargs["response_schema"] = schema
 
-    client = genai.Client(api_key=api_key())
+    import model_budget as _mb  # pylint: disable=import-outside-toplevel
+    state = _mb.REQUEST.get()
+    deadline = None
+    if state is not None:
+        deadline = state.setdefault("model_deadline", time.monotonic() + REQUEST_BUDGET_S)
+        if time.monotonic() >= deadline:
+            logger.info("Model time for this request is spent. Deterministic path continues.")
+            return None
+    try:
+        client = genai.Client(api_key=api_key(),
+                              http_options=types.HttpOptions(timeout=int(CALL_TIMEOUT_S * 1000)))
+    except Exception:
+        client = genai.Client(api_key=api_key())
     last: Exception | None = None
 
     primary = model or DEFAULT_MODEL
     chain = [primary] + [m for m in FALLBACK_MODELS if m != primary]
     for i, name in enumerate(chain):
         for attempt in range(1, MAX_ATTEMPTS + 1):
+            if deadline is not None and time.monotonic() >= deadline:
+                logger.info("Model time for this request is spent at %s. "
+                            "Deterministic path continues.", name)
+                return None
             try:
                 response = client.models.generate_content(
                     model=name,
@@ -186,7 +216,9 @@ def generate(
             except Exception as exc:
                 last = exc
                 status = _status_of(exc)
-                if status in (429, 503) and i + 1 < len(chain):
+                timed_out = status is None and any(
+                    w in str(exc).lower() for w in ("timed out", "timeout", "deadline"))
+                if (status in MOVE_ON_STATUS or timed_out) and i + 1 < len(chain):
                     logger.info("LLM %s unavailable (status=%s); trying %s.",
                                 name, status, chain[i + 1])
                     break
