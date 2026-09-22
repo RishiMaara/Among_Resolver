@@ -49,6 +49,10 @@ def _install(monkeypatch, answers):
     monkeypatch.setitem(sys.modules, "google.genai", genai)
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     monkeypatch.setattr(llm_provider.time, "sleep", lambda s: None)
+    # Each test starts with nothing to replay.
+    monkeypatch.setattr(llm_provider, "_replay_local", {})
+    monkeypatch.delenv("REDIS_URL", raising=False)
+    monkeypatch.delenv("KV_URL", raising=False)
     return calls
 
 
@@ -101,5 +105,23 @@ def test_a_request_stops_asking_once_its_model_time_is_spent(monkeypatch):
     try:
         assert llm_provider.generate("q") is None
         assert calls == []
+    finally:
+        model_budget.REQUEST.reset(token)
+
+
+def test_with_every_model_busy_the_answer_to_the_same_case_is_replayed_and_labelled(monkeypatch):
+    chain = _chain()
+    answers = {m: _Err(503) for m in chain}
+    answers[chain[0]] = "first answer"
+    _install(monkeypatch, answers)
+    assert llm_provider.generate("same case") == "first answer"
+    answers[chain[0]] = _Err(503)          # now every model is busy
+    token = model_budget.REQUEST.set({"client": "t", "calls": 0, "skipped": ""})
+    try:
+        assert llm_provider.generate("same case") == "first answer"
+        rep = model_budget.report()
+        assert rep["replayed_from"] and rep["model"] == chain[0]
+        # A different case is never answered from another case's reply.
+        assert llm_provider.generate("another case") is None
     finally:
         model_budget.REQUEST.reset(token)

@@ -8,7 +8,10 @@ exception: an optional enrichment must not take down a reconciliation.
 from __future__ import annotations
 
 import logging
+import hashlib
+import json
 import os
+from datetime import datetime, timezone
 import random
 import time
 
@@ -41,6 +44,74 @@ MOVE_ON_STATUS = (404, 408, 429, 499, 500, 502, 503, 504)
 # Each call gets MODEL_TIMEOUT_S, and one request gets MODEL_REQUEST_BUDGET_S of
 # model time in all; past it the deterministic path answers.
 CALL_TIMEOUT_S = float(os.environ.get("MODEL_TIMEOUT_S", "12"))
+
+# When every model is busy, the answer a model gave to the IDENTICAL request
+# (same system, prompt, schema and attachments) is replayed, and the response
+# says so with the time it was given (model_budget.report: replayed_from).
+# Whatever uses it still checks it as if it were new. MODEL_REPLAY=0 turns it
+# off.
+REPLAY = os.environ.get("MODEL_REPLAY", "1").strip() != "0"
+_REPLAY_TTL_S = 30 * 24 * 3600
+_replay_local: dict[str, dict] = {}
+
+
+def _replay_key(system, prompt, schema, attachments) -> str:
+    h = hashlib.sha256()
+    h.update(json.dumps([system or "", prompt or "", schema or {}], sort_keys=True,
+                        default=str).encode("utf-8"))
+    for data, mime in attachments or []:
+        h.update(mime.encode("utf-8"))
+        h.update(hashlib.sha256(data).digest())
+    return "model:answer:" + h.hexdigest()
+
+
+def _replay_store():
+    import audit  # pylint: disable=import-outside-toplevel
+    try:
+        return audit._get_redis() if audit.redis_url() else None  # pylint: disable=protected-access
+    except Exception:
+        return None
+
+
+def _remember(key: str, text: str, name: str) -> None:
+    if not REPLAY:
+        return
+    rec = {"text": text, "model": name,
+           "at": datetime.now(timezone.utc).isoformat(timespec="minutes")}
+    store = _replay_store()
+    if store is not None:
+        try:
+            store.set(key, json.dumps(rec), ex=_REPLAY_TTL_S)
+            return
+        except Exception:
+            pass
+    if len(_replay_local) > 500:
+        _replay_local.pop(next(iter(_replay_local)))
+    _replay_local[key] = rec
+
+
+def _replay(key: str) -> str | None:
+    if not REPLAY:
+        return None
+    rec = None
+    store = _replay_store()
+    if store is not None:
+        try:
+            raw = store.get(key)
+            rec = json.loads(raw) if raw else None
+        except Exception:
+            rec = None
+    rec = rec or _replay_local.get(key)
+    if not rec:
+        return None
+    import model_budget  # pylint: disable=import-outside-toplevel
+    state = model_budget.REQUEST.get()
+    if state is not None:
+        state["model"] = rec.get("model")
+        state["replayed_from"] = rec.get("at")
+    logger.info("Every model busy; replaying %s's answer to this identical request from %s.",
+                rec.get("model"), rec.get("at"))
+    return rec.get("text")
 REQUEST_BUDGET_S = float(os.environ.get("MODEL_REQUEST_BUDGET_S", "30"))
 
 MAX_ATTEMPTS = 3
@@ -174,12 +245,13 @@ def generate(
 
     primary = model or DEFAULT_MODEL
     chain = [primary] + [m for m in FALLBACK_MODELS if m != primary]
+    key = _replay_key(system, prompt, schema, attachments)
     for i, name in enumerate(chain):
         for attempt in range(1, MAX_ATTEMPTS + 1):
             if deadline is not None and time.monotonic() >= deadline:
                 logger.info("Model time for this request is spent at %s. "
                             "Deterministic path continues.", name)
-                return None
+                return _replay(key)
             try:
                 response = client.models.generate_content(
                     model=name,
@@ -200,6 +272,7 @@ def generate(
                     reason = ""
                 if text and "MAX_TOKENS" in reason:
                     _answered_by(name)
+                    _remember(key, text.rstrip() + " […answer truncated]", name)
                     logger.warning(
                         "LLM hit max_output_tokens (%d) and the answer is cut off. "
                         "Returning it flagged rather than silently truncated.",
@@ -209,6 +282,7 @@ def generate(
 
                 if text:
                     _answered_by(name)
+                    _remember(key, text, name)
                     return text
                 logger.warning("LLM returned an empty response; treating as unavailable.")
                 return None
@@ -218,7 +292,11 @@ def generate(
                 status = _status_of(exc)
                 timed_out = status is None and any(
                     w in str(exc).lower() for w in ("timed out", "timeout", "deadline"))
-                if (status in MOVE_ON_STATUS or timed_out) and i + 1 < len(chain):
+                # A 400 from a fallback is that model refusing a parameter it
+                # does not take (thinking budget, schema); from the primary it
+                # is our request, and every model would refuse it.
+                move_on = status in MOVE_ON_STATUS or timed_out or (status == 400 and i > 0)
+                if move_on and i + 1 < len(chain):
                     logger.info("LLM %s unavailable (status=%s); trying %s.",
                                 name, status, chain[i + 1])
                     break
@@ -231,7 +309,7 @@ def generate(
                         "Deterministic path continues.",
                         type(exc).__name__, status, attempt, str(exc)[:200],
                     )
-                    return None
+                    return _replay(key)
 
                 # Jittered backoff so concurrent workers do not retry in lockstep
                 # and re-trigger the same rate limit together.
@@ -243,4 +321,4 @@ def generate(
                 time.sleep(delay)
 
     logger.warning("LLM exhausted retries: %s", str(last)[:200])
-    return None
+    return _replay(key)

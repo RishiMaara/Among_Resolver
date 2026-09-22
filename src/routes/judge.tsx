@@ -112,6 +112,15 @@ async function reconcileAndInvestigate(): Promise<Line[]> {
   const inv = res2.investigation;
   if (inv) {
     const model: string | undefined = res2.ai?.model;
+    // Every model busy: the engine reused the answer a model gave this same
+    // case earlier, and says when. The verifier below still checked it now.
+    const replayed: string | undefined = res2.ai?.replayed_from;
+    if (replayed) {
+      out.push({
+        tone: "muted",
+        text: `Every model is busy right now, so this is ${model}'s answer to this same case from ${replayed.replace("T", " ")} UTC, replayed and checked again just now.`,
+      });
+    }
     // Every model attempt, so a proposal the checks turned down is seen being
     // turned down rather than disappearing into the final answer.
     for (const a of inv.attempts ?? []) {

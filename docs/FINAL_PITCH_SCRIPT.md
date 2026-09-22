@@ -92,7 +92,7 @@ code checks, and no model ever decides which payments make up a settlement.
   never saw, against 82.7% for rules — and anything it returns that is not in
   the narration is thrown away.
 - Every failure is written down: 41 of them in the failure log, each with the
-  fix and the re-measurement. 750 backend tests.
+  fix and the re-measurement. 751 backend tests.
 
 ---
 

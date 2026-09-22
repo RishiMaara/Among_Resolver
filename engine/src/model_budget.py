@@ -117,6 +117,9 @@ def report() -> dict:
                   if llm_provider.is_configured() else None),
         "model_calls": state.get("calls", 0),
         "skipped": state.get("skipped") or None,
+        # Set when every model was busy and an earlier answer to the identical
+        # request was reused; it is checked as if it were new.
+        "replayed_from": state.get("replayed_from"),
     }
 
 
