@@ -85,14 +85,15 @@ code checks, and no model ever decides which payments make up a settlement.
 
 ## [3:15 – 4:15] Why trust it
 
-- It has never cleared a wrong set, on any dataset it has been measured on.
+- It clears no wrong set on any dataset it has been measured on. A blind test
+  written after the engine found two; both are fixed and logged.
 - On real government payments from two public checkbooks it found 100 of 100
   exactly.
 - A model reads bank narrations right 97.5% of the time on formats the rules
   never saw, against 82.7% for rules — and anything it returns that is not in
   the narration is thrown away.
-- Every failure is written down: 45 of them in the failure log, each with the
-  fix and the re-measurement. 783 backend tests.
+- Every failure is written down: 48 of them in the failure log, each with the
+  fix and the re-measurement. 791 backend tests.
 
 ---
 

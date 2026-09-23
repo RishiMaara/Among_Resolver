@@ -835,3 +835,77 @@ test_stores.py hammers the ledger from eight threads at once.
 The same work gave the Razorpay route the shared ingest path: its own copy
 turned a ledger with no recognisable columns into a 500 rather than the 422
 every other upload gives.
+
+## 46. Two wrong clears in a blind test written after the engine
+
+Severity: Critical (a wrong set cleared automatically, at confidence 0.91)
+Fails safe: No
+
+A blind adversarial test was written for the final review from scratch, with
+its own generator, ground truth and a count of every subset that ties, none
+of it seen by the engine before. 237 settlements in 23 families. Two cleared
+the wrong set, both in one family: every member but one names the settlement,
+the member that belongs is missing from the feed, and an unrelated payment of
+exactly its amount carries no reference at all. The learned-cohort tier (by
+capture lag) and the unconstrained fallback (all anchors used) each admitted
+that payment, and nothing after them asked whether it had any reference.
+
+This is the gap a comment in recon_gates already described: blocking every
+partly anchored match "cost ten right answers to stop two wrong ones", so only
+matches that left anchors unused were blocked. A match that uses every anchor
+and completes the total with a record carrying no reference was still let
+through, and it is evidence-identical to a stranger standing in for a missing
+member.
+
+Mitigation: when a matched set names the settlement, every other member must
+share an informative reference token with the members that do (one not
+carried by most unrelated records, so "ORDER" does not count). Otherwise the
+set is proposed, not cleared: withheld_reason unreferenced_member, the record
+named in the summary, and the investigator's question asks about that one
+payment. Re-measured: the blind test's 2 wrong clears become 0; the
+engine's own benchmarks do not move (120 scenarios 65% identified, 62%
+auto-cleared; 1,000 edge cases 73.24% auto-cleared, 0 wrong; every
+should-clear still clears), because a member that lost its settlement id
+there still shares its batch reference. test_blind_findings.py pins both
+directions.
+
+## 47. A reconcile run tried to post the journal before anyone approved it
+
+Severity: High on a deployment with ERP_JOURNAL_URL set; Medium on the demo
+Fails safe: No where a URL was set; the demo only mislabelled
+
+Every cleared run called erp_sync.push_to_erp while building the report,
+before the journal approval that the page, the docs and separation of duties
+all promise comes first. With no URL set it posted nothing, but it rewrote the
+journal's status to no_target_configured, and the page shows any status other
+than "proposed" as Rejected and hides Approve and the Tally export. So on the
+live site every cleared settlement showed its posting proposal as Rejected.
+Found by clicking through the deployed site, not by a test: the component
+tests fed the panel a journal already marked "proposed".
+
+Mitigation: a reconcile run proposes the journal and sends it nowhere;
+erp_sync is the adapter an approval workflow calls. The page labels only a
+status of "rejected" as Rejected. test_blind_findings pins that a clear
+returns a journal awaiting approval.
+
+## 48. Four smaller faults the same test and click-through found
+
+Severity: Medium to Low
+Fails safe: Yes (refusals and mislabels, no wrong clear)
+
+- An export that repeats a row exactly (same id, amount, time, reference,
+  status), as overlapping date-range exports do, made every such settlement
+  ambiguous between the two copies: 12 of 12 refused. Exact repeats are now
+  read once, with a note; a repeated id with any field different is still
+  kept twice, and still refused.
+- A blank amount cell reads as 0, and a zero-amount record naming the
+  settlement ties with or without it: three one-answer settlements were
+  called ambiguous. Zero amounts are now excluded from the pool with the
+  failed and uncaptured ones.
+- The duplicate-transaction control compared records across feeds, so on
+  the sample every gateway payment and its ERP ledger line, 90 records, were
+  flagged as duplicates. It now compares within one feed.
+- The cash position listed the settlement's own bank credit as "In bank,
+  unexplained" beside the clear that explained it. When cleared, the credit
+  named by the batch id, or the only one of exactly the net amount, is
+  counted as explained and a note says which.

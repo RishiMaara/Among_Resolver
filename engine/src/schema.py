@@ -237,6 +237,10 @@ class MatchResult:
     # fall back to the ids (linkage.members_of).
     matched_keys: list[str] = field(default_factory=list)
 
+    # Matched records that neither name the settlement nor share a reference
+    # with those that do (recon_gates); set only when that withheld the clear.
+    unreferenced_txn_ids: list[str] = field(default_factory=list)
+
 
 @dataclass
 class ExceptionRecord:

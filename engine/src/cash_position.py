@@ -10,7 +10,7 @@ balance is returned REJECTED with the discrepancy, never rounded into shape.
 
 from __future__ import annotations
 
-from linkage import txn_key
+from linkage import canonical_key, txn_key
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -201,6 +201,17 @@ def build_settlement_journal(
     return entry
 
 
+def _settlement_credit(batch: SettlementBatch, bank: list[NormalizedTxn]) -> NormalizedTxn | None:
+    """The bank credit that is this settlement's payout, if one can be named."""
+    exact = [t for t in bank if t.amount_cents == batch.net_amount_cents]
+    key = canonical_key(batch.batch_id)
+    named = [t for t in exact
+             if key and (key in canonical_key(t.ref_id_canonical) or key in canonical_key(t.memo_raw))]
+    if len(named) == 1:
+        return named[0]
+    return exact[0] if len(exact) == 1 and not named else None
+
+
 def build_cash_position(
     batch: SettlementBatch,
     candidates: list[NormalizedTxn],
@@ -237,6 +248,14 @@ def build_cash_position(
         and txn_key(t) not in matched_key_set
         and t.source_txn_id not in blocked_ids
     ]
+    # The settlement's own credit is in the bank feed too. Cleared, it is the
+    # money this reconciliation explains, not an unexplained credit: the
+    # sample showed its Rs 66,466.36 payout under "In bank, unexplained" beside
+    # the clear that explained it. Named by the batch id, or the only credit
+    # of exactly the net amount.
+    own_credit = _settlement_credit(batch, bank_unmatched) if cleared else None
+    if own_credit is not None:
+        bank_unmatched = [t for t in bank_unmatched if t is not own_credit]
     gateway_unsettled = [
         t for t in candidates
         if t.source is SourceType.GATEWAY
@@ -316,6 +335,10 @@ def build_cash_position(
     ]
 
     notes: list[str] = []
+    if own_credit is not None:
+        notes.append(
+            f"Bank credit {own_credit.source_txn_id} is this settlement's own payout, "
+            f"so it is counted as explained, not as an unexplained credit.")
     journal: JournalEntry | None = None
 
     if cleared and matched:

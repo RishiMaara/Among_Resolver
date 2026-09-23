@@ -83,6 +83,7 @@ class ReconciliationReport:
             "exceptions_by_reason": _count_by_reason(self.exceptions),
             "ambiguous": self.match_result.ambiguous,
             "withheld_reason": self.match_result.withheld_reason,
+            "unreferenced_members": self.match_result.unreferenced_txn_ids,
             "confidence": self.match_result.confidence,
             # What claims at this confidence have actually been worth
             # (calibration_map.py). Shown beside the raw figure; the auto-clear

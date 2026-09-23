@@ -4,8 +4,9 @@
 
 **Settlement reconciliation for Indian payments.** It works out which payments
 make up each payout, proves the answer to the paisa, and refuses to clear
-what it cannot prove — then says what a person should do next. Across every
-corpus it has been measured on, it has never cleared a wrong set.
+what it cannot prove — then says what a person should do next. On every
+corpus it has been measured on it clears no wrong set, including a blind test
+written after it, whose two wrong clears were fixed and logged (FAILURE_LOG 46).
 
 Built for the Razorpay AI Buildathon, Track 04 — AI Finance Controller.
 **[Live demo](https://among-resolver.vercel.app/)** ·
@@ -130,7 +131,7 @@ Part by part — every module, its check, and the measurement behind it:
 | Confidence calibration, ReconRiver, out-of-sample (`calibration_out_of_sample.py`) | ECE 0.0901 raw, **0.026** calibrated (`fit_calibration.py`) · 42 of 42 correct above the gate, 74 predictions |
 | **Real payments** — Baton Rouge and Fulton County public checkbooks, 100 payments, each against its whole day's payment run (`public_ledger_benchmark.py`) | payee known: **100 of 100** exact, 99 auto-cleared · amounts only: 2 of 100, the rest withheld · **0** wrong clears in 200 runs |
 | Scanned bank statements, 24 noisy scans (`ocr_eval.py`) | 11 read exactly right by OCR in the browser, **23** with Gemini on the rest, **0** wrong readings accepted |
-| Tests | **783** backend · **138** frontend |
+| Tests | **791** backend · **138** frontend |
 
 Every figure in that table except the two calibration rows is re-measured by
 `python scripts/generate_benchmarks.py`, which writes
@@ -254,7 +255,7 @@ engine/        Python engine
   src/orchestrator.py        the money path's entry points; layers enforced by
                              tests/test_architecture.py; mypy-clean
   scripts/                   benchmarks, calibration, stress runs, data fetch
-  tests/                     783 tests
+  tests/                     791 tests
   benchmarks/                measurement snapshots
   data/                      Sanctions lists, test ledgers
 docs/                      ARCHITECTURE.md · FINAL_PITCH_SCRIPT.md · FINAL_TEST_REPORT.md · INDUSTRY_COMPARISON.md

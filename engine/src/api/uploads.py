@@ -8,6 +8,9 @@ ingest_upload.
 """
 from __future__ import annotations
 
+import csv
+import io
+import json
 import logging
 import os
 from typing import Optional
@@ -62,6 +65,56 @@ async def read_upload_capped(upload_file, *, limit: int = MAX_UPLOAD_BYTES) -> b
     return b"".join(chunks)
 
 
+def _raw_records(content: bytes) -> list[str] | None:
+    """Each data record of a CSV or JSON-array file as it was written, or None."""
+    try:
+        text = content.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        return None
+    stripped = text.lstrip()
+    if stripped.startswith("["):
+        try:
+            data = json.loads(stripped)
+        except ValueError:
+            return None
+        return ([json.dumps(o, sort_keys=True) for o in data]
+                if isinstance(data, list) and all(isinstance(o, dict) for o in data) else None)
+    if stripped.startswith("{"):
+        return None
+    lines = [ln for ln in csv.reader(io.StringIO(text)) if any(c.strip() for c in ln)]
+    return ["".join(c.strip() for c in ln) for ln in lines[1:]]
+
+
+def _drop_exact_repeats(content: bytes, rows: list[dict], filename: str,
+                        source_type: SourceType, notes: list[str]) -> list[dict]:
+    """
+    One payment exported twice (overlapping date ranges, a re-run export) is
+    one payment: a data row identical in EVERY column of the file to an
+    earlier one is read once, and the note says so. Compared on the file's
+    own rows, not the mapped fields: two bank rows that differ only in a UTR
+    the mapper did not choose are two payments, and merging on mapped fields
+    read ten of them as one. Applied only when the file's rows line up one to
+    one with the parsed rows; otherwise nothing is merged. A blind test's
+    twelve exact re-exports were all refused before this.
+    """
+    raw = _raw_records(content)
+    if raw is None or len(raw) != len(rows):
+        return rows
+    seen: set[str] = set()
+    kept = []
+    for record, row in zip(raw, rows):
+        if record in seen:
+            continue
+        seen.add(record)
+        kept.append(row)
+    merged = len(rows) - len(kept)
+    if merged:
+        notes.append(
+            f"{source_type.value}: {merged} row(s) in '{filename}' repeat an earlier row "
+            f"exactly, in every column, and were read once.")
+    return kept
+
+
 def ingest(content: bytes, filename: str, source_type: SourceType, *, batch_id: str,
            notes: list[str], scan_text: str = "") -> list[NormalizedTxn]:
     """
@@ -80,6 +133,7 @@ def ingest(content: bytes, filename: str, source_type: SourceType, *, batch_id: 
     )
     if not rows:
         return []
+    rows = _drop_exact_repeats(content, rows, filename, source_type, notes)
     report = normalize_batch_with_report(rows, source_type)
     audit.log_decision(
         batch_id=batch_id, agent="ingestion",

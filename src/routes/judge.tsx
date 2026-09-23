@@ -634,8 +634,9 @@ function Judge() {
         <h1 className="mt-2 text-[30px] font-semibold leading-tight">Judge this in five minutes</h1>
         <p className="mt-3 max-w-[680px] text-[14px] leading-[1.65]">
           It finds which payments make up each payout, proves the answer to the paisa, and refuses
-          to clear what it cannot prove — then says what a person should do next. Across every
-          corpus it has been measured on, it has never cleared a wrong set.
+          to clear what it cannot prove — then says what a person should do next. On every corpus it
+          has been measured on it clears no wrong set, including a blind test written after it,
+          whose two wrong clears were fixed and logged.
         </p>
         <p className="mt-2 text-[12px] text-muted-foreground">
           Live checks below call the engine at <span className="font-mono">{ENGINE_HOST}</span>.

@@ -32,7 +32,6 @@ import settled_ledger
 import audit
 import exception_ranking
 import exception_taxonomy
-import erp_sync
 import settlement_qa
 
 logger = logging.getLogger(__name__)
@@ -56,10 +55,13 @@ def _format_report(report, audit_trail=None, batch=None, candidates=None) -> dic
             exceptions=report.exceptions,
             cleared=report.match_result.cleared,
         )
-        
-        if report.match_result.cleared:
-            erp_sync.push_to_erp(cash_obj)
-            
+        # Not sent to an ERP here. A reconcile run proposes the journal; it
+        # is approved by a named person (routes_decisions) and posted in the
+        # accounting system. Pushing it on every clear posted before any
+        # approval where ERP_JOURNAL_URL was set, and where it was not, the
+        # status became no_target_configured and the page read the proposal
+        # as rejected (FAILURE_LOG 47). erp_sync is the adapter an approval
+        # workflow calls.
         cash = cash_obj.to_dict()
         # Agent 8 reports itself. Without this the stage runs but leaves no
         # trace, so the flow visualiser marks it "not needed" — which is a

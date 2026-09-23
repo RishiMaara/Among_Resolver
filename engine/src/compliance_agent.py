@@ -503,10 +503,15 @@ def check_circular_flow(transactions: List[NormalizedTxn]):
 
 
 def check_duplicates(transactions: List[NormalizedTxn]):
-    """Rule 9: Exact same amount, date, parties."""
+    """Rule 9: Exact same amount, date, parties, within one feed.
+
+    A gateway payment and its ERP ledger line are the same payment in two
+    books; that pairing is what reconciliation exists to make, not a
+    duplicate. Compared across feeds, the sample flagged all 90 of them.
+    """
     seen: dict = {}
     for t in transactions:
-        key = (t.amount_cents, t.timestamp_utc, t.payer_id, t.payee_id)
+        key = (t.source, t.amount_cents, t.timestamp_utc, t.payer_id, t.payee_id)
         if key in seen:
             _log([seen[key], t], "DUPLICATE_TX", f"Identical amount, timestamp and counterparties as {seen[key].source_txn_id}", "LOW", "FLAGGED")
         else:

@@ -11,6 +11,11 @@ outcome is distinct and only `posted` returns True:
     skipped_unbalanced      refused before sending
 
 It once reported an unreachable ERP as posted (FAILURE_LOG).
+
+Not called on the reconcile path: a journal is posted only after a named
+approval, and this engine records that approval rather than posting
+(routes_decisions). An approval workflow that wants write-back calls
+push_to_erp; nothing in this deployment does.
 """
 
 from __future__ import annotations

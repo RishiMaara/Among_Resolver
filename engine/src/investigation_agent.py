@@ -214,7 +214,8 @@ def deciding_question(case: dict) -> str:
     member-feed payment that the most even share of the listed sets contain.
     An escalation then asks a person one yes-or-no question they can answer
     from the processor's report, instead of asking them to compare the sets.
-    Empty when fewer than two distinct sets are listed.
+    With one set whose records only partly name the settlement, it asks about
+    the first record that does not. Empty otherwise.
     """
     feed = case.get("member_feed")
     listed = [rows for rows in [case["engine_proposal"]] + list(case["alternatives"]) if rows]
@@ -226,6 +227,14 @@ def deciding_question(case: dict) -> str:
         if ids and ids not in sets:
             sets.append(ids)
     if len(sets) < 2:
+        # One set, partly named: the question is whether the unnamed record belongs.
+        rows = case["engine_proposal"]
+        stray = [r for r in rows if not r.get("names_settlement")]
+        if stray and len(stray) < len(rows):
+            r = stray[0]
+            return (f" To decide, confirm whether payment {r['id']} ({r['amount_cents']} paise, "
+                    f"{r['date']}) is in this payout: it completes the total but does not "
+                    f"name the settlement.")
         return ""
     split = [(abs(len(sets) - 2 * sum(1 for s_ in sets if i in s_)), i)
              for i in sorted(set().union(*sets))

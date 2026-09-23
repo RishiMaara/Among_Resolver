@@ -124,6 +124,18 @@ def plain_summary(summary: dict, reasoning: str = "",
             f"we do not have." + tail
         )
 
+    if reason == "unreferenced_member":
+        stray = summary.get("unreferenced_members") or []
+        who = ", ".join(stray[:3]) + (" and others" if len(stray) > 3 else "")
+        return (
+            f"One check before this clears. {_plural(matched, 'payment')} add up "
+            f"to {rupees(target)} exactly, and all but {len(stray) or 'one'} of them "
+            f"name this settlement. {who or 'The rest'} complete the total without "
+            f"naming it. They may belong, or a different payment of the same amount "
+            f"may be standing in for one missing from your file, so we have not "
+            f"cleared it. Confirm {who or 'those payments'} belong to this payout." + tail
+        )
+
     if reason == "no_corroborating_evidence":
         return (
             f"Needs review. We found {_plural(matched, 'payment')} that add up to "

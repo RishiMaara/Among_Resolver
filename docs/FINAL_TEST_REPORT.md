@@ -5,11 +5,11 @@ This document compiles the testing results for the AmongResolver architecture: w
 ---
 
 ## 1. Unit & Integration Test Suite (`pytest`)
-The core pipeline is covered by 783 rigorous backend tests, from file parsing hazards to time-zone misalignment, cross-feed identity collisions, un-anchored math fallbacks, and — added after a 1,000-scenario adversarial sweep found it — a settlement's anchored leg being assigned to a different settlement in the joint N:M path.
+The core pipeline is covered by 791 rigorous backend tests, from file parsing hazards to time-zone misalignment, cross-feed identity collisions, un-anchored math fallbacks, and — added after a 1,000-scenario adversarial sweep found it — a settlement's anchored leg being assigned to a different settlement in the joint N:M path.
 
 ```text
 ============================= test session starts ==============================
-collected 783 items
+collected 791 items
 
 ... <truncated for brevity> ...
 tests/test_real_data_hazards.py::TestNoLinkageSignalNeverAutoClears::test_arithmetic_alone_does_not_clear_however_small_the_pool PASSED [ 86%]
@@ -23,16 +23,16 @@ tests/test_subset_sum_nm.py::TestIdentityIsCollisionSafe::test_a_bare_id_collisi
 tests/test_target_preservation.py::TestTieOut::test_books_tie_when_deductions_are_declared PASSED [ 97%]
 tests/test_upload_limits.py::test_a_file_over_the_limit_is_refused_with_413 PASSED [ 98%]
 
-============================ 783 passed in 96.2s =============================
+============================ 791 passed in 96.2s =============================
 ```
-**Result:** ✅ 783 passed, 0 failed — screening the UN Consolidated List (3,422 identifiers).
+**Result:** ✅ 791 passed, 0 failed — screening the UN Consolidated List (3,422 identifiers).
 
 The count used to depend on one environmental fact: with no sanctions list on
 disk, `test_compliance.py` skipped its real-list assertion rather than passing
 quietly against the four-name demo set. A snapshot of the list is now tracked
 at `engine/data/sanctions/un_consolidated.txt` — a deployed engine is built
 from git and would otherwise screen demo names in production — so a fresh
-clone runs all 783. Its retrieval date is in its header and `/health` reports
+clone runs all 791. Its retrieval date is in its header and `/health` reports
 it; `python engine/scripts/fetch_sanctions_list.py` writes a fresher copy that
 takes priority, and CI runs that fetch before pytest.
 
@@ -154,7 +154,7 @@ REASONING: CP-SAT failed/timed out. Fallback greedy approximation found 3 txns s
 ✅ *Instead of the solver crashing, the engine gracefully aborted the CP-SAT constraint and fell back to the greedy approximation, producing the closest guess for human review.*
 
 ### C. ERP Journal Sync (mock target, not a live webhook)
-**Scenario:** A cleared settlement — ₹97 net, ₹2 fees, ₹1 tax — triggers `erp_sync.push_to_erp`.
+**Scenario:** A cleared settlement — ₹97 net, ₹2 fees, ₹1 tax — whose journal a reviewer has approved, passed to `erp_sync.push_to_erp` (a reconcile run never calls it).
 **Result:**
 ```json
 {

@@ -333,7 +333,8 @@ function RazorpaySection() {
           )}
           {run.read && (
             <p className="mt-2 text-xs text-muted-foreground">
-              Read as a {run.read.recon}. {run.read.units} Payout amounts {run.read.settlements}.
+              Read as {/^[aeiou]/i.test(run.read.recon) ? "an" : "a"} {run.read.recon}.{" "}
+              {run.read.units} Payout amounts {run.read.settlements}.
             </p>
           )}
         </div>

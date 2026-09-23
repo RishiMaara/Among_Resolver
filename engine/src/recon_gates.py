@@ -13,6 +13,7 @@ answers a measured failure (FAILURE_LOG.md).
 from __future__ import annotations
 
 import os
+from collections import Counter
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -22,7 +23,7 @@ if TYPE_CHECKING:
     from recon_report import ReconciliationReport
 
 from schema import MatchResult, SettlementBatch, NormalizedTxn, ExceptionRecord
-from linkage import LinkageResult, link_confidence, txn_key, members_of
+from linkage import LinkageResult, link_confidence, txn_key, members_of, tokenize_ref, _raw_ref
 import audit
 
 
@@ -58,6 +59,29 @@ assert FUZZY_RECOVERY_CONFIDENCE < MIN_AUTOCLEAR_CONFIDENCE, (
     "A fuzzy recovery bundle must never be reportable as clearable; "
     "similarity is evidence of association, not of arithmetic."
 )
+
+
+def _reference_tokens(t: NormalizedTxn) -> set[str]:
+    return tokenize_ref(t.ref_id_canonical) | tokenize_ref(_raw_ref(t))
+
+
+def _unreferenced_members(result: MatchResult, pool: list[NormalizedTxn],
+                          anchor_keys: set) -> list[NormalizedTxn]:
+    """
+    Matched records that do not name the settlement and share no informative
+    reference token with a matched record that does. A token carried by more
+    than an eighth of the records that do NOT name the settlement is
+    boilerplate ("ORDER"), not a reference; counted outside the named records
+    so a batch token they all carry still counts.
+    """
+    matched = members_of(result, pool)
+    anchored = [t for t in matched if txn_key(t) in anchor_keys]
+    outside: Counter = Counter(tok for t in pool if txn_key(t) not in anchor_keys
+                               for tok in _reference_tokens(t))
+    limit = max(2, min(60, len(pool) // 8))
+    shared = {tok for t in anchored for tok in _reference_tokens(t) if outside[tok] <= limit}
+    return [t for t in matched
+            if txn_key(t) not in anchor_keys and not (_reference_tokens(t) & shared)]
 
 
 def _withhold_if_unevidenced(
@@ -104,6 +128,38 @@ def _withhold_if_unevidenced(
         and not (matched_keys <= anchor_keys)
         and bool(anchors_in_pool - matched_keys)
     )
+
+    # All anchors used, but a matched record neither names the settlement nor
+    # shares a reference with the records that do: admitted by amount and
+    # timing alone. That is evidence-identical to an unrelated payment of the
+    # same amount filling the place of a member missing from the feed, which a
+    # blind test cleared twice (FAILURE_LOG 46). Proposed, not cleared, and the
+    # record is named so one question settles it.
+    if (result.cleared and matched_anchored and not partially_anchored
+            and not matched_keys <= anchor_keys):
+        stray = _unreferenced_members(result, solver_candidates, anchor_keys)
+        if stray:
+            result.cleared = False
+            result.ambiguous = True
+            result.withheld_reason = "unreferenced_member"
+            result.unreferenced_txn_ids = [t.source_txn_id for t in stray]
+            named = ", ".join(f"{t.source_txn_id} ({t.amount_cents} paise)" for t in stray[:3])
+            result.reasoning += (
+                f" Withheld from auto-clear: {len(anchor_keys & matched_keys)} of the "
+                f"{len(matched_id_set)} matched record(s) name this settlement; "
+                f"{named} complete{'s' if len(stray) == 1 else ''} the total without "
+                f"naming it or sharing a reference with the ones that do. A different "
+                f"payment of the same amount fills that place when a member is missing "
+                f"from the feed, so this is proposed for a person to confirm."
+            )
+            audit.log_decision(
+                batch_id=batch.batch_id,
+                agent="linkage",
+                detail=(f"{len(stray)} matched record(s) carry no reference to this "
+                        f"settlement or to its named members ({named}). Refusing to "
+                        f"auto-clear on amount and timing alone."),
+            )
+            return
 
     if result.cleared and (
         partially_anchored

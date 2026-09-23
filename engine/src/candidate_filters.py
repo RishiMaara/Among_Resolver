@@ -97,11 +97,16 @@ def _filter_out_non_settling(
     # Money that never moved is not a settlement member. Failed payments once
     # entered the pool as spendable and created impossible alternate subsets. Only
     # explicitly non-settling states are dropped; blank or unknown stays.
+    # A zero amount moves no money either, and every subset ties with or
+    # without it: a blank amount cell (read as 0) naming the settlement made
+    # three blind-test settlements "ambiguous" that had one answer.
     dropped_status: dict[str, int] = {}
     settling = []
     for _t in candidates:
         _state = str((_t.extra or {}).get("status") or "").strip().lower().replace("-", "_")
-        if _state in NON_SETTLING_STATUSES:
+        if _t.amount_cents == 0:
+            dropped_status["zero amount"] = dropped_status.get("zero amount", 0) + 1
+        elif _state in NON_SETTLING_STATUSES:
             dropped_status[_state] = dropped_status.get(_state, 0) + 1
         else:
             settling.append(_t)
@@ -111,8 +116,8 @@ def _filter_out_non_settling(
             batch_id=batch.batch_id,
             agent="status_filter",
             detail=(
-                f"Excluded {sum(dropped_status.values())} candidate(s) whose "
-                f"status says the money never moved ({_detail}). A failed or "
+                f"Excluded {sum(dropped_status.values())} candidate(s) whose status or amount "
+                f"says no money moved ({_detail}). A failed or "
                 f"uncaptured payment cannot be part of a settlement, and "
                 f"leaving it in the pool invents subsets that cannot happen."
             ),

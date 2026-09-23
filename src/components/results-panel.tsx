@@ -275,7 +275,7 @@ function CashPosition({ cash, batchId }: { cash: CashPositionData; batchId: stri
                 "px-2 py-0.5 rounded-full border text-[11px] font-medium",
                 journalDecision === "approved"
                   ? "bg-emerald-500/15 text-emerald-500 border-emerald-500/30"
-                  : journalDecision === "rejected" || j.status !== "proposed"
+                  : journalDecision === "rejected" || j.status === "rejected"
                     ? "bg-red-500/15 text-red-500 border-red-500/30"
                     : "bg-sky-500/15 text-sky-500 border-sky-500/30",
               )}
@@ -286,7 +286,9 @@ function CashPosition({ cash, batchId }: { cash: CashPositionData; batchId: stri
                   ? "Rejected by reviewer"
                   : j.status === "proposed"
                     ? "Proposed — awaiting approval"
-                    : "Rejected"}
+                    : j.status === "rejected"
+                      ? "Rejected"
+                      : j.status.replace(/_/g, " ")}
             </span>
             <span
               className={cn(
