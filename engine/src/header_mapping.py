@@ -329,7 +329,7 @@ def _score_pairs(headers: list[str]) -> tuple[dict, dict, dict]:
         for t in TARGET_FIELDS
     }
 
-    scores: dict[tuple[str, str], float] = {}
+    scores: dict[tuple[str, str], tuple[float, int]] = {}
     disqualified: dict[str, str] = {}
 
     for raw, c in clean.items():

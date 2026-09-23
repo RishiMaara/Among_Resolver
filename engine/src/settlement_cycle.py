@@ -25,6 +25,7 @@ import contextvars
 from contextlib import contextmanager
 
 import audit
+import stores
 from linkage_em import LAG_LEVELS, lag_level
 
 logger = logging.getLogger(__name__)
@@ -58,14 +59,14 @@ def _memory_only() -> bool:
 def _shared():
     if _memory_only() or not audit.redis_url():
         return None
-    return audit._get_redis()
+    return stores.any_redis()
 
 
 def _db():
     if _memory_only():
         return None
     try:
-        conn = audit._get_db()
+        conn = stores.durable_db()
     except Exception as exc:
         logger.debug("_db: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
         return None

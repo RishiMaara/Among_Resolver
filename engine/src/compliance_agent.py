@@ -43,7 +43,7 @@ def _inr(cents: int) -> str:
     if len(digits) > 3:
         head, tail = digits[:-3], digits[-3:]
         # after the last three digits, group in pairs (thousand, lakh, crore...)
-        pairs = []
+        pairs: list[str] = []
         while len(head) > 2:
             pairs.insert(0, head[-2:])
             head = head[:-2]
@@ -504,7 +504,7 @@ def check_circular_flow(transactions: List[NormalizedTxn]):
 
 def check_duplicates(transactions: List[NormalizedTxn]):
     """Rule 9: Exact same amount, date, parties."""
-    seen = {}
+    seen: dict = {}
     for t in transactions:
         key = (t.amount_cents, t.timestamp_utc, t.payer_id, t.payee_id)
         if key in seen:

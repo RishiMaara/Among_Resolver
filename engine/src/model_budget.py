@@ -52,8 +52,8 @@ def begin_request(client: str) -> dict:
 
 
 def _store():
-    import audit  # pylint: disable=import-outside-toplevel
-    return audit._get_redis() if audit.redis_url() else None  # pylint: disable=protected-access
+    import stores  # pylint: disable=import-outside-toplevel
+    return stores.shared_redis()
 
 
 def _count(key: str, ttl_s: int, add: int) -> int:

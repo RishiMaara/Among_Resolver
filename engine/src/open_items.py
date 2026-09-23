@@ -20,6 +20,7 @@ from dataclasses import asdict, dataclass
 from datetime import date, datetime, timezone
 
 import audit
+import stores
 import india_calendar
 import india_tax
 import settled_ledger
@@ -61,12 +62,12 @@ class OpenItem:
 # ── storage: Redis when shared, else the audit database, else memory ──────
 
 def _shared():
-    return audit._get_redis() if audit.redis_url() else None
+    return stores.shared_redis()
 
 
 def _db():
     try:
-        conn = audit._get_db()
+        conn = stores.durable_db()
     except Exception as exc:
         logger.debug("_db: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
         return None
@@ -227,8 +228,8 @@ def _update(outcomes: list, candidates: list) -> dict:
             if cleared:
                 continue
             key = f"batch:{batch.batch_id}"
-            item = changed.get(key) or existing.get(key)
-            if item is None or item["status"] != "open":
+            held = changed.get(key) or existing.get(key)
+            if held is None or held["status"] != "open":
                 settled_on = india_tax.ist_date(batch.settled_at_utc)
                 changed[key] = asdict(OpenItem(
                     item_id=key, kind="withheld_settlement", ref=batch.batch_id,
@@ -237,8 +238,8 @@ def _update(outcomes: list, candidates: list) -> dict:
                     first_seen_batch=batch.batch_id, last_seen_batch=batch.batch_id,
                     first_seen_at=now, last_seen_at=now))
             else:
-                item.update(last_seen_at=now)
-                changed[key] = item
+                held.update(last_seen_at=now)
+                changed[key] = held
 
         # Which of this pool's member-feed payments are still waiting.
         waiting = [t for t in candidates
@@ -255,10 +256,10 @@ def _update(outcomes: list, candidates: list) -> dict:
         seen_in = first_batch.batch_id
         for t in waiting[:MAX_ITEMS_PER_RUN]:
             key = f"txn:{t.source_txn_id}"
-            item = existing.get(key)
-            if item is not None and item["status"] == "closed":
+            known = existing.get(key)
+            if known is not None and known["status"] == "closed":
                 continue
-            if item is None:
+            if known is None:
                 occurred = india_tax.ist_date(t.timestamp_utc)
                 due = india_calendar.add_working_days(occurred, T_PLUS_WORKING_DAYS)
                 item = asdict(OpenItem(
@@ -270,7 +271,8 @@ def _update(outcomes: list, candidates: list) -> dict:
                     first_seen_at=now, last_seen_at=now))
                 opened += 1
             else:
-                item.update(last_seen_batch=seen_in, last_seen_at=now)
+                known.update(last_seen_batch=seen_in, last_seen_at=now)
+                item = known
             changed[key] = item
 
         _save(changed)
@@ -316,7 +318,7 @@ def report(as_of: date | None = None, include_closed: bool = False,
         inb = [r for r in open_rows if r["bucket"] == label]
         buckets.append({"label": f"{label} working days", "count": len(inb),
                         "value_cents": sum(abs(r["amount_cents"]) for r in inb)})
-    overdue = [r for r in open_rows if r["overdue_working_days"] > 0]
+    overdue_rows = [r for r in open_rows if r["overdue_working_days"] > 0]
     by_kind: dict[str, dict] = {}
     for r in open_rows:
         k = by_kind.setdefault(r["kind"], {"count": 0, "value_cents": 0})
@@ -332,8 +334,8 @@ def report(as_of: date | None = None, include_closed: bool = False,
         "summary": {
             "open_count": len(open_rows),
             "open_value_cents": sum(abs(r["amount_cents"]) for r in open_rows),
-            "overdue_count": len(overdue),
-            "overdue_value_cents": sum(abs(r["amount_cents"]) for r in overdue),
+            "overdue_count": len(overdue_rows),
+            "overdue_value_cents": sum(abs(r["amount_cents"]) for r in overdue_rows),
             "by_kind": by_kind,
             "buckets": buckets,
         },

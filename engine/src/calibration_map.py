@@ -21,6 +21,7 @@ from dataclasses import dataclass
 
 import audit
 
+import stores
 logger = logging.getLogger(__name__)
 MAP_PATH = os.path.join(os.path.dirname(__file__), "calibration_map.json")
 BANDS = [(0.0, 0.5), (0.5, 0.7), (0.7, 0.85), (0.85, 0.93), (0.93, 1.01)]
@@ -121,12 +122,12 @@ def calibrated(confidence: float) -> float | None:
 # ── reviewer outcomes ─────────────────────────────────────────────────────
 
 def _shared():
-    return audit._get_redis() if audit.redis_url() else None
+    return stores.shared_redis()
 
 
 def _db():
     try:
-        conn = audit._get_db()
+        conn = stores.durable_db()
     except Exception as exc:
         logger.debug("_db: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
         return None
@@ -193,7 +194,7 @@ def report() -> dict:
     """Per band: what the shipped map predicts, and what reviewers decided."""
     m = shipped()
     rows = outcomes()
-    bands = []
+    bands: list[dict] = []
     for lo, hi in BANDS:
         inb = [r for r in rows if lo <= r["confidence"] < hi]
         mid = (lo + min(hi, 1.0)) / 2

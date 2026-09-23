@@ -130,7 +130,7 @@ Part by part — every module, its check, and the measurement behind it:
 | Confidence calibration, ReconRiver, out-of-sample (`calibration_out_of_sample.py`) | ECE 0.0901 raw, **0.026** calibrated (`fit_calibration.py`) · 42 of 42 correct above the gate, 74 predictions |
 | **Real payments** — Baton Rouge and Fulton County public checkbooks, 100 payments, each against its whole day's payment run (`public_ledger_benchmark.py`) | payee known: **100 of 100** exact, 99 auto-cleared · amounts only: 2 of 100, the rest withheld · **0** wrong clears in 200 runs |
 | Scanned bank statements, 24 noisy scans (`ocr_eval.py`) | 11 read exactly right by OCR in the browser, **23** with Gemini on the rest, **0** wrong readings accepted |
-| Tests | **755** backend · **137** frontend |
+| Tests | **762** backend · **137** frontend |
 
 Every figure in that table except the two calibration rows is re-measured by
 `python scripts/generate_benchmarks.py`, which writes
@@ -251,8 +251,10 @@ engine/        Python engine
   src/                       one module per agent — see docs/ARCHITECTURE.md
   src/api/                   the HTTP surface: routes, request models, presentation, uploads
   src/settlement_run.py      what a run does after the solve — no HTTP in it
+  src/orchestrator.py        the money path's entry points; layers enforced by
+                             tests/test_architecture.py; mypy-clean
   scripts/                   benchmarks, calibration, stress runs, data fetch
-  tests/                     755 tests
+  tests/                     762 tests
   benchmarks/                measurement snapshots
   data/                      Sanctions lists, test ledgers
 docs/                      ARCHITECTURE.md · FINAL_PITCH_SCRIPT.md · FINAL_TEST_REPORT.md · INDUSTRY_COMPARISON.md

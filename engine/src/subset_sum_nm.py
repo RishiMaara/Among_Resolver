@@ -100,11 +100,11 @@ def _solve(
     num_t = len(target_cents_list)
     key_to_idx = {txn_key(u): i for i, u in enumerate(union)}
 
-    include: dict[tuple[int, int], object] = {}
+    include: dict[tuple[int, int], cp_model.IntVar] = {}
     for c in range(n):
         for t in eligible[c]:
             if 0 <= t < num_t:
-                include[(c, t)] = model.NewBoolVar(f"include_c{c}_t{t}")
+                include[(c, t)] = model.new_bool_var(f"include_c{c}_t{t}")
 
     if not include:
         return None
@@ -119,7 +119,7 @@ def _solve(
         by_candidate.setdefault(c, []).append(var)
     for c, vars_for_c in by_candidate.items():
         if len(vars_for_c) > 1:
-            model.AddAtMostOne(vars_for_c)
+            model.add_at_most_one(vars_for_c)
 
     for t in range(num_t):
         terms = [
@@ -128,8 +128,8 @@ def _solve(
         ]
         total_t = sum(terms) if terms else 0
         target = target_cents_list[t]
-        model.Add(total_t >= target - tolerance_cents)
-        model.Add(total_t <= target + tolerance_cents)
+        model.add(total_t >= target - tolerance_cents)
+        model.add(total_t <= target + tolerance_cents)
 
     # Forced members — see subset_sum._solve_cpsat's docstring for why this
     # exists: an anchored refund is not the solver's to decline.
@@ -138,9 +138,9 @@ def _solve(
             if not keys or t >= num_t:
                 continue
             for k in keys:
-                c = key_to_idx.get(k)
-                if c is not None and (c, t) in include:
-                    model.Add(include[(c, t)] == 1)
+                idx = key_to_idx.get(k)
+                if idx is not None and (idx, t) in include:
+                    model.add(include[(idx, t)] == 1)
                 # A forced key that resolves to no (c, t) variable at all
                 # means it was anchored to a target whose own narrowed pool
                 # never contained it — cannot happen when forced_per_target
@@ -155,9 +155,9 @@ def _solve(
                 if t >= num_t:
                     continue
                 for k in keys:
-                    c = key_to_idx.get(k)
-                    if c is not None:
-                        forbidden_pairs.add((c, t))
+                    idx = key_to_idx.get(k)
+                    if idx is not None:
+                        forbidden_pairs.add((idx, t))
             # Forbid the exact same joint assignment: at least one (c, t)
             # pair must flip relative to it, over every pair the model
             # actually has a variable for.
@@ -166,7 +166,7 @@ def _solve(
                 for (c, t), var in include.items()
             ]
             if diff_terms:
-                model.AddBoolOr(diff_terms)
+                model.add_bool_or(diff_terms)
 
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = time_limit_s

@@ -100,7 +100,9 @@ def _get(path: str, params: dict, creds: RazorpayCredentials, timeout: float = 3
         return response.json()
         
     except requests.exceptions.HTTPError as e:
-        raise RazorpayError(f"Razorpay returned {e.response.status_code} for {path}: {e.response.text}") from e
+        resp = e.response
+        raise RazorpayError(f"Razorpay returned {resp.status_code if resp is not None else '?'} "
+                            f"for {path}: {resp.text if resp is not None else e}") from e
     except requests.exceptions.RequestException as e:
         raise RazorpayError(f"Could not reach Razorpay ({str(e)}).") from e
 

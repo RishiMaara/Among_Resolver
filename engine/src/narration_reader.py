@@ -43,7 +43,10 @@ def _norm(s: str) -> str:
 
 def grounded(value: str | None, text: str) -> bool:
     """Does this value appear in the narration, ignoring case and separators?"""
-    return bool(value) and _norm(value) != "" and _norm(value) in _norm(text)
+    if not value:
+        return False
+    norm = _norm(value)
+    return norm != "" and norm in _norm(text)
 
 
 # ── the deterministic reader ──────────────────────────────────────────────
@@ -171,7 +174,8 @@ def read(texts: list[str], use_llm: bool = False, stats: dict | None = None) -> 
     model = llm_read(texts, stats) if use_llm else None
     out = []
     for i, rx in enumerate(regex):
-        row, src = {}, {}
+        row: dict = {}
+        src: dict[str, str | None] = {}
         for f in FIELDS:
             mv = getattr(model[i], f) if model is not None else None
             if mv is not None:

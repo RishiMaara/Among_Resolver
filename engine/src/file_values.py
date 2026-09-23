@@ -97,7 +97,7 @@ def _looks_like_amount(vals: list[str]) -> float:
     a column of 1, 2, 3 is a row counter, not money."""
     if not vals:
         return 0.0
-    ok = 0
+    ok: float = 0
     for v in vals:
         try:
             _clean_amount(v)

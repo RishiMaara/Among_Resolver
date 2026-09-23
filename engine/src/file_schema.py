@@ -6,6 +6,11 @@ file_agent re-exports it.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # the annotation only; header_mapping imports this module
+    from header_mapping import HeaderMappingReport
+
 import logging
 
 import dateutil.parser as dateparser

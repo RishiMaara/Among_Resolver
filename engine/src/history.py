@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 
 import audit
 
+import stores
 logger = logging.getLogger(__name__)
 
 HISTORY_DIR = os.environ.get("HISTORY_DIR", "").strip() or os.path.join(
@@ -46,7 +47,7 @@ def _shared_store():
     """The Redis client — but only when a URL was configured explicitly."""
     if not audit.redis_url():
         return None
-    return audit._get_redis()
+    return stores.any_redis()
 
 
 def _writable_dir() -> str:

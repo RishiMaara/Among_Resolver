@@ -15,8 +15,10 @@ counts, so pool size barely matters.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 import math
-from collections import Counter
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 
 LAG_LEVELS = ("0", "1", "2", "3", "4-7", "other")
@@ -77,7 +79,7 @@ class FSModel:
 
     def explain(self, top: int = 6) -> list[dict]:
         """The levels that moved the model most, largest |weight| first."""
-        rows = []
+        rows: list[dict] = []
         for f, levels in FEATURES.items():
             for lv in levels:
                 m, u = self.m[f][lv], self.u[f][lv]
@@ -128,7 +130,7 @@ class FSModel:
         }
 
 
-def _normalise(counts: dict[str, float], levels: tuple[str, ...]) -> dict[str, float]:
+def _normalise(counts: Mapping[str, float], levels: tuple[str, ...]) -> dict[str, float]:
     total = sum(counts.get(lv, 0.0) for lv in levels) + SMOOTHING * len(levels)
     return {lv: (counts.get(lv, 0.0) + SMOOTHING) / total for lv in levels}
 
@@ -152,7 +154,7 @@ def fit(vectors: list[dict[str, str]], expected_members: float | None = None,
 
     patterns = Counter(tuple(v[f] for f in FEATURES) for v in vectors)
     keys = list(FEATURES)
-    marginals = {f: Counter() for f in keys}
+    marginals: dict[str, Counter[str]] = {f: Counter() for f in keys}
     for pat, c in patterns.items():
         for f, lv in zip(keys, pat):
             marginals[f][lv] += c
@@ -184,8 +186,8 @@ def fit(vectors: list[dict[str, str]], expected_members: float | None = None,
 
     converged, it = False, 0
     for it in range(1, MAX_ITERATIONS + 1):
-        m_acc = {f: Counter() for f in keys}
-        u_acc = {f: Counter() for f in keys}
+        m_acc: dict[str, dict[str, float]] = {f: defaultdict(float) for f in keys}
+        u_acc: dict[str, dict[str, float]] = {f: defaultdict(float) for f in keys}
         member_mass = 0.0
         for pat, c in patterns.items():
             a, b = lam, 1 - lam

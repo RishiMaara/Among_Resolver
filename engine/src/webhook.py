@@ -26,6 +26,7 @@ from datetime import datetime, timezone
 
 import audit
 
+import stores
 logger = logging.getLogger(__name__)
 
 # Razorpay signs webhook bodies with a secret set per endpoint in the
@@ -103,7 +104,7 @@ def _shared_store():
     """The Redis client — but only when a URL was configured explicitly."""
     if not audit.redis_url():
         return None
-    return audit._get_redis()
+    return stores.any_redis()
 
 
 def storage_status() -> dict:
@@ -301,10 +302,10 @@ def mark_reconciled(settlement_id: str) -> bool:
         except Exception as exc:
             logger.warning("Webhook: shared pending update failed (%s).",
                            type(exc).__name__)
-    d = _pending.get(settlement_id)
-    if d is None:
+    local = _pending.get(settlement_id)
+    if local is None:
         return False
-    d.reconciled = True
+    local.reconciled = True
     return True
 
 

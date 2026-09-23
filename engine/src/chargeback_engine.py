@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from schema import NormalizedTxn, SourceType, ComplianceStatus, TzConfidence
 import audit
 
+import stores
 logger = logging.getLogger(__name__)
 
 
@@ -93,7 +94,7 @@ _pending: "dict[str, NormalizedTxn]" = {}
 def _shared_store():
     if not audit.redis_url():
         return None
-    return audit._get_redis()
+    return stores.any_redis()
 
 
 def _to_record(t: NormalizedTxn) -> str:

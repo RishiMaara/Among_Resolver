@@ -60,6 +60,8 @@ def build_payload(position: CashPosition) -> dict:
     all.
     """
     journal = position.journal
+    if journal is None:
+        raise ValueError("this cash position carries no journal to send")
     lines = []
     for line in journal.lines:
         if line.debit_cents <= 0 and line.credit_cents <= 0:

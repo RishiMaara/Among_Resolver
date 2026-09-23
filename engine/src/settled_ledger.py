@@ -16,6 +16,7 @@ from typing import Iterable
 
 import audit
 
+import stores
 logger = logging.getLogger(__name__)
 _lock = threading.Lock()
 _memory: dict[str, str] = {}          # txn_id -> batch_id, when no DB exists
@@ -31,7 +32,7 @@ def _redis():
     unknown to the next, and the double-payment check could not see it.
     """
     try:
-        return audit._get_redis() if audit.redis_url() else None  # pylint: disable=protected-access
+        return stores.shared_redis()
     except Exception as exc:
         logger.debug("_redis: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
         return None
@@ -40,7 +41,7 @@ def _redis():
 def _db():
     """Reuse the audit database so durability is one decision, not two."""
     try:
-        conn = audit._get_db()
+        conn = stores.durable_db()
     except Exception as exc:
         logger.debug("_db: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
         return None
@@ -94,9 +95,35 @@ def record_settled(batch_id: str, txn_ids: Iterable[str], when: str = "") -> int
             return 0
 
 
+_FEEDS = ("gateway", "bank", "erp")
+
+
+def _aliases(txn_id: str) -> list[str]:
+    """
+    The forms a payment may have been recorded under. Clears record the
+    collision-safe key ("gateway:1001"); a FIFO acceptance and rows written
+    before keys existed hold the bare id. A lookup in one form must find the
+    other, or a payment paid out once looks unpaid to every caller that asks
+    the other way (FAILURE_LOG 43). A bare id matching another feed's key
+    reads as a conflict, which withholds; that is the safe direction.
+    """
+    feed, sep, bare = txn_id.partition(":")
+    if sep and feed in _FEEDS:
+        return [txn_id, bare]
+    return [txn_id] + [f"{f}:{txn_id}" for f in _FEEDS]
+
+
 def owners(txn_ids: Iterable[str]) -> dict[str, str]:
     """Every one of these payments a cleared settlement took, and which one."""
-    ids = [t for t in (txn_ids or []) if t]
+    asked = [t for t in (txn_ids or []) if t]
+    if not asked:
+        return {}
+    alias_of = {a: t for t in asked for a in _aliases(t)}
+    return {alias_of[a]: b for a, b in _owners_raw(list(alias_of)).items()}
+
+
+def _owners_raw(ids: list[str]) -> dict[str, str]:
+    """Owners of exactly these recorded ids."""
     if not ids:
         return {}
     found: dict[str, str] = {}

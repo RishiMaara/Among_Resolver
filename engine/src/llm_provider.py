@@ -7,6 +7,8 @@ exception: an optional enrichment must not take down a reconciliation.
 
 from __future__ import annotations
 
+from typing import Any
+
 import logging
 import hashlib
 import json
@@ -66,9 +68,9 @@ def _replay_key(system, prompt, schema, attachments) -> str:
 
 
 def _replay_store():
-    import audit  # pylint: disable=import-outside-toplevel
+    import stores  # pylint: disable=import-outside-toplevel
     try:
-        return audit._get_redis() if audit.redis_url() else None  # pylint: disable=protected-access
+        return stores.shared_redis()
     except Exception as exc:
         logger.debug("_replay_store: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
         return None
@@ -255,11 +257,12 @@ def generate(
                             "Deterministic path continues.", name)
                 return _replay(key)
             try:
+                contents: Any = ([types.Part.from_bytes(data=data, mime_type=mime)
+                                  for data, mime in attachments] + [prompt]
+                                 if attachments else prompt)
                 response = client.models.generate_content(
                     model=name,
-                    contents=([types.Part.from_bytes(data=data, mime_type=mime)
-                               for data, mime in attachments] + [prompt]
-                              if attachments else prompt),
+                    contents=contents,
                     config=types.GenerateContentConfig(**config_kwargs),
                 )
                 text = (getattr(response, "text", None) or "").strip()
@@ -269,7 +272,7 @@ def generate(
                 # caller has no other way to tell a complete short answer from a
                 # sentence that stops halfway.
                 try:
-                    reason = str(response.candidates[0].finish_reason or "")
+                    reason = str((response.candidates or [])[0].finish_reason or "")
                 except Exception as exc:
                     logger.debug("generate: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
                     reason = ""

@@ -87,12 +87,12 @@ def _solve_cpsat(
 
     model = cp_model.CpModel()
     n = len(candidates)
-    include = [model.NewBoolVar(f"include_{i}") for i in range(n)]
+    include = [model.new_bool_var(f"include_{i}") for i in range(n)]
     keys = [txn_key(c) for c in candidates]
 
     total = sum(candidates[i].amount_cents * include[i] for i in range(n))
-    model.Add(total >= target_cents - tolerance_cents)
-    model.Add(total <= target_cents + tolerance_cents)
+    model.add(total >= target_cents - tolerance_cents)
+    model.add(total <= target_cents + tolerance_cents)
 
     # Forced members are not the solver's to choose.
     #
@@ -108,7 +108,7 @@ def _solve_cpsat(
     if forced_ids:
         for i in range(n):
             if keys[i] in forced_ids:
-                model.Add(include[i] == 1)
+                model.add(include[i] == 1)
 
     if forbidden_solutions:
         for forbidden_keys in forbidden_solutions:
@@ -121,7 +121,7 @@ def _solve_cpsat(
                     diff_terms.append(include[i].Not())
                 else:
                     diff_terms.append(include[i])
-            model.AddBoolOr(diff_terms)
+            model.add_bool_or(diff_terms)
 
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = time_limit_s

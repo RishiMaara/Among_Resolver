@@ -56,7 +56,7 @@ def latest_journal_decision(batch_id: str) -> tuple[str, str] | None:
             said = re.match(r"\s*(?P<name>.+?) (?P<act>APPROVED|REJECTED) the posting proposal",
                             detail[m.end():])
             name = said.group("name") if said else m.group("actor")
-            approved = bool(said) and said.group("act") == "APPROVED"
+            approved = said is not None and said.group("act") == "APPROVED"
             return ("approved" if approved else "rejected", name)
     return None
 

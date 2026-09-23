@@ -350,9 +350,9 @@ def parse_text(text: str, fmt: str = "pdf") -> ParsedStatement:
         st.lines.append(StatementLine(booked=booked, amount_cents=sign * amt, description=rest,
                                       reference=ref, balance_cents=balance))
         prev = balance
-    if st.opening_cents is None and st.lines:
-        first = st.lines[0]
-        st.opening_cents = first.balance_cents - first.amount_cents
+    first_balance = st.lines[0].balance_cents if st.lines else None
+    if st.opening_cents is None and first_balance is not None:
+        st.opening_cents = first_balance - st.lines[0].amount_cents
         st.notes.append("No opening balance printed; derived from the first line's balance.")
     if st.closing_cents is None and st.lines:
         st.closing_cents = st.lines[-1].balance_cents

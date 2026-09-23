@@ -9,6 +9,8 @@ fuzzy fallback and the tiebreak scorer.
 """
 
 from __future__ import annotations
+
+from typing import Any
 import logging
 from dataclasses import dataclass
 
@@ -45,13 +47,13 @@ def memo_semantic_similarity(memo_a: str, memo_b: str) -> float:
     call this in a loop over a large pool; use SimilarityContext, which
     batches the embedding calls instead of one encode() per pair.
     """
-    model = memo_semantic_similarity._model
-    if model is None and not memo_semantic_similarity._tried_load:
-        memo_semantic_similarity._tried_load = True
+    model = _MEMO_MODEL["model"]
+    if model is None and not _MEMO_MODEL["tried"]:
+        _MEMO_MODEL["tried"] = True
         try:
             from sentence_transformers import SentenceTransformer
             model = SentenceTransformer("all-MiniLM-L6-v2")
-            memo_semantic_similarity._model = model
+            _MEMO_MODEL["model"] = model
         except Exception as exc:
             # sentence-transformers not installed, model unavailable, or
             # network blocked (e.g. huggingface.co unreachable) — fall
@@ -73,8 +75,8 @@ def memo_semantic_similarity(memo_a: str, memo_b: str) -> float:
     return fuzz.token_sort_ratio(memo_a, memo_b) / 100.0
 
 
-memo_semantic_similarity._model = None
-memo_semantic_similarity._tried_load = False
+# The embedding model, loaded once on first use (None if unavailable).
+_MEMO_MODEL: dict[str, Any] = {"model": None, "tried": False}
 
 
 @dataclass
@@ -89,8 +91,8 @@ class SimilarityContext:
     pool: list[NormalizedTxn]
     pool_id_to_idx: dict[str, int]
     query_id_to_row: dict[str, int]
-    ref_matrix: "object"   # numpy ndarray, shape (len(query), len(pool))
-    memo_matrix: "object"  # numpy ndarray, shape (len(query), len(pool))
+    ref_matrix: Any   # numpy ndarray, shape (len(query), len(pool))
+    memo_matrix: Any  # numpy ndarray, shape (len(query), len(pool))
 
 
 def _compute_similarity_rows(
@@ -118,13 +120,13 @@ def _compute_similarity_rows(
     memos_q = [t.memo_normalized for t in query]
     memos_p = [t.memo_normalized for t in pool]
 
-    model = memo_semantic_similarity._model
-    if model is None and not memo_semantic_similarity._tried_load:
-        memo_semantic_similarity._tried_load = True
+    model = _MEMO_MODEL["model"]
+    if model is None and not _MEMO_MODEL["tried"]:
+        _MEMO_MODEL["tried"] = True
         try:
             from sentence_transformers import SentenceTransformer
             model = SentenceTransformer("all-MiniLM-L6-v2")
-            memo_semantic_similarity._model = model
+            _MEMO_MODEL["model"] = model
         except Exception as exc:
             logger.debug("_compute_similarity_rows: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
 

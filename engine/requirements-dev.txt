@@ -3,6 +3,11 @@
 -r requirements.txt
 pytest==8.3.3
 
+# The quality gates CI runs beside the tests: types, lint errors, security.
+mypy==2.3.1
+pylint==4.0.8
+bandit==1.9.4
+
 # Draws the scanned-statement samples and the OCR evaluation set
 # (scripts/make_scanned_statements.py, scripts/ocr_eval.py). Not a runtime need.
 pillow>=11.0

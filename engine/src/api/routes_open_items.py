@@ -42,6 +42,10 @@ def list_open_items(as_of: str = Query("", description="YYYY-MM-DD; default toda
 def due_date(captured_on: str = Query(..., description="YYYY-MM-DD, in India"),
              t_plus: int = Query(open_items.T_PLUS_WORKING_DAYS, ge=0, le=30)):
     start = _day(captured_on, "captured_on")
+    if start is None:
+        raise HTTPException(status_code=422, detail={
+            "message": "captured_on must be YYYY-MM-DD",
+            "plain": "Give the date the payment was captured."})
     due = india_calendar.add_working_days(start, t_plus)
     skipped = []
     d = start

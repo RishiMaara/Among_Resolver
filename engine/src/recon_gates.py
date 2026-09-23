@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     # Import only for the annotation. orchestrator imports this module, so a
     # runtime import here would be circular; `from __future__ import
     # annotations` keeps the reference a string at runtime.
-    from orchestrator import ReconciliationReport
+    from recon_report import ReconciliationReport
 
 from schema import MatchResult, SettlementBatch, NormalizedTxn, ExceptionRecord
 from linkage import LinkageResult, link_confidence, txn_key, members_of

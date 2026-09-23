@@ -47,7 +47,7 @@ def rank(exceptions: list[dict], candidates, target_cents: int | None = None
 
     annotated.sort(key=lambda e: (
         -e["amount_at_stake_cents"],
-        _REASON_PRIORITY.get(e.get("reason"), 1),
+        _REASON_PRIORITY.get(str(e.get("reason")), 1),
         -len(e.get("candidate_txn_ids") or []),
         e["_position"],                       # stable: equal cases keep order
     ))

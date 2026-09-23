@@ -773,3 +773,23 @@ paths, which had drifted (the queue gave a 500 on an unreadable file and
 dropped the timezone and currency notes), and gave each of 29 silent
 `except Exception` handlers a log line, or, for parse probes, a narrower
 exception.
+
+## 43. The paid-out ledger stopped answering the callers that asked by bare id
+
+Severity: Medium (a payment already paid out could look unpaid)
+Fails safe: Partly — the single upload and the queue asked by key and still withheld
+
+The fix for FAILURE_LOG 38 records a clear under the collision-safe key
+("gateway:1001"). Three callers still asked by bare id: open items (so a
+payment an earlier settlement took could be listed as unsettled), the
+investigator's already-paid-out check, and the FIFO acceptance. Found while
+fixing what a first full type-check (mypy, 107 errors) flagged, by reading
+every caller of the ledger. The ledger now answers for a payment in either
+form — key or bare id — so no caller has to know how it was recorded; a bare
+id matching another feed's key reads as a conflict, which withholds.
+test_settled_ledger_aliases.py.
+
+The same type-check found an annotation naming a class that was never
+imported (left by the file_agent split), a date that could be None reaching
+arithmetic, and a bank statement with no balance on its first line able to crash
+the opening-balance derivation. All fixed; mypy is clean and now runs in CI.

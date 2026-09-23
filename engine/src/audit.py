@@ -19,6 +19,8 @@ someone else holds.
 
 from __future__ import annotations
 
+from typing import Any, TextIO
+
 import hashlib
 import json
 import logging
@@ -174,7 +176,7 @@ _FILE_WARNED = False
 # logs ~18,500 entries, so it was ~7.5 s of pure open/close syscalls per run.
 # Handles are cached and closed on eviction; the cache is bounded because a
 # long-lived server would otherwise hold one descriptor per batch forever.
-_HANDLES: "OrderedDict[str, object]" = OrderedDict()
+_HANDLES: "OrderedDict[str, TextIO]" = OrderedDict()
 MAX_OPEN_HANDLES = 8
 
 
@@ -553,7 +555,7 @@ def verify_chain(batch_id: str, receipt: str = "") -> dict:
     while unchained < len(entries) and not entries[unchained].get("hash"):
         unchained += 1
     prev = GENESIS
-    verdict = {"batch_id": batch_id, "entries": len(entries),
+    verdict: dict[str, Any] = {"batch_id": batch_id, "entries": len(entries),
                "unchained_before_chain_began": unchained, "verified": 0,
                "intact": True, "broken_at": None, "reason": "", "head": None}
     for i in range(unchained, len(entries)):
@@ -695,11 +697,11 @@ def find_entries(agent: str, contains: str = "", limit: int = 200) -> list[dict]
 
     # In-memory last resort, when there is no durable store or the query failed.
     out = []
-    for e in _FALLBACK_LOG:
-        if e.get("agent") != agent:
+    for entry in _FALLBACK_LOG:
+        if entry.get("agent") != agent:
             continue
-        if needle and needle not in (e.get("detail") or "").lower():
+        if needle and needle not in (entry.get("detail") or "").lower():
             continue
-        out.append(e)
+        out.append(entry)
     out.sort(key=lambda e: e.get("timestamp_utc") or "", reverse=True)
     return out[:limit]

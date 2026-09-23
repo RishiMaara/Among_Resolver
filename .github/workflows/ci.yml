@@ -30,6 +30,19 @@ jobs:
           cache: pip
       - run: pip install -r engine/requirements-dev.txt
 
+      # Quality gates before the tests: static types (mypy, clean across
+      # src/), lint errors (pylint), and a security scan (bandit, medium and
+      # above). Each has been clean locally; a regression turns the build red.
+      - name: types (mypy)
+        working-directory: engine
+        run: python -m mypy
+      - name: lint errors (pylint)
+        working-directory: engine
+        run: python -m pylint src --errors-only --disable=import-error
+      - name: security (bandit)
+        working-directory: engine
+        run: python -m bandit -r src -ll -q
+
       # The sanctions list is gitignored - a committed copy is stale a week
       # later, and stale screening is the failure that matters. So CI fetches
       # it, and the screening tests assert against the real 3,400-odd entries

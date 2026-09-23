@@ -155,7 +155,7 @@ def books_check(members: list[dict], ledger: list[NormalizedTxn]) -> dict:
     if missing:
         return {"verdict": "missing_in_books", "missing": missing[:50],
                 "plain": (f"{len(missing)} payment(s) Razorpay settled are not in the "
-                          f"ledger by order or payment id: {', '.join(missing[:5])}"
+                          f"ledger by order or payment id: {', '.join(str(m) for m in missing[:5])}"
                           f"{'…' if len(missing) > 5 else ''}. Revenue not yet booked, "
                           f"or booked under another reference.")}
     return {"verdict": "all_booked", "missing": [],
@@ -167,7 +167,7 @@ def reconcile(settlements: list[dict], recon: list[dict],
               ledger: list[NormalizedTxn] | None = None,
               blind: bool = True) -> dict:
     """Every settlement, checked five ways. See the module docstring."""
-    results = []
+    results: list[dict] = []
     for s in settlements:
         sid = str(s.get("id") or "")
         members = rz.members_of(sid, recon)
@@ -225,7 +225,7 @@ def reconcile(settlements: list[dict], recon: list[dict],
             "currency": s.get("currency") or "INR", "settled_on": settled_on.date().isoformat(),
             "members": len(members),
             "by_type": {t: sum(1 for i in members if i.get("type") == t)
-                        for t in sorted({i.get("type") for i in members})},
+                        for t in sorted({i.get("type") for i in members}, key=str)},
             "status": status, "checks": checks,
         })
 

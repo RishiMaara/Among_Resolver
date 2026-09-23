@@ -111,7 +111,7 @@ def parse_csv(content: str, filename_hint: str = "CSV input",
 
     results = []
     for _row_no, row in enumerate(raw_rows, start=1):
-        mapped_row = {
+        mapped_row: dict[str, Any] = {
             "txn_id": "",
             "ref_id": "",
             "amount": 0.0,
@@ -193,7 +193,7 @@ def parse_json(content: str, filename_hint: str = "JSON input",
         return []
 
     # Get all unique keys across all objects to map headers
-    all_keys = set()
+    all_keys: set[str] = set()
     for _row_no, item in enumerate(data, start=1):
         if isinstance(item, dict):
             all_keys.update(item.keys())
@@ -211,7 +211,7 @@ def parse_json(content: str, filename_hint: str = "JSON input",
         if not isinstance(item, dict):
             continue
             
-        mapped_row = {
+        mapped_row: dict[str, Any] = {
             "txn_id": "",
             "ref_id": "",
             "amount": 0.0,

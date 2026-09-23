@@ -18,7 +18,7 @@ def rupees(cents: int | float | None) -> str:
     units, paise = f"{whole:.2f}".split(".")
     if len(units) > 3:
         head, tail = units[:-3], units[-3:]
-        parts = []
+        parts: list[str] = []
         while len(head) > 2:
             parts.insert(0, head[-2:])
             head = head[:-2]
