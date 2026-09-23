@@ -5,10 +5,14 @@ values looks like. Split out of file_agent.py, unchanged; file_agent re-exports 
 
 from __future__ import annotations
 
+import logging
+
 from datetime import datetime
 import re
 import dateutil.parser as dateparser
 from ingestion import _fast_parse, clean_amount_str, AmountUnreadable
+
+logger = logging.getLogger(__name__)
 
 
 def _clean_amount(value: str | int | float) -> float:
@@ -83,8 +87,8 @@ def _looks_like_date(vals: list[str]) -> float:
                 continue
             dateparser.parse(v)
             ok += 1
-        except Exception:
-            pass
+        except (ValueError, OverflowError, TypeError):
+            pass  # not a date: the probe's answer, not a failure
     return ok / len(vals)
 
 
@@ -98,8 +102,8 @@ def _looks_like_amount(vals: list[str]) -> float:
         try:
             _clean_amount(v)
             ok += 1 if ("." in v or "," in v) else 0.4
-        except Exception:
-            pass
+        except (ValueError, ArithmeticError, TypeError):
+            pass  # not a number: the probe's answer, not a failure
     return ok / len(vals)
 
 

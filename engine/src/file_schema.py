@@ -363,8 +363,8 @@ def _validate_rows(filename: str, rows: list[dict], headers: list[str],
                 try:
                     dateparser.parse(raw)
                     usable_ts += 1
-                except Exception:
-                    pass
+                except (ValueError, OverflowError, TypeError):
+                    pass  # not a date: the probe's answer, not a failure
         try:
             if float(r.get("amount") or 0) != 0:
                 usable_amt += 1

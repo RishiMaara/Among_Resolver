@@ -69,7 +69,8 @@ def _replay_store():
     import audit  # pylint: disable=import-outside-toplevel
     try:
         return audit._get_redis() if audit.redis_url() else None  # pylint: disable=protected-access
-    except Exception:
+    except Exception as exc:
+        logger.debug("_replay_store: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
         return None
 
 
@@ -83,8 +84,8 @@ def _remember(key: str, text: str, name: str) -> None:
         try:
             store.set(key, json.dumps(rec), ex=_REPLAY_TTL_S)
             return
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("_remember: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
     if len(_replay_local) > 500:
         _replay_local.pop(next(iter(_replay_local)))
     _replay_local[key] = rec
@@ -99,7 +100,8 @@ def _replay(key: str) -> str | None:
         try:
             raw = store.get(key)
             rec = json.loads(raw) if raw else None
-        except Exception:
+        except Exception as exc:
+            logger.debug("_replay: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
             rec = None
     rec = rec or _replay_local.get(key)
     if not rec:
@@ -215,10 +217,10 @@ def generate(
             config_kwargs["thinking_config"] = types.ThinkingConfig(
                 thinking_budget=thinking_budget
             )
-        except Exception:
+        except Exception as exc:
             # An older SDK, or a model that will not take the field. The call
             # still works; it just thinks, so this must not be fatal.
-            pass
+            logger.debug("generate: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
     if system:
         config_kwargs["system_instruction"] = system
     if schema:
@@ -268,7 +270,8 @@ def generate(
                 # sentence that stops halfway.
                 try:
                     reason = str(response.candidates[0].finish_reason or "")
-                except Exception:
+                except Exception as exc:
+                    logger.debug("generate: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
                     reason = ""
                 if text and "MAX_TOKENS" in reason:
                     _answered_by(name)

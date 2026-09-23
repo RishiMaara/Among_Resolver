@@ -262,7 +262,8 @@ def _withheld_answer(grounding: dict, verdict) -> str:
     """
     try:
         recorded = plain_summary(grounding.get("summary") or {})
-    except Exception:  # the fallback must not be the thing that breaks
+    except Exception as exc:  # the fallback must not be the thing that breaks
+        logger.debug("_withheld_answer: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
         recorded = ""
     lead = (
         f"The drafted answer cited {', '.join(verdict.items[:6])}, which "

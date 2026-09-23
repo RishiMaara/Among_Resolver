@@ -757,3 +757,19 @@ Fails safe: Yes
   ENABLE_DEMO_ENDPOINT=1.
 - A reviewer's name could carry the separation-of-duties marker's own
   brackets and bars. They are stripped from names now.
+
+## 42. A test kept passing after the code it guarded had moved
+
+Severity: Low (a guard that could no longer fail)
+Fails safe: Yes, until the next endpoint
+
+test_every_upload_path_goes_through_the_cap reads main.py's source for bare
+upload reads. Splitting main.py (1,160 lines to 160: routes to api/, what a
+run does to settlement_run.py) moved every upload handler out of the one file
+it read, and it went on passing because there was nothing left to find. It
+now reads main.py and every module under api/, and asserts it found an
+upload handler at all. The split also merged the upload and queue ingest
+paths, which had drifted (the queue gave a 500 on an unreadable file and
+dropped the timezone and currency notes), and gave each of 29 silent
+`except Exception` handlers a log line, or, for parse probes, a narrower
+exception.

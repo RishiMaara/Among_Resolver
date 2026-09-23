@@ -105,10 +105,13 @@ def test_every_upload_path_goes_through_the_cap():
     Reading the source, because the risk is a NEW endpoint added later with a
     bare read rather than the four that exist today being un-fixed.
     """
-    source = (SRC / "main.py").read_text(encoding="utf-8")
+    # Every module that serves HTTP: main.py and the route groups it mounts.
+    files = [SRC / "main.py", *sorted((SRC / "api").glob("*.py"))]
+    assert any("UploadFile" in f.read_text(encoding="utf-8") for f in files)
     bare = [
-        line.strip()
-        for line in source.splitlines()
+        f"{f.name}: {line.strip()}"
+        for f in files
+        for line in f.read_text(encoding="utf-8").splitlines()
         if "await" in line and ".read()" in line and not line.strip().startswith("#")
     ]
     assert not bare, (

@@ -127,7 +127,8 @@ def _shared():
 def _db():
     try:
         conn = audit._get_db()
-    except Exception:
+    except Exception as exc:
+        logger.debug("_db: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
         return None
     if conn is None:
         return None
@@ -150,8 +151,8 @@ def record_outcome(batch_id: str, confidence: float, confirmed: bool, reviewer: 
             try:
                 shared.hset(_REDIS_KEY, batch_id, body)
                 return
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("record_outcome: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
         conn = _db()
         if conn is not None:
             try:
@@ -169,8 +170,8 @@ def outcomes() -> list[dict]:
     if shared is not None:
         try:
             return [json.loads(v) for v in shared.hgetall(_REDIS_KEY).values()]
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("outcomes: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
     conn = _db()
     if conn is not None:
         try:

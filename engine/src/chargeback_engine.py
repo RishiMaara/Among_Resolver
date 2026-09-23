@@ -170,8 +170,8 @@ def mark_taken(reversal_ids: list[str], batch_id: str) -> int:
                 if shared.hdel(_REDIS_PENDING, rid) is not None:
                     taken += 1
                     continue
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("mark_taken: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
         if _pending.pop(rid, None) is not None:
             taken += 1
     if taken:

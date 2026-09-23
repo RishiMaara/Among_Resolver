@@ -10,6 +10,8 @@ why main.py was two thousand lines.
 
 from __future__ import annotations
 
+import logging
+
 import re
 from datetime import datetime, timezone
 from typing import Optional
@@ -32,6 +34,8 @@ import exception_ranking
 import exception_taxonomy
 import erp_sync
 import settlement_qa
+
+logger = logging.getLogger(__name__)
 
 
 
@@ -331,9 +335,9 @@ def compliance_review(candidates, batch_id_for_audit: str = "") -> dict:
                         f"human review. {d.get('reason', '')} "
                         f"{d.get('residual', '')}".strip()),
             )
-        except Exception:
+        except Exception as exc:
             # Never let a bookkeeping write fail a completed reconciliation.
-            pass
+            logger.debug("compliance_review: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
     return triaged
 
 

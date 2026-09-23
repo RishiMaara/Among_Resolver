@@ -167,9 +167,10 @@ def _read(filepath: str) -> dict | None:
     try:
         with open(filepath, encoding="utf-8") as f:
             return json.load(f)
-    except Exception:
+    except Exception as exc:
         # A truncated or hand-edited file must not take down the listing.
         # Skipping one record is better than returning none of them.
+        logger.debug("_read: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
         return None
 
 

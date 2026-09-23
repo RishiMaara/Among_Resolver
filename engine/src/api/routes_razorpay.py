@@ -82,7 +82,7 @@ def _items(payload, name: str) -> list[dict]:
 
 
 async def _json(upload: UploadFile, name: str):
-    from main import read_upload_capped  # pylint: disable=import-outside-toplevel
+    from api.uploads import read_upload_capped  # pylint: disable=import-outside-toplevel
     raw = await read_upload_capped(upload)
     try:
         return json.loads(raw.decode("utf-8-sig"))
@@ -96,7 +96,7 @@ async def _json(upload: UploadFile, name: str):
 async def _rows(upload: Optional[UploadFile], source: SourceType):
     if upload is None:
         return None
-    from main import read_upload_capped  # pylint: disable=import-outside-toplevel
+    from api.uploads import read_upload_capped  # pylint: disable=import-outside-toplevel
     content = await read_upload_capped(upload)
     if not content:
         return None
@@ -121,7 +121,7 @@ async def reconcile_upload(
     with no API keys and nothing shared — on a self-hosted engine
     (docker compose up) the data never leaves their machine.
     """
-    from main import read_upload_capped  # pylint: disable=import-outside-toplevel
+    from api.uploads import read_upload_capped  # pylint: disable=import-outside-toplevel
     raw = await read_upload_capped(recon_file)
     note = ""
     if raw.lstrip()[:1] in (b"{", b"["):

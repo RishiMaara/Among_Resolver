@@ -5,6 +5,8 @@ settlements. Split out of file_agent.py, unchanged; file_agent re-exports it.
 
 from __future__ import annotations
 
+import logging
+
 import csv
 import io
 import json
@@ -12,6 +14,8 @@ import re
 
 from file_values import _clean_amount, _looks_like_date, normalize_date, resolve_day_order
 from file_schema import FileRejected
+
+logger = logging.getLogger(__name__)
 
 
 # ── The settlements list itself ───────────────────────────────────────────
@@ -66,8 +70,8 @@ def _settlement_columns(rows: list[dict], headers: list[str]) -> dict[str, str]:
             try:
                 _clean_amount(v)
                 ok += 1
-            except Exception:
-                pass
+            except (ValueError, ArithmeticError, TypeError):
+                pass  # not a number: the probe's answer, not a failure
         return ok / len(nz), len(nz) / len(vals)
 
     date_col = None

@@ -10,10 +10,14 @@ SCOPE_NOTE). Published openly.
 """
 
 from __future__ import annotations
+
+import logging
 from dataclasses import dataclass, asdict
 from typing import Dict
 
 from schema import ComplianceBasis
+
+logger = logging.getLogger(__name__)
 
 
 # ── Official sources (URLs verified reachable 2026-08-30) ─────────────────────
@@ -49,7 +53,8 @@ def scope_note() -> str:
     try:
         import compliance_agent
         prov = compliance_agent.sanctions_provenance()
-    except Exception:
+    except Exception as exc:
+        logger.debug("scope_note: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
         prov = {}
 
     if prov.get("is_illustrative", True):

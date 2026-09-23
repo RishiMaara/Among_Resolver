@@ -125,8 +125,8 @@ def _compute_similarity_rows(
             from sentence_transformers import SentenceTransformer
             model = SentenceTransformer("all-MiniLM-L6-v2")
             memo_semantic_similarity._model = model
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("_compute_similarity_rows: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
 
     if model is not None:
         from sentence_transformers import util

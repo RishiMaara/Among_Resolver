@@ -67,7 +67,8 @@ def _shared():
 def _db():
     try:
         conn = audit._get_db()
-    except Exception:
+    except Exception as exc:
+        logger.debug("_db: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
         return None
     if conn is None:
         return None
@@ -127,8 +128,8 @@ def _reset_for_tests() -> None:
     if shared is not None:
         try:
             shared.delete(_REDIS_KEY)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("_reset_for_tests: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
     conn = _db()
     if conn is not None:
         try:

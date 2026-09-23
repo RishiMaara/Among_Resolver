@@ -218,8 +218,8 @@ def _get_handle(batch_id: str):
         _, old = _HANDLES.popitem(last=False)
         try:
             old.close()
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("_get_handle: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
 
     fh = _batch_path(batch_id).open("a", encoding="utf-8")
     _HANDLES[batch_id] = fh
@@ -231,8 +231,8 @@ def _close_handle(batch_id: str) -> None:
     if fh is not None:
         try:
             fh.close()
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("_close_handle: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
 
 
 def close_all() -> None:
@@ -242,8 +242,8 @@ def close_all() -> None:
         for _, fh in list(_HANDLES.items()):
             try:
                 fh.close()
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("close_all: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
         _HANDLES.clear()
 
 
@@ -643,8 +643,8 @@ def clear_trail(batch_id: str) -> None:
         try:
             client.delete(f"audit:{batch_id}", f"audit:{batch_id}:head")
             return
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("clear_trail: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
 
     conn = _get_db()
     if conn is not None:

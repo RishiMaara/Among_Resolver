@@ -32,7 +32,8 @@ def _redis():
     """
     try:
         return audit._get_redis() if audit.redis_url() else None  # pylint: disable=protected-access
-    except Exception:
+    except Exception as exc:
+        logger.debug("_redis: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
         return None
 
 
@@ -40,7 +41,8 @@ def _db():
     """Reuse the audit database so durability is one decision, not two."""
     try:
         conn = audit._get_db()
-    except Exception:
+    except Exception as exc:
+        logger.debug("_db: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
         return None
     if conn is None:
         return None

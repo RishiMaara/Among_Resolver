@@ -13,11 +13,15 @@ a public demo.
 
 from __future__ import annotations
 
+import logging
+
 import contextvars
 import os
 import threading
 import time
 from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
 
 # Set per request by main.py's middleware. A dict rather than a value so a
 # call made in a worker thread (FastAPI runs sync routes in a threadpool) can
@@ -60,8 +64,8 @@ def _count(key: str, ttl_s: int, add: int) -> int:
             if add and n == add:
                 client.expire(key, ttl_s)
             return n
-        except Exception:  # a store that fails mid-request falls back, it does not block
-            pass
+        except Exception as exc:  # a store that fails mid-request falls back, it does not block
+            logger.debug("_count: best-effort step skipped (%s: %s)", type(exc).__name__, exc)
     with _lock:
         now = time.time()
         n, expires = _local.get(key, (0, now + ttl_s))

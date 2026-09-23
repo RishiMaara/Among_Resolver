@@ -29,7 +29,7 @@ async def parse_statement(file: UploadFile = File(...),
     scan. The engine reads it with the same parser as a text PDF and uses it
     only if it balances; otherwise the model reads the scan, where configured.
     """
-    from main import read_upload_capped  # pylint: disable=import-outside-toplevel
+    from api.uploads import read_upload_capped  # pylint: disable=import-outside-toplevel
     content = await read_upload_capped(file)
     try:
         st, check = statement_parsers.parse(content, file.filename or "", scan_text=scan_text)
