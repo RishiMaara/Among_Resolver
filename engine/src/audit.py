@@ -339,7 +339,11 @@ def _memory_read(batch_id: str) -> list[dict]:
 # SQLite between Redis and the lossy tiers: durable, transactional, no server.
 # Defaults inside the engine directory, not the temp dir, so a reboot cannot
 # erase the trail.
-_DB: "sqlite3.Connection | None" = None
+# One connection per thread. A sqlite3 connection shared across FastAPI's
+# threadpool is not safe for concurrent use: the load test crashed one with
+# SystemError while the ledger, open items and the cycle used it at once
+# (FAILURE_LOG 45). Separate connections are, and WAL serialises writers.
+_DB_LOCAL = threading.local()
 _DB_WARNED = False
 
 
@@ -351,17 +355,16 @@ def _db_path() -> Path:
 
 
 def _get_db():
-    """Open (once) the durable store. Returns None if it cannot be opened."""
-    global _DB, _DB_WARNED
-    if _DB is not None:
-        return _DB
+    """This thread's connection to the durable store, opened on first use;
+    None if it cannot be opened."""
+    global _DB_WARNED
+    path = _db_path()
+    conn = getattr(_DB_LOCAL, "conn", None)
+    if conn is not None and getattr(_DB_LOCAL, "path", None) == path:
+        return conn
     try:
-        path = _db_path()
         path.parent.mkdir(parents=True, exist_ok=True)
-        # check_same_thread=False: FastAPI serves requests on a threadpool and
-        # the connection is guarded by SQLite's own locking plus the fact that
-        # every write here is a single autocommitted statement.
-        conn = sqlite3.connect(path, check_same_thread=False, timeout=5.0)
+        conn = sqlite3.connect(path, timeout=5.0)
         # WAL so a reader (the flow canvas polling /audit) never blocks the
         # writer (the reconciliation that is still running).
         conn.execute("PRAGMA journal_mode=WAL")
@@ -383,11 +386,11 @@ def _get_db():
             if col not in cols:
                 conn.execute(f"ALTER TABLE audit ADD COLUMN {col} TEXT")  # nosec B608 - fixed names
         conn.commit()
-        _DB = conn
+        _DB_LOCAL.conn, _DB_LOCAL.path = conn, path
         if not _DB_WARNED:
             logger.info("Audit: durable store at %s (SQLite, WAL).", path)
             _DB_WARNED = True
-        return _DB
+        return conn
     except Exception as exc:
         if not _DB_WARNED:
             logger.warning(

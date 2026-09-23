@@ -123,3 +123,20 @@ def test_the_limit_is_configurable_and_sane():
     assert main.MAX_UPLOAD_BYTES >= 1024 * 1024
     # Comfortably above the 50K stress corpus (~5 MB) so real exports pass.
     assert main.MAX_UPLOAD_BYTES >= 32 * 1024 * 1024
+
+
+def test_a_refused_ledger_on_the_razorpay_route_is_a_422_not_a_crash():
+    """The Razorpay route had its own copy of the ingest step, without the
+    refusal handling: a ledger with no recognisable columns was a 500."""
+    from pathlib import Path
+
+    from fastapi.testclient import TestClient
+    base = Path(__file__).resolve().parents[2] / "public" / "sample-data" / "razorpay"
+    files = {
+        "settlements_file": ("settlements.json", (base / "settlements.json").read_bytes()),
+        "recon_file": ("recon_combined.json", (base / "recon_combined.json").read_bytes()),
+        "ledger_file": ("ledger.csv", b"colour,size\nred,large\n"),
+    }
+    r = TestClient(main.app).post("/razorpay/reconcile/upload", files=files)
+    assert r.status_code == 422
+    assert r.json()["detail"]["rejected"] is True

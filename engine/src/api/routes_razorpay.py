@@ -93,15 +93,13 @@ async def _json(upload: UploadFile, name: str):
         })
 
 
-async def _rows(upload: Optional[UploadFile], source: SourceType):
+async def _rows(upload: Optional[UploadFile], source: SourceType, notes: list[str]):
+    """A bank statement or ledger, through the same ingest path as every upload:
+    a refused file is a 422 naming the missing columns, never a 500."""
     if upload is None:
         return None
-    from api.uploads import read_upload_capped  # pylint: disable=import-outside-toplevel
-    content = await read_upload_capped(upload)
-    if not content:
-        return None
-    parsed = file_agent.parse_file_content(content, upload.filename or "", [])
-    return normalize_batch_with_report(parsed, source).normalized if parsed else []
+    from api.uploads import ingest_upload  # pylint: disable=import-outside-toplevel
+    return await ingest_upload(upload, source, batch_id="RAZORPAY", notes=notes)
 
 
 @router.post("/razorpay/reconcile/upload",
@@ -141,9 +139,12 @@ async def reconcile_upload(
         settlements = _items(await _json(settlements_file, "settlements_file"), "settlements_file")
     else:
         settlements = rz.settlements_from_report(recon)
-    bank = await _rows(bank_file, SourceType.BANK)
-    ledger = await _rows(ledger_file, SourceType.ERP)
+    notes: list[str] = []
+    bank = await _rows(bank_file, SourceType.BANK, notes)
+    ledger = await _rows(ledger_file, SourceType.ERP, notes)
     out = razorpay_recon.reconcile(settlements, recon, bank=bank, ledger=ledger)
+    if notes:
+        out["ingestion_notes"] = notes
     out["read"] = {
         "recon": "dashboard report (CSV)" if note else "API response (JSON)",
         "units": note or "Amounts in paise and times in Unix seconds, as the API documents.",

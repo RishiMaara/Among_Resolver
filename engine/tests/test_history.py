@@ -22,6 +22,9 @@ import history
 @pytest.fixture
 def history_dir(tmp_path, monkeypatch):
     monkeypatch.setattr(history, "HISTORY_DIR", str(tmp_path))
+    # list_runs also reads the temp-dir fallback; point it here too, so runs
+    # another process left on this machine cannot leak into the count.
+    monkeypatch.setattr(history, "_FALLBACK_DIR", str(tmp_path / "fallback"))
     return tmp_path
 
 

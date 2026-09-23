@@ -184,6 +184,37 @@ describe("the judge page", () => {
     expect(lines.some((l) => /^The same 2 payments/.test(l))).toBe(true);
   });
 
+  it("runs the three pitch checks from one button", async () => {
+    const hits: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        const u = String(url);
+        if (u.includes("/sample-data/")) {
+          return { ok: true, status: 200, blob: async () => new Blob(["x"]) } as Response;
+        }
+        for (const path of ["razorpay/reconcile/upload", "reconcile/upload", "statements/parse"]) {
+          if (u.includes(path)) {
+            hits.push(path);
+            break;
+          }
+        }
+        const body = u.includes("razorpay/reconcile/upload")
+          ? { settlements: 1, tally: { verified: 1 }, results: [] }
+          : u.includes("statements/parse")
+            ? { read_by: "OCR", lines: [], check: { holds: true, plain: "balances" } }
+            : { summary: { cleared: true, matched_count: 1, confidence: 0.95 } };
+        return { ok: true, status: 200, json: async () => body } as Response;
+      }),
+    );
+    render(<Judge />);
+    await userEvent.click(screen.getByRole("button", { name: /run the three/i }));
+    await waitFor(() => expect(hits).toContain("statements/parse"));
+    await waitFor(() => expect(hits).toContain("razorpay/reconcile/upload"));
+    // The payout card reconciles twice: declared, then undeclared.
+    await waitFor(() => expect(hits.filter((h) => h === "reconcile/upload").length).toBe(2));
+  });
+
   it("reads a scan in the browser and shows what the engine made of it", async () => {
     let sent: FormData | undefined;
     vi.stubGlobal(

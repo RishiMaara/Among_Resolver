@@ -8,7 +8,7 @@
  * a claim typed for the page.
  */
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Play, CheckCircle2, AlertTriangle, ExternalLink } from "lucide-react";
 import { engineFetch, ENGINE_HOST } from "@/lib/api";
@@ -321,7 +321,10 @@ const CHECKS: { title: string; proves: string; endpoint: string; run: () => Prom
   },
 ];
 
-function Check({ c }: { c: (typeof CHECKS)[number] }) {
+// The runs a five-minute pitch shows, in its order; the rest fold under "More".
+const PITCH_RUNS = 3;
+
+function Check({ c, trigger = 0 }: { c: (typeof CHECKS)[number]; trigger?: number }) {
   const [state, setState] = useState<RunState>({ status: "idle", lines: [] });
   const go = async () => {
     setState({ status: "running", lines: [] });
@@ -334,6 +337,15 @@ function Check({ c }: { c: (typeof CHECKS)[number] }) {
       });
     }
   };
+  // "Run the three" bumps `trigger`; a card runs once per bump.
+  const lastTrigger = useRef(0);
+  useEffect(() => {
+    if (trigger > lastTrigger.current) {
+      lastTrigger.current = trigger;
+      void go();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trigger]);
   return (
     <article className="surface-card p-4">
       <div className="flex items-start justify-between gap-3">
@@ -581,6 +593,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 function Judge() {
+  const [runAll, setRunAll] = useState(0);
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md">
@@ -646,11 +659,34 @@ function Judge() {
         </div>
 
         <Section title="Run it">
+          <div className="mb-3 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setRunAll((n) => n + 1)}
+              className="flex items-center gap-1.5 rounded-md bg-foreground px-3.5 py-2 text-[13px] font-medium text-background hover:opacity-90"
+            >
+              <Play className="size-3.5" />
+              Run the three
+            </button>
+            <span className="text-[12px] text-muted-foreground">
+              Clear and refuse a payout, Razorpay checked five ways, a scanned statement — at once.
+            </span>
+          </div>
           <div className="grid gap-3">
-            {CHECKS.map((c) => (
-              <Check key={c.title} c={c} />
+            {CHECKS.slice(0, PITCH_RUNS).map((c) => (
+              <Check key={c.title} c={c} trigger={runAll} />
             ))}
           </div>
+          <details className="mt-3">
+            <summary className="cursor-pointer text-[13px] text-muted-foreground hover:text-foreground">
+              More live checks — a text statement, tax by date, working days, open items
+            </summary>
+            <div className="mt-3 grid gap-3">
+              {CHECKS.slice(PITCH_RUNS).map((c) => (
+                <Check key={c.title} c={c} />
+              ))}
+            </div>
+          </details>
         </Section>
 
         <Section title="Measured — with the file behind every figure">

@@ -495,6 +495,25 @@ the build checks (`engine/tests/test_architecture.py`), not a diagram:
 CI also runs mypy (clean across `src/`), pylint for errors, and bandit
 before the tests.
 
+## Measured under load
+
+`engine/scripts/load_test.py` drives one engine process in-process (ASGI, no
+network, no model, SQLite store) at rising concurrency; the figures are in
+`engine/docs/benchmarks/load_test.json`.
+
+| request | 1 at a time | 4 at once | 8 at once |
+|---|---|---|---|
+| upload (sample payout, 3 files, 91 candidates) | 9.8/s, p95 110 ms | 10.0/s, p95 524 ms | 7.3/s, p95 1260 ms |
+| Razorpay, five payouts checked five ways | 8.0/s, p95 158 ms | 8.9/s, p95 570 ms | 9.0/s, p95 1222 ms |
+| `/health` | 477.6/s, p95 2 ms | 566.3/s, p95 11 ms | 637.1/s, p95 18 ms |
+
+Zero errors at every level. One process tops out near ten reconciliations a
+second: the solve is CPU-bound and Python runs it on one core at a time, so
+beyond that requests queue rather than fail. More throughput is more
+processes or instances, which is how Vercel serves it. The first run of this
+test crashed: one SQLite connection was shared across the thread pool and
+used by several stores at once. Each thread now has its own (FAILURE_LOG 45).
+
 ## How this scales beyond one process — a design, not shipped code
 
 A streaming version of this engine was prototyped: Kafka topics for raw and
@@ -586,7 +605,7 @@ python scripts/run_reconriver.py          # accuracy, third-party data
 python scripts/pull_razorpay.py --month YYYY-MM   # live Razorpay settlements
 python scripts/close_batch.py --generate  # batch close: match rate + exceptions
 python scripts/calibration.py             # is the confidence real
-python -m pytest tests/ -q                # 769 tests
+python -m pytest tests/ -q                # 771 tests
 ```
 
 Frontend: `npm run dev` (port 8080).
@@ -648,7 +667,7 @@ The suite is honest about which of the two it ran against. A fresh clone
 now carries a real list — `engine/data/sanctions/un_consolidated.txt` is
 tracked so a deployed engine, which is built from git, screens against the UN
 Consolidated List instead of silently dropping to four demo names — so the
-run is **769 passed** with or without a fetch. If neither list is present,
+run is **771 passed** with or without a fetch. If neither list is present,
 `test_compliance.py` skips its real-list assertion and names itself, rather
 than passing quietly against the demo set. A fresh fetch into `data/sanctions/`
 at the repo root takes priority over the tracked snapshot, and CI does one.

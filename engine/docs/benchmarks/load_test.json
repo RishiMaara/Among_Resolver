@@ -1,0 +1,104 @@
+{
+  "measured_at": "2026-09-23T16:16:27+00:00",
+  "cpu_count": 12,
+  "python": "3.14.4",
+  "setup": "one engine process, in-process ASGI (no network), no model, SQLite store",
+  "results": {
+    "upload": [
+      {
+        "concurrency": 1,
+        "requests": 60,
+        "errors": 0,
+        "throughput_per_s": 9.78,
+        "p50_ms": 77.0,
+        "p95_ms": 110.1,
+        "p99_ms": 182.2,
+        "mean_ms": 102.2
+      },
+      {
+        "concurrency": 4,
+        "requests": 60,
+        "errors": 0,
+        "throughput_per_s": 9.97,
+        "p50_ms": 403.7,
+        "p95_ms": 523.8,
+        "p99_ms": 540.1,
+        "mean_ms": 393.5
+      },
+      {
+        "concurrency": 8,
+        "requests": 60,
+        "errors": 0,
+        "throughput_per_s": 7.28,
+        "p50_ms": 1059.4,
+        "p95_ms": 1260.0,
+        "p99_ms": 1308.2,
+        "mean_ms": 1050.9
+      }
+    ],
+    "razorpay": [
+      {
+        "concurrency": 1,
+        "requests": 60,
+        "errors": 0,
+        "throughput_per_s": 8.04,
+        "p50_ms": 124.2,
+        "p95_ms": 158.0,
+        "p99_ms": 177.7,
+        "mean_ms": 124.4
+      },
+      {
+        "concurrency": 4,
+        "requests": 60,
+        "errors": 0,
+        "throughput_per_s": 8.92,
+        "p50_ms": 426.2,
+        "p95_ms": 570.5,
+        "p99_ms": 571.5,
+        "mean_ms": 437.5
+      },
+      {
+        "concurrency": 8,
+        "requests": 60,
+        "errors": 0,
+        "throughput_per_s": 9.03,
+        "p50_ms": 874.4,
+        "p95_ms": 1222.2,
+        "p99_ms": 1222.5,
+        "mean_ms": 855.2
+      }
+    ],
+    "health": [
+      {
+        "concurrency": 1,
+        "requests": 300,
+        "errors": 0,
+        "throughput_per_s": 477.55,
+        "p50_ms": 2.0,
+        "p95_ms": 2.5,
+        "p99_ms": 3.2,
+        "mean_ms": 2.1
+      },
+      {
+        "concurrency": 4,
+        "requests": 300,
+        "errors": 0,
+        "throughput_per_s": 566.26,
+        "p50_ms": 6.1,
+        "p95_ms": 10.6,
+        "p99_ms": 21.2,
+        "mean_ms": 6.9
+      },
+      {
+        "concurrency": 8,
+        "requests": 300,
+        "errors": 0,
+        "throughput_per_s": 637.06,
+        "p50_ms": 12.0,
+        "p95_ms": 17.6,
+        "p99_ms": 21.1,
+        "mean_ms": 12.2
+      }
+    ]
+  }
+}

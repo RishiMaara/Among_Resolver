@@ -813,3 +813,25 @@ time, refuses the match. Re-measured by replaying the recorded model answers:
 picks between equally evidenced sets that happened to be right, which a
 reviewer should not be shown as verified. The demo's agent match still
 passes: its 14 payments are the only set with that evidence.
+
+## 45. One SQLite connection shared across the thread pool
+
+Severity: High on a self-hosted deployment (a crash under concurrent requests)
+Fails safe: No — the request failed with a 500
+
+Found by the first load test. FastAPI runs sync work on a thread pool, and the
+engine opened one sqlite3 connection with check_same_thread=False for every
+thread to share. The audit trail serialised its own writes, but the paid-out
+ledger, open items and the settlement cycle used the same connection with no
+common lock; at four concurrent uploads it failed with SystemError inside
+sqlite3. The deployed site was not exposed, because on Vercel those stores
+are in Redis; any single-host deployment was.
+
+Mitigation: one connection per thread (audit._get_db, reached through
+stores.durable_db); SQLite in WAL mode serialises writers between
+connections. The load test then ran every level with zero errors, and
+test_stores.py hammers the ledger from eight threads at once.
+
+The same work gave the Razorpay route the shared ingest path: its own copy
+turned a ledger with no recognisable columns into a 500 rather than the 422
+every other upload gives.
