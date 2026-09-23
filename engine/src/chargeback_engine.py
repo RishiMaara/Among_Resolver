@@ -88,7 +88,7 @@ def process_chargeback(notice: ChargebackNotice) -> NormalizedTxn:
 # per-process memory as the fallback when no REDIS_URL is configured.
 
 _REDIS_PENDING = "chargebacks:pending"
-_pending: "dict[str, NormalizedTxn]" = {}
+_pending: "dict[str, NormalizedTxn]" = stores.local("chargebacks_pending", dict)
 
 
 def _shared_store():

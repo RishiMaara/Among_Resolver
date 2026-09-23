@@ -66,8 +66,8 @@ export const MEASURED: Measured[] = [
   {
     label: "Withheld settlements: right, verified proposals reaching a reviewer (of 58)",
     before: "16",
-    after: "22",
-    note: "fixed rules vs the investigator as deployed (model, one retry told why, then rules or escalation); 20 of the 22 are cases missing a member. Ids aliased, label-bearing text removed.",
+    after: "20",
+    note: "fixed rules vs the investigator as deployed (model, one retry told why, then rules or escalation); all 20 are cases missing a member, and no wrong match passes its verifier. Ids aliased, label-bearing text removed.",
     source: {
       file: "investigation_eval.json",
       beforePath: "rules.right_and_reaching_reviewer",

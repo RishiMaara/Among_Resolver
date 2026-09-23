@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 import logging
+import stores
 import hashlib
 import json
 import os
@@ -54,7 +55,7 @@ CALL_TIMEOUT_S = float(os.environ.get("MODEL_TIMEOUT_S", "12"))
 # off.
 REPLAY = os.environ.get("MODEL_REPLAY", "1").strip() != "0"
 _REPLAY_TTL_S = 30 * 24 * 3600
-_replay_local: dict[str, dict] = {}
+_replay_local: dict[str, dict] = stores.local("model_replay", dict)
 
 
 def _replay_key(system, prompt, schema, attachments) -> str:

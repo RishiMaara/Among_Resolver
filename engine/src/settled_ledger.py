@@ -19,7 +19,7 @@ import audit
 import stores
 logger = logging.getLogger(__name__)
 _lock = threading.Lock()
-_memory: dict[str, str] = {}          # txn_id -> batch_id, when no DB exists
+_memory: dict[str, str] = stores.local("settled_ledger", dict)          # txn_id -> batch_id, when no DB exists
 _REDIS_KEY = "settled:payments"
 
 

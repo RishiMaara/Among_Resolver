@@ -74,10 +74,12 @@ class TestTheCase:
 class TestTheVerifier:
     def test_the_true_set_passes(self, withheld):
         # Arithmetic, pool and currency: a true set never fails those. Whether
-        # its evidence beats the listed rivals is a separate question, tested
-        # below — here one anchor is shared by several sets, so it does not.
+        # its evidence singles it out is a separate question — here one anchor
+        # is shared by several sets, so the pool-wide rival check may object,
+        # and that is the only objection allowed.
         sc, _, case = withheld
-        assert inv.verify(match(sorted(sc.truth_ids)), dict(case, _sets=[]))["valid"]
+        v = inv.verify(match(sorted(sc.truth_ids)), dict(case, _sets=[]))
+        assert all("as much evidence" in f for f in v["failed"]), v["failed"]
 
     def test_an_id_outside_the_pool_is_rejected(self, withheld):
         sc, _, case = withheld
@@ -357,3 +359,28 @@ class TestAnUndeclaredMemberFeed:
         truth = [f"pay_{i:04d}" for i in range(14)]
         verdict = inv.verify(match(truth), case)
         assert verdict["valid"], verdict["failed"]
+
+
+class TestTheRivalAnywhereInThePool:
+    """FAILURE_LOG 44: the listed sets are a sample; a rival can sit unlisted."""
+
+    def _case(self, pool, target):
+        return {"_pool": pool, "_sets": [], "currency": "INR", "member_feed": "gateway",
+                "member_feed_declared": True, "target_cents": target, "tolerance_cents": 0,
+                "batch_id": "B", "settled_on": "2026-09-02", "next_working_day": "2026-09-03",
+                "residual_cents": 0, "engine_proposal": [], "alternatives": [],
+                "exceptions": [], "withheld_reason": "ambiguous"}
+
+    def _rec(self, amount, named):
+        return {"amount_cents": amount, "currency": "INR", "feed": "gateway", "named": named}
+
+    def test_an_unlisted_set_with_as_much_evidence_refuses_the_match(self):
+        pool = {"A": self._rec(100, True), "B": self._rec(200, True),
+                "C": self._rec(300, True), "D": self._rec(300, False)}
+        # {C} names the settlement once; {A, B} reaches 300 naming it twice.
+        assert inv._rival_in_pool(self._case(pool, 300), {"C"}, 1)
+
+    def test_the_best_evidenced_set_stands_when_nothing_matches_it(self):
+        pool = {"A": self._rec(100, True), "B": self._rec(200, True),
+                "C": self._rec(300, True), "D": self._rec(300, False)}
+        assert inv._rival_in_pool(self._case(pool, 300), {"A", "B"}, 2) is None

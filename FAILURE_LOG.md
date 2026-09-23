@@ -793,3 +793,23 @@ The same type-check found an annotation naming a class that was never
 imported (left by the file_agent split), a date that could be None reaching
 arithmetic, and a bank statement with no balance on its first line able to crash
 the opening-balance derivation. All fixed; mypy is clean and now runs in CI.
+
+## 44. The verifier compared a match only with the sets it was shown
+
+Severity: Medium (a wrong match could reach a reviewer marked as verified)
+Fails safe: No — three passed in the evaluation
+
+The investigator's verifier refused a match that did not carry more
+evidence than every LISTED rival set. The listed sets are a sample. In the
+ref_collision cases twenty unrelated records carry the settlement's own
+reference; the model picked a set of them that out-evidenced everything
+listed while another set, just as well evidenced, sat unlisted in the pool.
+Three such wrong matches reached a reviewer marked as verified.
+
+Mitigation: one bounded solve asks whether ANY other member-feed set reaches
+the target with at least as much evidence; finding one, or running out of
+time, refuses the match. Re-measured by replaying the recorded model answers:
+0 wrong matches through (was 3), 20 of 58 right (was 22). The two lost were
+picks between equally evidenced sets that happened to be right, which a
+reviewer should not be shown as verified. The demo's agent match still
+passes: its 14 payments are the only set with that evidence.

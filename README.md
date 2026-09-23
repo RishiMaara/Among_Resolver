@@ -130,7 +130,7 @@ Part by part — every module, its check, and the measurement behind it:
 | Confidence calibration, ReconRiver, out-of-sample (`calibration_out_of_sample.py`) | ECE 0.0901 raw, **0.026** calibrated (`fit_calibration.py`) · 42 of 42 correct above the gate, 74 predictions |
 | **Real payments** — Baton Rouge and Fulton County public checkbooks, 100 payments, each against its whole day's payment run (`public_ledger_benchmark.py`) | payee known: **100 of 100** exact, 99 auto-cleared · amounts only: 2 of 100, the rest withheld · **0** wrong clears in 200 runs |
 | Scanned bank statements, 24 noisy scans (`ocr_eval.py`) | 11 read exactly right by OCR in the browser, **23** with Gemini on the rest, **0** wrong readings accepted |
-| Tests | **762** backend · **137** frontend |
+| Tests | **769** backend · **137** frontend |
 
 Every figure in that table except the two calibration rows is re-measured by
 `python scripts/generate_benchmarks.py`, which writes
@@ -254,7 +254,7 @@ engine/        Python engine
   src/orchestrator.py        the money path's entry points; layers enforced by
                              tests/test_architecture.py; mypy-clean
   scripts/                   benchmarks, calibration, stress runs, data fetch
-  tests/                     762 tests
+  tests/                     769 tests
   benchmarks/                measurement snapshots
   data/                      Sanctions lists, test ledgers
 docs/                      ARCHITECTURE.md · FINAL_PITCH_SCRIPT.md · FINAL_TEST_REPORT.md · INDUSTRY_COMPARISON.md
@@ -304,11 +304,11 @@ trail a reviewer reads afterwards.
   merchant can reconcile the Settlement Recon report they download instead.
 - **No payment processor publishes settlement data.** The real-data benchmark
   is government payables (two public checkbooks), not card or UPI payouts.
-- **The investigator matches little on its own.** It puts 22 of 58 withheld
-  benchmark cases right, but 20 of those are cases missing a member, where
-  the answer is to wait or ask. On the 38 solvable ones it finds the exact set
-  twice and otherwise escalates, which is safe but leaves the choice to a
-  person; 3 wrong matches still pass its verifier (`docs/AI_EVALUATION.md`).
+- **The investigator matches little on its own.** It puts 20 of 58 withheld
+  benchmark cases right, all of them cases missing a member, where the answer
+  is to wait or ask. On the 38 solvable ones it escalates: none carries
+  evidence that singles out one set, and no wrong match passes its verifier
+  (`docs/AI_EVALUATION.md`).
 - **Scanned statements are measured on generated scans**, in three layouts;
   a bank's own layout may read worse, and is then refused, not guessed.
 

@@ -450,7 +450,10 @@ stood out more for the contrast, not less. It is now `engine/src/api/`:
 | `tiered_solve.py` | 510 | solving in evidence tiers, the substitutability guard, tiebreak, fuzzy recovery |
 | `recon_report.py` | 208 | the report, its tie-out arithmetic, the fee audit on the matched set |
 | `candidate_filters.py` | 104 | which records can be members: the settlement's currency, money that moved |
-| `stores.py` | 38 | the one public door to Redis and SQLite for every stateful module |
+| `stores.py` | 67 | the one public door to Redis and SQLite, and the registry of every in-process fallback (`/health` reports what it holds) |
+| `fee_audit.py` | 383 | gateway fee, GST-on-fee and settlement-shortfall checks; the entry point |
+| `tax_audit.py` | 155 | e-commerce TDS (194-O / 393(1)) and GST TCS (Section 52), by payment date |
+| `fee_model.py` | 111 | the finding types and fee-field helpers both share |
 
 `models` and `presentation` import nothing from FastAPI beyond pydantic, so
 they can be exercised without a running app. The split was made against the
@@ -583,7 +586,7 @@ python scripts/run_reconriver.py          # accuracy, third-party data
 python scripts/pull_razorpay.py --month YYYY-MM   # live Razorpay settlements
 python scripts/close_batch.py --generate  # batch close: match rate + exceptions
 python scripts/calibration.py             # is the confidence real
-python -m pytest tests/ -q                # 762 tests
+python -m pytest tests/ -q                # 769 tests
 ```
 
 Frontend: `npm run dev` (port 8080).
@@ -645,7 +648,7 @@ The suite is honest about which of the two it ran against. A fresh clone
 now carries a real list — `engine/data/sanctions/un_consolidated.txt` is
 tracked so a deployed engine, which is built from git, screens against the UN
 Consolidated List instead of silently dropping to four demo names — so the
-run is **762 passed** with or without a fetch. If neither list is present,
+run is **769 passed** with or without a fetch. If neither list is present,
 `test_compliance.py` skips its real-list assertion and names itself, rather
 than passing quietly against the demo set. A fresh fetch into `data/sanctions/`
 at the repo root takes priority over the tracked snapshot, and CI does one.

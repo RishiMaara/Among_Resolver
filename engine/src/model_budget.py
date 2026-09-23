@@ -14,6 +14,7 @@ a public demo.
 from __future__ import annotations
 
 import logging
+import stores
 
 import contextvars
 import os
@@ -28,7 +29,7 @@ logger = logging.getLogger(__name__)
 # record what happened and the route can read it back.
 REQUEST: contextvars.ContextVar[dict | None] = contextvars.ContextVar("model_request", default=None)
 
-_local: dict[str, tuple[int, float]] = {}
+_local: dict[str, tuple[int, float]] = stores.local("model_budget", dict)
 _lock = threading.Lock()
 
 

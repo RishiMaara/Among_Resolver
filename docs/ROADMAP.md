@@ -36,12 +36,10 @@ pool, so a transaction contested between two batches is resolved by what both
 targets need at once, not by whichever batch's solve ran first. Linkage,
 anchored-refund forcing, and the unevidenced-match withholding are reused
 exactly as the 1:N path defines them, per batch, before the joint solve runs.
-What is deliberately **not** yet generalised to the joint case: the 1:N path's
-tiering (progressively widening the candidate pool) and its substitutability
-guard (flagging a matched transaction that a same-amount transaction from
-another feed could equally have satisfied) are both materially different
-problems once several targets share a pool, and neither has been extended
-there. If the single joint model can't satisfy every target in a group at
+What is deliberately **not** generalised to the joint case: the 1:N path's
+tiering (progressively widening the candidate pool), which has no single
+meaning once several targets share a pool. The substitutability guard is
+shared: each target's matched set is checked against its own pool. If the single joint model can't satisfy every target in a group at
 once, `reconcile_many` falls back to running the proven 1:N path independently
 per batch, so N:M is never a worse answer than calling the 1:N path on each
 batch separately — it can only do better when a shared claim is actually

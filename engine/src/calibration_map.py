@@ -27,7 +27,7 @@ MAP_PATH = os.path.join(os.path.dirname(__file__), "calibration_map.json")
 BANDS = [(0.0, 0.5), (0.5, 0.7), (0.7, 0.85), (0.85, 0.93), (0.93, 1.01)]
 _REDIS_KEY = "reviewer_outcomes"
 _lock = threading.Lock()
-_memory: list[dict] = []
+_memory: list[dict] = stores.local("calibration_map", list)
 
 
 # ── isotonic regression, pool-adjacent-violators ──────────────────────────

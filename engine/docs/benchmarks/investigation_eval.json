@@ -13,34 +13,34 @@
   "harmful_reaching_reviewer_with_verifier": 0
  },
  "model": {
-  "cases": 50,
-  "right": 13,
-  "right_pct": 26.0,
-  "rejected_by_verifier": 18,
-  "right_and_reaching_reviewer": 11,
+  "cases": 57,
+  "right": 17,
+  "right_pct": 29.8,
+  "rejected_by_verifier": 24,
+  "right_and_reaching_reviewer": 12,
   "harmful_reaching_reviewer_without_verifier": 19,
-  "harmful_reaching_reviewer_with_verifier": 3
+  "harmful_reaching_reviewer_with_verifier": 0
  },
- "model_answered": 50,
+ "model_answered": 57,
  "investigator": {
   "cases": 58,
-  "right": 22,
-  "right_pct": 37.9,
+  "right": 20,
+  "right_pct": 34.5,
   "rejected_by_verifier": 0,
-  "right_and_reaching_reviewer": 22,
-  "harmful_reaching_reviewer_without_verifier": 3,
-  "harmful_reaching_reviewer_with_verifier": 3
+  "right_and_reaching_reviewer": 20,
+  "harmful_reaching_reviewer_without_verifier": 0,
+  "harmful_reaching_reviewer_with_verifier": 0
  },
- "model_calls_this_run": 85,
+ "model_calls_this_run": 0,
  "investigator_by_kind": {
   "solvable": {
    "cases": 38,
-   "right": 2,
-   "right_pct": 5.3,
+   "right": 0,
+   "right_pct": 0.0,
    "rejected_by_verifier": 0,
-   "right_and_reaching_reviewer": 2,
-   "harmful_reaching_reviewer_without_verifier": 3,
-   "harmful_reaching_reviewer_with_verifier": 3
+   "right_and_reaching_reviewer": 0,
+   "harmful_reaching_reviewer_without_verifier": 0,
+   "harmful_reaching_reviewer_with_verifier": 0
   },
   "unsolvable": {
    "cases": 20,
@@ -264,6 +264,15 @@
     "valid": true,
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
+   },
+   "model": {
+    "action": "WAIT_FOR_DATA",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "failed": []
    },
    "investigator": {
     "action": "WAIT_FOR_DATA",
@@ -785,14 +794,25 @@
     "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false
    },
-   "investigator": {
+   "model": {
     "action": "MATCH_PROPOSAL",
-    "proposer": "model",
     "right": true,
+    "harmful": false,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
+    "right_with_verifier": false,
+    "failed": [
+     "another set of 6 gateway record(s) in the pool also reaches the target with at least as much evidence (3 naming the settlement); escalate rather than choose between them"
+    ]
+   },
+   "investigator": {
+    "action": "ESCALATE",
+    "proposer": "rules",
+    "right": false,
     "harmful": false,
     "valid": true,
     "reaches_reviewer_with_verifier": true,
-    "right_with_verifier": true,
+    "right_with_verifier": false,
     "attempts": [
      {
       "proposer": "rules",
@@ -802,8 +822,10 @@
      {
       "proposer": "model",
       "action": "MATCH_PROPOSAL",
-      "valid": true,
-      "failed": []
+      "valid": false,
+      "failed": [
+       "another set of 6 gateway record(s) in the pool also reaches the target with at least as much evidence (3 naming the settlement); escalate rather than choose between them"
+      ]
      }
     ]
    }
@@ -915,6 +937,15 @@
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": true
    },
+   "model": {
+    "action": "ESCALATE",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true,
+    "failed": []
+   },
    "investigator": {
     "action": "ESCALATE",
     "proposer": "model",
@@ -950,6 +981,15 @@
     "valid": true,
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
+   },
+   "model": {
+    "action": "ESCALATE",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "failed": []
    },
    "investigator": {
     "action": "ESCALATE",
@@ -1036,16 +1076,18 @@
     "action": "MATCH_PROPOSAL",
     "right": false,
     "harmful": true,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false,
-    "failed": []
+    "failed": [
+     "another set of 12 gateway record(s) in the pool also reaches the target with at least as much evidence (6 naming the settlement); escalate rather than choose between them"
+    ]
    },
    "investigator": {
-    "action": "MATCH_PROPOSAL",
-    "proposer": "model",
+    "action": "ESCALATE",
+    "proposer": "rules",
     "right": false,
-    "harmful": true,
+    "harmful": false,
     "valid": true,
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false,
@@ -1058,8 +1100,10 @@
      {
       "proposer": "model",
       "action": "MATCH_PROPOSAL",
-      "valid": true,
-      "failed": []
+      "valid": false,
+      "failed": [
+       "another set of 12 gateway record(s) in the pool also reaches the target with at least as much evidence (6 naming the settlement); escalate rather than choose between them"
+      ]
      }
     ]
    }
@@ -1326,19 +1370,21 @@
     "action": "MATCH_PROPOSAL",
     "right": true,
     "harmful": false,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
-    "right_with_verifier": true,
-    "failed": []
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
+    "right_with_verifier": false,
+    "failed": [
+     "another set of 12 gateway record(s) in the pool also reaches the target with at least as much evidence (3 naming the settlement); escalate rather than choose between them"
+    ]
    },
    "investigator": {
-    "action": "MATCH_PROPOSAL",
-    "proposer": "model",
-    "right": true,
+    "action": "ESCALATE",
+    "proposer": "rules",
+    "right": false,
     "harmful": false,
     "valid": true,
     "reaches_reviewer_with_verifier": true,
-    "right_with_verifier": true,
+    "right_with_verifier": false,
     "attempts": [
      {
       "proposer": "rules",
@@ -1348,8 +1394,10 @@
      {
       "proposer": "model",
       "action": "MATCH_PROPOSAL",
-      "valid": true,
-      "failed": []
+      "valid": false,
+      "failed": [
+       "another set of 12 gateway record(s) in the pool also reaches the target with at least as much evidence (3 naming the settlement); escalate rather than choose between them"
+      ]
      }
     ]
    }
@@ -1616,16 +1664,18 @@
     "action": "MATCH_PROPOSAL",
     "right": false,
     "harmful": true,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false,
-    "failed": []
+    "failed": [
+     "another set of 9 gateway record(s) in the pool also reaches the target with at least as much evidence (5 naming the settlement); escalate rather than choose between them"
+    ]
    },
    "investigator": {
-    "action": "MATCH_PROPOSAL",
-    "proposer": "model",
+    "action": "ESCALATE",
+    "proposer": "rules",
     "right": false,
-    "harmful": true,
+    "harmful": false,
     "valid": true,
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false,
@@ -1638,8 +1688,10 @@
      {
       "proposer": "model",
       "action": "MATCH_PROPOSAL",
-      "valid": true,
-      "failed": []
+      "valid": false,
+      "failed": [
+       "another set of 9 gateway record(s) in the pool also reaches the target with at least as much evidence (5 naming the settlement); escalate rather than choose between them"
+      ]
      }
     ]
    }
@@ -1701,6 +1753,15 @@
     "valid": true,
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": true
+   },
+   "model": {
+    "action": "ESCALATE",
+    "right": true,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": true,
+    "failed": []
    },
    "investigator": {
     "action": "ESCALATE",
@@ -2377,6 +2438,15 @@
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
    },
+   "model": {
+    "action": "ESCALATE",
+    "right": false,
+    "harmful": false,
+    "valid": true,
+    "reaches_reviewer_with_verifier": true,
+    "right_with_verifier": false,
+    "failed": []
+   },
    "investigator": {
     "action": "ESCALATE",
     "proposer": "model",
@@ -2578,6 +2648,17 @@
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false
    },
+   "model": {
+    "action": "MATCH_PROPOSAL",
+    "right": true,
+    "harmful": false,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
+    "right_with_verifier": false,
+    "failed": [
+     "3 other set(s) reach the same target and this one has no more evidence than the best of them (0 vs 0 record(s) whose reference names the settlement); escalate with the sets listed rather than choose between equals"
+    ]
+   },
    "investigator": {
     "action": "WAIT_FOR_DATA",
     "proposer": "rules",
@@ -2665,16 +2746,18 @@
     "action": "MATCH_PROPOSAL",
     "right": false,
     "harmful": true,
-    "valid": true,
-    "reaches_reviewer_with_verifier": true,
+    "valid": false,
+    "reaches_reviewer_with_verifier": false,
     "right_with_verifier": false,
-    "failed": []
+    "failed": [
+     "another set of 9 gateway record(s) in the pool also reaches the target with at least as much evidence (6 naming the settlement); escalate rather than choose between them"
+    ]
    },
    "investigator": {
-    "action": "MATCH_PROPOSAL",
-    "proposer": "model",
+    "action": "ESCALATE",
+    "proposer": "rules",
     "right": false,
-    "harmful": true,
+    "harmful": false,
     "valid": true,
     "reaches_reviewer_with_verifier": true,
     "right_with_verifier": false,
@@ -2687,8 +2770,10 @@
      {
       "proposer": "model",
       "action": "MATCH_PROPOSAL",
-      "valid": true,
-      "failed": []
+      "valid": false,
+      "failed": [
+       "another set of 9 gateway record(s) in the pool also reaches the target with at least as much evidence (6 naming the settlement); escalate rather than choose between them"
+      ]
      }
     ]
    }

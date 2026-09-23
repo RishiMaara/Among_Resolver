@@ -38,7 +38,7 @@ AGE_BUCKETS = ((0, 2, "0-2"), (3, 5, "3-5"), (6, 10, "6-10"),
                (11, 30, "11-30"), (31, 10**9, "over 30"))
 
 _lock = threading.Lock()
-_memory: dict[str, dict] = {}
+_memory: dict[str, dict] = stores.local("open_items", dict)
 
 
 @dataclass

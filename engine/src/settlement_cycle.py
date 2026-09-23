@@ -35,7 +35,7 @@ _OVERRIDE: contextvars.ContextVar = contextvars.ContextVar("settlement_cycle_ove
                                                           default=None)
 _REDIS_KEY = "settlement_cycle"
 _lock = threading.Lock()
-_memory: dict[str, dict] = {}
+_memory: dict[str, dict] = stores.local("settlement_cycle", dict)
 
 
 def merchant_key(merchant: str) -> str:

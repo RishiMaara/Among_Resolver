@@ -18,78 +18,26 @@ from enum import Enum
 
 import india_tax
 
+# The shared types live in fee_model.py and the tax checks in tax_audit.py;
+# every name is still importable from here.
+from fee_model import (  # noqa: E402,F401 - re-exported; callers import them here
+    FeeAuditSeverity,
+    FeeAuditCategory,
+    FeeAuditFinding,
+    MethodRateCard,
+    _paise,
+    _stated_paise,
+    _gross_cents,
+)
+from tax_audit import (  # noqa: E402,F401 - re-exported; callers import them here
+    _rate_on,
+    _cite,
+    audit_tds_194o,
+    audit_tcs_section52,
+)
+
+
 logger = logging.getLogger(__name__)
-
-
-class FeeAuditSeverity(str, Enum):
-    INFO = "info"          # within tolerance, noted for completeness
-    WARNING = "warning"    # outside tolerance, review recommended
-    HIGH = "high"          # material discrepancy, action required
-
-
-class FeeAuditCategory(str, Enum):
-    FEE_OVERCHARGE = "fee_overcharge"
-    FEE_UNDERCHARGE = "fee_undercharge"
-    GST_MISCALCULATION = "gst_miscalculation"
-    TDS_WITHHOLDING_ERROR = "tds_withholding_error"
-    TCS_COLLECTION_ERROR = "tcs_collection_error"
-    SETTLEMENT_SHORTFALL = "settlement_shortfall"
-    DUPLICATE_FEE = "duplicate_fee"
-
-
-@dataclass
-class FeeAuditFinding:
-    """A single finding from the fee audit."""
-    category: FeeAuditCategory
-    severity: FeeAuditSeverity
-    txn_id: str                      # which transaction, or "batch" for batch-level
-    expected_cents: int              # what the rate card says
-    actual_cents: int                # what the gateway charged
-    difference_cents: int            # actual - expected (positive = overcharge)
-    description: str                 # human-readable explanation
-    payment_method: str = ""         # card / upi / netbanking / wallet / unknown
-    rule_basis: str = ""             # statutory / contractual / internal
-    citation: str = ""               # the provision, for statutory findings
-
-
-@dataclass
-class MethodRateCard:
-    """Per-payment-method fee structure for Indian gateways.
-
-    All rates in basis points (1 bp = 0.01%) unless marked as flat (cents).
-    This models the actual Razorpay/Stripe India pricing structure.
-    """
-    card_bps: int = 200              # 2.00% — typical for domestic cards
-    upi_bps: int = 0                 # 0% — MDR waived since Jan 2020
-    netbanking_flat_cents: int = 500 # Rs 5 flat per transaction
-    wallet_bps: int = 200            # ~2%
-    international_card_bps: int = 300  # 3% — higher for cross-border
-    default_bps: int = 200           # fallback for unknown methods
-
-    gst_rate_bps: int = india_tax.GST_ON_SERVICES_BPS  # 18% on the fee (CGST 9% + SGST 9%)
-
-    # E-commerce TDS (194-O, then 393(1) Sl. 8(v)) on gross credited.
-    #
-    # None means "the statutory rate on each payment's date", read from
-    # india_tax.TDS_ECOMMERCE. This used to be one number, 1%, and it was
-    # wrong for two years after the Finance (No. 2) Act 2024 cut the rate to
-    # 0.1% from 1 October 2024 — ten times the correct withholding expected on
-    # every settlement. A number here overrides the schedule for every date;
-    # 0 switches the check off, because whether it applies at all depends on
-    # the merchant's arrangement rather than anything this engine can see.
-    tds_rate_bps: int | None = None
-    # Rs 5,00,000 a year, for individual and HUF sellers only. Other sellers
-    # have no threshold: set 0, which means "none" rather than "off".
-    tds_annual_threshold_cents: int = 500_000_00
-
-    # GST TCS under Section 52 CGST. None means the statutory rate on each
-    # payment's date (0.5% since 10 July 2024). Checked only when the data
-    # reports TCS, because whether a gateway is the operator collecting it is
-    # not something the engine can know; 0 switches it off.
-    tcs_rate_bps: int | None = None
-
-    # How far actual can deviate from expected before it is flagged (in bps of txn amount)
-    tolerance_bps: int = 10          # 0.10% tolerance
 
 
 def _detect_payment_method(txn) -> str:
@@ -138,17 +86,6 @@ def _normalize_method(raw: str) -> str:
     return raw
 
 
-def _paise(value) -> int | None:
-    """A money cell from a file, read the way the amount column is read."""
-    if value is None or str(value).strip() == "":
-        return None
-    from ingestion import normalize_amount_to_cents
-    try:
-        return normalize_amount_to_cents(value)
-    except (ValueError, TypeError):
-        return None
-
-
 def fee_fields(extra: dict) -> tuple[int | None, int | None]:
     """
     (fee before GST, GST on it) in paise, or None where the data is silent.
@@ -171,25 +108,6 @@ def fee_fields(extra: dict) -> tuple[int | None, int | None]:
     if tax is None:
         return gross_fee, None
     return gross_fee - tax, tax
-
-
-def _stated_paise(extra: dict, cents_key: str, *file_keys: str) -> int | None:
-    if cents_key in extra and extra[cents_key] is not None:
-        return int(extra[cents_key])
-    for k in file_keys:
-        v = _paise(extra.get(k))
-        if v is not None:
-            return v
-    return None
-
-
-def _gross_cents(txn) -> int:
-    """The amount a fee is charged on: gross where the source states it."""
-    extra = getattr(txn, "extra", {}) or {}
-    stated = extra.get("gross_amount_cents")
-    if stated is not None:
-        return int(stated)
-    return getattr(txn, "amount_cents", 0)
 
 
 def _expected_fee_cents(amount_cents: int, method: str, card: MethodRateCard) -> int:
@@ -398,149 +316,6 @@ def audit_settlement_shortfall(
         ),
         rule_basis="contractual",
     )
-
-
-def _rate_on(override: int | None, schedule, on: date) -> tuple[int, str]:
-    """(rate in bps, citation) for a day, from an override or the schedule."""
-    provision = india_tax.in_force(schedule, on)
-    citation = provision.citation if provision else ""
-    if override is not None:
-        return override, citation
-    return (provision.rate_bps if provision else 0), citation
-
-
-def _cite(parts: dict[str, int]) -> str:
-    """One citation, or each with the amount it covers when a batch spans two."""
-    named = {c: v for c, v in parts.items() if c}
-    if len(named) <= 1:
-        return next(iter(named), "")
-    return "; ".join(f"{c} on {v / 100:,.2f}" for c, v in named.items())
-
-
-def audit_tds_194o(
-    matched_txns: list,
-    annual_gross_cents: int = 0,
-    rate_card: MethodRateCard | None = None,
-    as_of: date | None = None,
-) -> list[FeeAuditFinding]:
-    """
-    Check e-commerce TDS: 194-O, and 393(1) Sl. 8(v) from April 2026.
-
-    Each payment is taxed under the provision in force on its own IST date, so a
-    batch straddling 1 April cites both. Individual/HUF sellers are exempt on
-    the first Rs 5 lakh a year, used up by the earliest payments; set the
-    threshold to 0 for other sellers and the rate to 0 to turn the check off.
-    Arithmetic against configured numbers, not tax advice.
-    """
-    if rate_card is None:
-        rate_card = MethodRateCard()
-    if rate_card.tds_rate_bps == 0:
-        return []  # TDS checking disabled
-
-    threshold = max(rate_card.tds_annual_threshold_cents, 0)
-    running = annual_gross_cents
-    expected_tds = 0
-    taxable_by_citation: dict[str, int] = {}
-
-    dated = sorted(
-        matched_txns,
-        key=lambda t: india_tax.ist_date(getattr(t, "timestamp_utc", None), as_of),
-    )
-    for txn in dated:
-        gross = abs(_gross_cents(txn))
-        exempt_left = max(threshold - running, 0)
-        taxable = max(gross - exempt_left, 0)
-        running += gross
-        if taxable == 0:
-            continue
-        on = india_tax.ist_date(getattr(txn, "timestamp_utc", None), as_of)
-        rate, citation = _rate_on(rate_card.tds_rate_bps, india_tax.TDS_ECOMMERCE, on)
-        expected_tds += round(taxable * rate / 10_000)
-        taxable_by_citation[citation] = taxable_by_citation.get(citation, 0) + taxable
-
-    if not taxable_by_citation:
-        return []
-
-    actual_tds = sum(
-        _stated_paise(getattr(t, "extra", {}) or {}, "tds_amount_cents", "tds", "tds_amount") or 0
-        for t in matched_txns
-    )
-
-    diff = expected_tds - actual_tds
-    if abs(diff) <= 100:  # Rs 1 tolerance
-        return []
-
-    citation = _cite(taxable_by_citation)
-    return [FeeAuditFinding(
-        category=FeeAuditCategory.TDS_WITHHOLDING_ERROR,
-        severity=FeeAuditSeverity.HIGH,
-        txn_id="batch",
-        expected_cents=expected_tds,
-        actual_cents=actual_tds,
-        difference_cents=diff,
-        description=(
-            f"E-commerce TDS ({citation}): year-to-date gross {running/100:,.2f} "
-            f"against a threshold of {threshold/100:,.2f}. Expected TDS "
-            f"{expected_tds/100:,.2f}, withheld {actual_tds/100:,.2f}, "
-            f"difference {diff/100:,.2f}."
-        ),
-        rule_basis="statutory",
-        citation=citation,
-    )]
-
-
-def audit_tcs_section52(
-    matched_txns: list,
-    rate_card: MethodRateCard | None = None,
-    as_of: date | None = None,
-) -> list[FeeAuditFinding]:
-    """
-    GST TCS under Section 52 CGST, on net taxable supplies (refunds reduce the
-    base), at the rate on each supply's date. Runs only when a row reports TCS.
-    """
-    if rate_card is None:
-        rate_card = MethodRateCard()
-    if rate_card.tcs_rate_bps == 0:
-        return []
-
-    stated = [
-        _stated_paise(getattr(t, "extra", {}) or {}, "tcs_amount_cents", "tcs", "tcs_amount")
-        for t in matched_txns
-    ]
-    if all(v is None for v in stated):
-        return []
-    actual = sum(v or 0 for v in stated)
-
-    weighted = 0
-    base_by_citation: dict[str, int] = {}
-    for txn in matched_txns:
-        on = india_tax.ist_date(getattr(txn, "timestamp_utc", None), as_of)
-        rate, citation = _rate_on(rate_card.tcs_rate_bps, india_tax.TCS_GST_ECOMMERCE, on)
-        value = _gross_cents(txn)          # refunds arrive negative and net off
-        weighted += value * rate
-        base_by_citation[citation] = base_by_citation.get(citation, 0) + value
-    expected = max(round(weighted / 10_000), 0)
-
-    diff = expected - actual
-    if abs(diff) <= 100:
-        return []
-    citation = _cite(base_by_citation)
-    net_value = sum(base_by_citation.values())
-    return [FeeAuditFinding(
-        category=FeeAuditCategory.TCS_COLLECTION_ERROR,
-        severity=FeeAuditSeverity.WARNING,
-        txn_id="batch",
-        expected_cents=expected,
-        actual_cents=actual,
-        difference_cents=diff,
-        description=(
-            f"GST TCS ({citation}): net taxable value {net_value/100:,.2f} after "
-            f"returns. Expected TCS {expected/100:,.2f}, reported {actual/100:,.2f}, "
-            f"difference {diff/100:,.2f}."
-        ),
-        rule_basis="statutory",
-        citation=citation,
-    )]
 
 
 def run_fee_audit(

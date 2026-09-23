@@ -350,6 +350,53 @@ def propose_model(case: dict, redact_text: bool = False,
 
 # ── the verifier ──────────────────────────────────────────────────────────
 
+# How long the verifier may search the pool for a rival set.
+RIVAL_PROBE_SECONDS = 3.0
+
+
+def _rival_in_pool(case: dict, chosen: set[str], evidence: int) -> str | None:
+    """
+    Is there ANOTHER set of member-feed records, anywhere in the pool, that
+    reaches the target with at least as much evidence as the chosen one?
+
+    The listed sets are a sample. Comparing only against them let three wrong
+    matches through where unrelated records also carried the settlement's
+    reference: the chosen set out-evidenced every LISTED rival while an
+    equally evidenced one sat unlisted in the pool (FAILURE_LOG 44). One
+    bounded solve settles it. A search that runs out of time has not ruled a
+    rival out, and is treated as though it had found one.
+    """
+    from ortools.sat.python import cp_model  # pylint: disable=import-outside-toplevel
+
+    pool = case["_pool"]
+    feed = case.get("member_feed")
+    ids = [i for i, r in pool.items()
+           if (not feed or r.get("feed") == feed) and r.get("currency") == case["currency"]]
+    if not ids:
+        return None
+    model = cp_model.CpModel()
+    pick = {i: model.new_bool_var(i) for i in ids}
+    total = sum(pool[i]["amount_cents"] * pick[i] for i in ids)
+    model.add(total >= case["target_cents"] - case["tolerance_cents"])
+    model.add(total <= case["target_cents"] + case["tolerance_cents"])
+    model.add(sum(pick[i] for i in ids if pool[i].get("named")) >= evidence)
+    # Any set but the chosen one: at least one record in or out differs.
+    model.add_bool_or([pick[i].Not() if i in chosen else pick[i] for i in ids])
+    solver = cp_model.CpSolver()
+    solver.parameters.max_time_in_seconds = RIVAL_PROBE_SECONDS
+    solver.parameters.num_search_workers = 1
+    status = solver.solve(model)
+    if status == cp_model.INFEASIBLE:
+        return None
+    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+        other = sorted(i for i in ids if solver.value(pick[i]))
+        return (f"another set of {len(other)} {feed or 'member-feed'} record(s) in the pool "
+                f"also reaches the target with at least as much evidence ({evidence} naming "
+                f"the settlement); escalate rather than choose between them")
+    return ("could not rule out, within the time allowed, another set in the pool with as "
+            "much evidence; escalate rather than choose")
+
+
 def verify(p: Proposal, case: dict) -> dict:
     """Check a proposal in code. Returns {valid, failed: [...], plain}."""
     failed: list[str] = []
@@ -433,9 +480,10 @@ def verify(p: Proposal, case: dict) -> dict:
 
         rivals = [r for r in (as_member_feed(g) for g in case.get("_sets", []) if g)
                   if r != chosen]
+
+        def named(group):
+            return sum(1 for i in group if pool.get(i, {}).get("named"))
         if not failed and rivals:
-            def named(group):
-                return sum(1 for i in group if pool.get(i, {}).get("named"))
             best_rival = max(named(r) for r in rivals)
             if named(chosen) <= best_rival:
                 failed.append(
@@ -443,6 +491,10 @@ def verify(p: Proposal, case: dict) -> dict:
                     f"more evidence than the best of them ({named(chosen)} vs {best_rival} "
                     f"record(s) whose reference names the settlement); escalate with the "
                     f"sets listed rather than choose between equals")
+        if not failed:
+            rival = _rival_in_pool(case, chosen, named(chosen))
+            if rival:
+                failed.append(rival)
     elif p.action == "WAIT_FOR_DATA":
         try:
             until = date.fromisoformat(p.until_date)

@@ -144,10 +144,10 @@ here from the README unchanged, except where a figure has since changed.
   typed action — match, wait, request a document, write off rounding,
   escalate — and a verifier checks the arithmetic, the ledger, the calendar,
   the evidence and every figure in the reason before a reviewer sees it; on
-  58 withheld benchmark cases it puts 22 right, verified proposals in front
-  of a reviewer against 16 from fixed rules — 20 of them cases missing a
-  member, 2 of the 38 solvable ones — with 3 wrong ones getting through
-  where the evidence itself misleads. Questions about a result: 44 of 44 on a
+  58 withheld benchmark cases it puts 20 right, verified proposals in front
+  of a reviewer against 16 from fixed rules, all of them cases missing a
+  member, and no wrong match gets through: a match must be the only
+  best-evidenced set in the whole pool. Questions about a result: 44 of 44 on a
   small set, facts from the record and refusals where the record cannot
   answer. Confidence is shown calibrated as well as raw (out-of-sample ECE
   0.090 → 0.026), and reviewer decisions flag drift. The first investigator

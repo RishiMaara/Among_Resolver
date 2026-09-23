@@ -105,6 +105,50 @@ class _SolveOutcome:
     anchor_ids: set
 
 
+def _withhold_if_substitutable(batch, result, pool_txns, windowed_candidates, anchor_keys,
+                               label: str, outside: str = "this tier") -> None:
+    """
+    Substitutability guard. A narrowed pool (a tier, or one settlement's pool
+    in a joint solve) can hide one copy of a payment that exists in another
+    feed with the same amount, so a solve looks unique when it is not. This
+    produced the first false clears ever recorded ("_MIRROR" records), so a
+    matched member with an equal-amount twin in another feed, outside the
+    pool it was solved over, withholds the clear.
+
+    Exempt: anchored members (they name the settlement) and members of the
+    declared member feed (the other copy was never a candidate). Scoring the
+    two copies against each other was tried and endorsed the wrong one (30
+    false clears). Keys, not bare ids, throughout: ids repeat across feeds.
+    """
+    if not (result.cleared and result.matched_txn_ids):
+        return
+    pool_ids = {txn_key(t) for t in pool_txns}
+    matched_txns = members_of(result, pool_txns)
+    substitutable = [
+        t for t in matched_txns
+        if txn_key(t) not in anchor_keys
+        and not (batch.member_source is not None and t.source is batch.member_source)
+        and any(o.amount_cents == t.amount_cents and o.source is not t.source
+                and txn_key(o) not in pool_ids for o in windowed_candidates)
+    ]
+    if not substitutable:
+        return
+    result.cleared = False
+    result.ambiguous = True
+    result.reasoning += (
+        f" Withheld from auto-clear: {len(substitutable)} matched "
+        f"record(s) have an equal-amount counterpart in another feed "
+        f"outside {outside}, so the set is substitutable and the "
+        f"system of record is not determined by the arithmetic."
+    )
+    audit.log_decision(
+        batch_id=batch.batch_id,
+        agent="linkage",
+        detail=(f"'{label}' summed to target but {len(substitutable)} member(s) are "
+                f"substitutable with another feed's copy. Refusing to auto-clear."),
+    )
+
+
 def _solve_in_tiers(
     batch: SettlementBatch,
     solver_candidates: list[NormalizedTxn],
@@ -161,55 +205,8 @@ def _solve_in_tiers(
 
         tier_result = match_batch(batch.batch_id, tier_txns, gross_target, cfg)
 
-        # Substitutability guard: a tier can hide one copy of a payment that exists
-        # in another feed with the same amount, so a solve looks unique when it is
-        # not. This produced the first false clears ever recorded ("_MIRROR" records),
-        # so a member with an equal-amount twin in another feed outside the tier
-        # withholds the clear.
-        if tier_result.cleared and tier_result.matched_txn_ids:
-            # Keys, not bare ids — a bare-id collision across feeds could
-            # make an `o` that IS in this tier look like it isn't (or vice
-            # versa) below. Same class of bug as link_confidence's, see
-            # linkage.txn_key.
-            tier_ids = {txn_key(t) for t in tier_txns}
-            matched_txns = members_of(tier_result, tier_txns)
-
-            # Exempt: anchored members (they name the settlement) and members of the
-            # declared member feed (the other copy was never a candidate). Scoring the
-            # two copies against each other was tried and endorsed the wrong one (30
-            # false clears).
-            substitutable = [
-                t for t in matched_txns
-                if txn_key(t) not in anchor_keys
-                and not (
-                    batch.member_source is not None
-                    and t.source is batch.member_source
-                )
-                and any(
-                    o.amount_cents == t.amount_cents
-                    and o.source is not t.source
-                    and txn_key(o) not in tier_ids
-                    for o in windowed_candidates
-                )
-            ]
-            if substitutable:
-                tier_result.cleared = False
-                tier_result.ambiguous = True
-                tier_result.reasoning += (
-                    f" Withheld from auto-clear: {len(substitutable)} matched "
-                    f"record(s) have an equal-amount counterpart in another feed "
-                    f"outside this tier, so the set is substitutable and the "
-                    f"system of record is not determined by the arithmetic."
-                )
-                audit.log_decision(
-                    batch_id=batch.batch_id,
-                    agent="linkage",
-                    detail=(
-                        f"Tier '{tier_name}' summed to target but "
-                        f"{len(substitutable)} member(s) are substitutable with "
-                        f"another feed's copy. Refusing to auto-clear."
-                    ),
-                )
+        _withhold_if_substitutable(batch, tier_result, tier_txns, windowed_candidates,
+                                   anchor_keys, tier_name)
 
         if tier_result.cleared:
             audit.log_decision(

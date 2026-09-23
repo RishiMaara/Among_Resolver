@@ -51,7 +51,7 @@ REPLAY_TTL_S = 48 * 3600
 _REDIS_SEEN_PREFIX = "webhook:seen:"
 _REDIS_PENDING = "webhook:pending"
 
-_seen: "OrderedDict[str, str]" = OrderedDict()
+_seen: "OrderedDict[str, str]" = stores.local("webhook_seen", OrderedDict)
 
 # Events worth acting on. Razorpay sends many more; anything else is
 # acknowledged so it stops being retried, and ignored.
@@ -71,7 +71,7 @@ class Delivery:
     reconciled: bool = False
 
 
-_pending: "OrderedDict[str, Delivery]" = OrderedDict()
+_pending: "OrderedDict[str, Delivery]" = stores.local("webhook_pending", OrderedDict)
 
 
 def secret() -> str:

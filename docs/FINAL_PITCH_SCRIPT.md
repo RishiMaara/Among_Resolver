@@ -91,8 +91,8 @@ code checks, and no model ever decides which payments make up a settlement.
 - A model reads bank narrations right 97.5% of the time on formats the rules
   never saw, against 82.7% for rules — and anything it returns that is not in
   the narration is thrown away.
-- Every failure is written down: 43 of them in the failure log, each with the
-  fix and the re-measurement. 762 backend tests.
+- Every failure is written down: 44 of them in the failure log, each with the
+  fix and the re-measurement. 769 backend tests.
 
 ---
 

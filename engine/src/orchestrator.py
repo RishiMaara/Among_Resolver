@@ -67,6 +67,7 @@ from tiered_solve import (  # noqa: E402,F401 - re-exported; callers import them
     _solve_in_tiers,
     _collect_unmatched,
     _tiebreak_if_ambiguous,
+    _withhold_if_substitutable,
 )
 
 
@@ -98,9 +99,10 @@ def reconcile_many(
     payment two settlements could claim is assigned by the solver, not by order.
 
     Reused per batch from the 1:N path: linkage narrowing, forced anchored
-    refunds, a per-target ambiguity probe, and the same refusal gates. Not
-    reused: the evidence tiers and the substitutability guard, which have not
-    been generalised to several targets. If the joint model is infeasible (one
+    refunds, a per-target ambiguity probe, the substitutability guard (over
+    each settlement's own pool) and the same refusal gates. Not reused: the
+    evidence tiers, which widen one target's pool and have no single meaning
+    when several targets share one. If the joint model is infeasible (one
     batch's leg missing makes the whole model infeasible), every batch falls
     back to reconcile_batch against the original pool, with siblings' anchored
     records withheld, and double claims across the group are then withheld.
@@ -223,6 +225,12 @@ def reconcile_many(
             if probe_timed_out and not ambiguous:
                 result.reasoning += UNPROVEN_UNIQUE_NOTE
 
+            # The 1:N substitutability guard, per target: a matched member whose
+            # equal-amount twin in another feed sits outside this settlement's
+            # own pool withholds, as it does outside a tier.
+            _withhold_if_substitutable(p.batch, result, p.narrowed, p.windowed,
+                                       p.link_result.anchor_keys, "joint",
+                                       outside="this settlement's pool")
             _withhold_if_unevidenced(
                 p.batch, result, p.narrowed, p.link_result, p.link_result.anchor_keys
             )

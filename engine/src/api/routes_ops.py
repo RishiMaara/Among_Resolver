@@ -15,6 +15,7 @@ import auth
 import compliance_agent
 import history
 import india_calendar
+import stores
 import webhook
 from api.config import CORS_ORIGINS, CORS_ORIGIN_REGEX
 from orchestrator import reconcile_batch
@@ -197,6 +198,8 @@ def health():
         # call items late on festival days; say which one is in use.
         "bank_calendar": india_calendar.source(),
         "sanctions_list": sanctions,
+        # In-process fallbacks holding data: invisible to other instances.
+        "process_local_state": stores.process_local_state(),
         "cors_origins": CORS_ORIGINS,
         "cors_origin_regex": CORS_ORIGIN_REGEX,
         "ready_for_production": not warnings,
