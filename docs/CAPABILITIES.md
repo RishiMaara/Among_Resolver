@@ -15,6 +15,16 @@ here from the README unchanged, except where a figure has since changed.
 
 ## Part by part
 
+- **Foreign-currency payments, through a declared rate.** A settlement's advice
+  states the rate it converted at; declared as `fx_rates` (`USD=83.1250`, on the
+  upload form or the JSON API), a USD payment enters an INR settlement's pool
+  converted exactly in Decimal to the paisa, with its original amount and the
+  rate kept on the record (`fx.py`). Without a declared rate a foreign payment
+  stays out of the pool: amounts carry no unit, and summing across currencies
+  once cleared a wrong set at 0.97. Minor units follow ISO 4217 (JPY none,
+  KWD three). A converted payment's fee fields are in its own currency, so they
+  are set aside rather than audited as rupees.
+
 - **Five uses of a model (Gemini), each opt-in and metered** — column
   headers when rules cannot find a required one, bank narrations, scanned
   statements the browser's OCR could not prove, a next step for a withheld
@@ -147,7 +157,8 @@ here from the README unchanged, except where a figure has since changed.
   58 withheld benchmark cases it puts 20 right, verified proposals in front
   of a reviewer against 16 from fixed rules, all of them cases missing a
   member, and no wrong match gets through: a match must be the only
-  best-evidenced set in the whole pool. Questions about a result: 44 of 44 on a
+  best-evidenced set in the whole pool. Where sets tie, the escalation names
+  the one payment whose answer decides it. Questions about a result: 44 of 44 on a
   small set, facts from the record and refusals where the record cannot
   answer. Confidence is shown calibrated as well as raw (out-of-sample ECE
   0.090 → 0.026), and reviewer decisions flag drift. The first investigator

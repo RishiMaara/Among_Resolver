@@ -12,6 +12,7 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from starlette.concurrency import run_in_threadpool
 
 import file_agent
+import fx
 import settlement_run
 from api.models import (
     JointReconcileRequest, MultiSourceReconcileRequest, ReconcileRequest,
@@ -140,6 +141,9 @@ async def reconcile_upload(
     # What OCR in the browser read off a scanned bank statement. Used only if
     # bank_file is a scan, and only if the reading balances line by line.
     bank_scan_text: str = Form("", max_length=200_000),
+    # Exchange rates into `currency` as the settlement advice states them,
+    # "USD=83.1250,EUR=90.40". Only a declared rate converts (fx.py).
+    fx_rates: str = Form("", max_length=500),
     gateway_file: Optional[UploadFile] = File(None),
     bank_file: Optional[UploadFile] = File(None),
     erp_file: Optional[UploadFile] = File(None),
@@ -170,6 +174,10 @@ async def reconcile_upload(
         member = settlement_run.parse_member_source(member_source)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e)) from None
+    try:
+        rates = fx.parse_rates(fx_rates)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from None
 
     batch = SettlementBatch(
         batch_id=batch_id,
@@ -178,6 +186,7 @@ async def reconcile_upload(
         settled_at_utc=_settlement_instant(settled_at),
         member_source=member,
         merchant=merchant_id,
+        fx_rates=rates,
         # Declared deductions make the gross target a fact, not an estimate.
         declared_deductions_cents=(normalize_amount_to_cents(declared_deductions)
                                    if declared_deductions is not None else None),

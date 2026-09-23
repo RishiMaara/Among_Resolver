@@ -13,6 +13,7 @@ in ingestion.py and never convert back until final display.
 from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
+from decimal import Decimal
 from enum import Enum
 
 
@@ -123,6 +124,14 @@ class SettlementBatch:
     guess is unnecessary and strictly worse. `fee_decomposition.py` called this the
     preferred path from the beginning — this is the field that makes it
     reachable.
+    """
+
+    fx_rates: dict[str, Decimal] = field(default_factory=dict)
+    """
+    Exchange rates into this settlement's currency, as its advice states them:
+    {"USD": Decimal("83.1250")} means one USD is 83.1250 of this currency.
+    Only a declared rate converts a foreign payment (fx.py); with none, it is
+    kept out of the pool rather than summed across currencies.
     """
 
     member_source: SourceType | None = None

@@ -108,6 +108,7 @@ describe("the judge page", () => {
                       valid: false,
                       plain: "REJECTED before reaching a reviewer: 4 payment(s) counted twice.",
                     },
+                    deciding_question: "To decide, confirm whether payment GW3 is in this payout.",
                   },
                 };
         }
@@ -124,6 +125,7 @@ describe("the judge page", () => {
     expect(lines[0]).toMatch(/^Cleared: 14 payment/);
     expect(lines.some((l) => /Audit receipt fc172d071420…: All 20/.test(l))).toBe(true);
     expect(lines.some((l) => /^Member feed undeclared — Withheld: 13/.test(l))).toBe(true);
+    expect(lines).toContain("To decide, confirm whether payment GW3 is in this payout.");
     expect(uploads).toBe(2);
   });
 

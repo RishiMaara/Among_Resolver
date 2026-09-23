@@ -92,7 +92,7 @@ code checks, and no model ever decides which payments make up a settlement.
   never saw, against 82.7% for rules — and anything it returns that is not in
   the narration is thrown away.
 - Every failure is written down: 45 of them in the failure log, each with the
-  fix and the re-measurement. 771 backend tests.
+  fix and the re-measurement. 783 backend tests.
 
 ---
 
@@ -119,5 +119,10 @@ and the books. Thank you.
 - **"Real data?"** — Two public government checkbooks, 100 of 100. No live
   merchant yet: Razorpay test mode creates no settlements, so the Razorpay path
   runs on the report format a merchant downloads.
+- **"What if nothing can decide between the sets?"** — It refuses to guess and
+  names the one payment whose answer decides it: a person confirms one fact
+  from the processor's report instead of comparing sets.
+- **"Foreign currency?"** — Converted only at the rate the settlement advice
+  declares, exactly, with the rate kept as evidence; with no rate it refuses.
 - **"What if the model is down?"** — It falls back to a second model, then to
   fixed rules, and the screen says which one answered.

@@ -14,6 +14,7 @@ from typing import Optional
 
 import dateutil.parser as dp
 from fastapi import HTTPException
+import fx
 from pydantic import BaseModel, Field
 
 from schema import SourceType, SettlementBatch, NormalizedTxn, TzConfidence
@@ -46,6 +47,8 @@ class SettlementBatchIn(BaseModel):
     net_amount: float
     currency: str = "INR"
     settled_at: str
+    # Declared rates into `currency`, e.g. {"USD": "83.1250"} (fx.py).
+    fx_rates: dict[str, str] = Field(default_factory=dict)
 
 
 class ReconcileRequest(BaseModel):
@@ -87,4 +90,5 @@ def _build_settlement_batch(b: SettlementBatchIn) -> SettlementBatch:
         net_amount_cents=normalize_amount_to_cents(b.net_amount),
         currency=b.currency,
         settled_at_utc=_settlement_instant(b.settled_at),
+        fx_rates=fx.parse_rates(",".join(f"{k}={v}" for k, v in b.fx_rates.items())),
     )

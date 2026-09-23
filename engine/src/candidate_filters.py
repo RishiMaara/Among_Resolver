@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from schema import NormalizedTxn, SettlementBatch
 import audit
+import fx
 
 
 # States that mean the money did not move. Deliberately a closed list of
@@ -40,34 +41,49 @@ NON_SETTLING_STATUSES = {
 def _filter_to_settlement_currency(
     batch: SettlementBatch, candidates: list[NormalizedTxn]
 ) -> list[NormalizedTxn]:
-    """Drop candidates denominated in a currency the settlement is not in."""
+    """Keep candidates in the settlement's currency; convert those with a declared rate."""
     # Currency first: amounts are integer minor units with no unit attached, so
     # the solver once cleared INR 300 from two INR legs and a USD leg at 0.97.
-    # Foreign-currency candidates are excluded until FX conversion exists.
+    # A foreign candidate enters only through a rate the settlement declares
+    # (fx.py), converted exactly and carrying the rate as evidence.
     settlement_ccy = (batch.currency or "").strip().upper()
     if settlement_ccy:
-        same_ccy = [
-            t for t in candidates
-            if (t.currency or "").strip().upper() == settlement_ccy
-        ]
-        dropped_ccy = len(candidates) - len(same_ccy)
-        if dropped_ccy:
-            others = sorted({
-                (t.currency or "?").strip().upper() for t in candidates
-                if (t.currency or "").strip().upper() != settlement_ccy
-            })
+        rates = {k.strip().upper(): v for k, v in (batch.fx_rates or {}).items()}
+        kept: list[NormalizedTxn] = []
+        converted: dict[str, int] = {}
+        dropped: dict[str, int] = {}
+        for t in candidates:
+            ccy = (t.currency or "").strip().upper()
+            if ccy == settlement_ccy:
+                kept.append(t)
+            elif ccy in rates:
+                kept.append(fx.convert(t, settlement_ccy, rates[ccy]))
+                converted[ccy] = converted.get(ccy, 0) + 1
+            else:
+                dropped[ccy or "?"] = dropped.get(ccy or "?", 0) + 1
+        for ccy, n in sorted(converted.items()):
+            audit.log_decision(
+                batch_id=batch.batch_id, agent="currency_filter",
+                detail=(f"Converted {n} {ccy} candidate(s) into {settlement_ccy} at the "
+                        f"declared rate 1 {ccy} = {rates[ccy]} {settlement_ccy}, each rounded "
+                        f"half-up to the minor unit. The original amount and the rate stay "
+                        f"on the record; their fee fields are set aside, not audited."),
+            )
+        if dropped:
             audit.log_decision(
                 batch_id=batch.batch_id,
                 agent="currency_filter",
                 detail=(
-                    f"Excluded {dropped_ccy} candidate(s) denominated in "
-                    f"{', '.join(others)} from this {settlement_ccy} "
+                    f"Excluded {sum(dropped.values())} candidate(s) denominated in "
+                    f"{', '.join(sorted(dropped))} from this {settlement_ccy} "
                     f"settlement. Amounts are integer minor units with no unit "
                     f"attached, so summing across currencies produces an exact "
-                    f"total that is meaningless. No FX conversion is applied."
+                    f"total that is meaningless. No rate was declared for "
+                    f"{'this currency' if len(dropped) == 1 else 'these currencies'}, "
+                    f"so none is converted."
                 ),
             )
-        return same_ccy
+        return kept
 
     # No settlement currency declared: nothing to compare against, so nothing
     # is excluded. Guessing one would be worse than not filtering.

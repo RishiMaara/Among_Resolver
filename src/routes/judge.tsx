@@ -138,6 +138,8 @@ async function reconcileAndInvestigate(): Promise<Line[]> {
       text: `Investigator (${who}) proposes ${inv.proposal.action}: ${inv.proposal.reason}`,
     });
     out.push({ tone: inv.verification.valid ? "good" : "bad", text: inv.verification.plain });
+    // A tie becomes one question a person can answer from the processor's report.
+    if (inv.deciding_question) out.push({ tone: "muted", text: inv.deciding_question });
     const ids: string[] = inv.proposal.txn_ids ?? [];
     if (
       inv.proposal.action === "MATCH_PROPOSAL" &&

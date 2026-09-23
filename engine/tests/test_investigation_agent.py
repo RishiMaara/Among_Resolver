@@ -384,3 +384,23 @@ class TestTheRivalAnywhereInThePool:
         pool = {"A": self._rec(100, True), "B": self._rec(200, True),
                 "C": self._rec(300, True), "D": self._rec(300, False)}
         assert inv._rival_in_pool(self._case(pool, 300), {"A", "B"}, 2) is None
+
+
+class TestTheDecidingQuestion:
+    """A tie becomes one yes-or-no question a person can answer from the report."""
+
+    def _row(self, i, amount):
+        return {"id": i, "amount_cents": amount, "date": "2026-09-01", "feed": "gateway"}
+
+    def test_it_names_the_payment_that_splits_the_sets(self):
+        case = {"member_feed": "gateway",
+                "engine_proposal": [self._row("A", 100), self._row("B", 200)],
+                "alternatives": [[self._row("A", 100), self._row("C", 200)],
+                                 [self._row("D", 300)]]}
+        q = inv.deciding_question(case)
+        # A is in two of the three sets: its answer rules out one side either way.
+        assert "payment A (100 paise, 2026-09-01)" in q
+
+    def test_no_question_without_two_distinct_sets(self):
+        assert inv.deciding_question({"member_feed": "gateway", "engine_proposal": [],
+                                      "alternatives": [[self._row("A", 100)]]}) == ""

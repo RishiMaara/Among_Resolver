@@ -208,6 +208,36 @@ def _best_on_evidence(case: dict) -> tuple[list[str] | None, int, int]:
     return sorted(top[0]), best, len(admissible)
 
 
+def deciding_question(case: dict) -> str:
+    """
+    When sets tie, the one payment whose answer separates them best: the
+    member-feed payment that the most even share of the listed sets contain.
+    An escalation then asks a person one yes-or-no question they can answer
+    from the processor's report, instead of asking them to compare the sets.
+    Empty when fewer than two distinct sets are listed.
+    """
+    feed = case.get("member_feed")
+    listed = [rows for rows in [case["engine_proposal"]] + list(case["alternatives"]) if rows]
+    sets: list[frozenset] = []
+    rows_by_id: dict = {}
+    for rows in listed:
+        ids = frozenset(r["id"] for r in rows if not feed or r.get("feed", feed) == feed)
+        rows_by_id.update({r["id"]: r for r in rows})
+        if ids and ids not in sets:
+            sets.append(ids)
+    if len(sets) < 2:
+        return ""
+    split = [(abs(len(sets) - 2 * sum(1 for s_ in sets if i in s_)), i)
+             for i in sorted(set().union(*sets))
+             if 0 < sum(1 for s_ in sets if i in s_) < len(sets)]
+    if not split:
+        return ""
+    row = rows_by_id[min(split)[1]]
+    return (f" To decide, confirm whether payment {row['id']} ({row['amount_cents']} paise, "
+            f"{row['date']}) is in this payout: some of the listed sets contain it and the "
+            f"others do not.")
+
+
 def propose_rules(case: dict) -> Proposal:
     """
     The fixed-logic baseline, and the fallback when the model gives no
@@ -237,7 +267,7 @@ def propose_rules(case: dict) -> Proposal:
                         reason="Nothing in the pool sums to the payout.")
     return Proposal("ESCALATE", reason=(
         "Several sets reach the target and none carries more evidence than the rest; "
-        "a person should choose between the sets listed."))
+        "a person should choose between the sets listed." + deciding_question(case)))
 
 
 _SYSTEM = (
@@ -565,7 +595,7 @@ def decide(case: dict, use_model: bool = False, redact_text: bool = False,
     # checks turned down is never the answer; a person is asked instead.
     escalate = Proposal("ESCALATE", reason=(
         "No proposed set passed the checks; a person should choose between the "
-        "sets listed."))
+        "sets listed." + deciding_question(case)))
     return escalate, verify(escalate, case), attempts
 
 
@@ -576,4 +606,7 @@ def investigate(batch, candidates: list, report, use_model: bool = False) -> dic
     case = build_case(batch, candidates, report)
     proposal, verdict, attempts = decide(case, use_model=use_model)
     return {"case": _public(case), "proposal": proposal.__dict__, "verification": verdict,
-            "attempts": attempts}
+            "attempts": attempts,
+            # Any escalation, the model's included, names the one deciding question.
+            "deciding_question": (deciding_question(case).strip()
+                                  if proposal.action == "ESCALATE" else "")}

@@ -139,6 +139,13 @@ refused, and so are the two solvable cases the model had got right: they were
 picks between equally evidenced sets, which a reviewer should not be shown as
 verified.
 
+An escalation is not a shrug. Each one names the payment whose answer
+separates the tied sets best (`investigation_agent.deciding_question`):
+"confirm whether payment X (amount, date) is in this payout", which a person
+answers from the processor's settlement report. Measured on the benchmark's
+rule escalations: 16 of 16 carry one, all 16 pass the verifier's grounding
+check, and answering settles the tie in 2.46 questions on average, 3 at most.
+
 The rules changed too (FAILURE_LOG 37). They used to propose the engine's own
 set, which the engine had already withheld, and the verifier stopped almost
 all of them; they now match only a set the evidence singles out and escalate
