@@ -10,7 +10,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Play, CheckCircle2, AlertTriangle, ExternalLink } from "lucide-react";
+import { Play, CheckCircle2, AlertTriangle, ExternalLink, Upload } from "lucide-react";
 import { engineFetch, ENGINE_HOST } from "@/lib/api";
 import { MEASURED } from "@/lib/measured";
 import { inr } from "@/lib/utils";
@@ -673,6 +673,27 @@ function Judge() {
             </button>
             <span className="text-[12px] text-muted-foreground">
               Clear and refuse a payout, Razorpay checked five ways, a scanned statement — at once.
+            </span>
+          </div>
+          {/* The upload pages already exist; this page only runs fixed samples,
+              so a judge with their own file was never shown where to take it. */}
+          <div className="mb-3 flex flex-wrap items-center gap-3">
+            <Link
+              to="/"
+              className="flex items-center gap-1.5 rounded-md border border-border px-3.5 py-2 text-[13px] font-medium hover:bg-muted"
+            >
+              <Upload className="size-3.5" />
+              Upload your own files
+            </Link>
+            <Link
+              to="/payouts"
+              className="flex items-center gap-1.5 rounded-md border border-border px-3.5 py-2 text-[13px] font-medium hover:bg-muted"
+            >
+              <Upload className="size-3.5" />
+              Upload a Razorpay recon report
+            </Link>
+            <span className="text-[12px] text-muted-foreground">
+              A gateway report, bank statement or ledger; sign in with the demo account shown there.
             </span>
           </div>
           <div className="grid gap-3">

@@ -36,6 +36,16 @@ function card(title: string) {
 }
 
 describe("the judge page", () => {
+  it("sends a judge with their own file to the upload pages that already exist", () => {
+    render(<Judge />);
+    expect(screen.getByRole("link", { name: /upload your own files/i }).getAttribute("href")).toBe(
+      "/",
+    );
+    expect(
+      screen.getByRole("link", { name: /upload a razorpay recon report/i }).getAttribute("href"),
+    ).toBe("/payouts");
+  });
+
   it("shows every measured figure with its source file", () => {
     render(<Judge />);
     for (const m of MEASURED) {
