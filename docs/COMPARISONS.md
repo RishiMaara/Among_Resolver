@@ -25,7 +25,40 @@ cannot be set side by side.
 
 ---
 
-## 1. Against arithmetic alone
+## 1. What AmongResolver does that traditional engines do not
+
+Traditional reconciliation engines match records on configured rules: a shared
+key, an amount, a date window and a tolerance. They are fast and reliable when
+the data carries that key. The table below lists what a merchant reconciling
+Razorpay payouts needs that such rule-based matching does not provide, as far
+as the vendors' public material shows, and what AmongResolver does instead.
+
+| # | The merchant's problem | What a rule-based engine does | What AmongResolver does | Evidence |
+|---|---|---|---|---|
+| 1 | A payout is many payments, and nothing in the bank credit names them | Matches on a configured key; without one, raises an exception or falls back to amount or oldest-first rules | Identifies the members with linkage, a learned payout cycle and exact subset-sum, to the paisa | True sets 0% with arithmetic alone, 65% with linkage; 24% to 57% with references stripped; 0 wrong clears |
+| 2 | Several different sets of payments add up to the same payout | Oldest-first matching picks one | Proves whether another set also fits, refuses if one does, and names the one payment that decides it | FIFO-style matching wrong in 12 of 12 fixed-price cases; AmongResolver wrong in none |
+| 3 | A payment is missing and an unrelated payment has exactly its amount | Clears if the amounts fit | Withholds, and names the payment that completes the total without a reference | Blind test; `FAILURE_LOG.md`, entry 46 |
+| 4 | The processor's own settlement report could be wrong | Treats it as the source of truth to match against | Re-derives each payout without Razorpay's ids, checks the bank credit by UTR and amount, and audits every fee and tax | Live: a Rs 10 bank shortfall and a Rs 43.09 fee overcharge found |
+| 5 | Knowing how often automatic matches are wrong | Publishes auto-match rates, not wrong-match rates | Measures and publishes its wrong-clear rate, and every figure can be re-run | 0 wrong clears across 474 blind settlements, 1,050 edge batches and the limits test |
+| 6 | Setting up matching for a new source | Rules configured per data source | No rules to write: headers are mapped automatically, and a merchant can start from the Settlement Recon report they download, with no API keys | The sample payout reconciles in one click |
+| 7 | GST on fees, TDS and TCS, whose sections change by date | Configured by hand, if at all | Applies the law on each payment's date: Section 194-O until 31 March 2026, Section 393(1) from 1 April, GST on the fee, TCS under Section 52 | Live on the judges' brief |
+| 8 | T+2 working days across second Saturdays and festivals | A fixed date-tolerance window | Learns each merchant's payout cycle in calendar and in working days and uses whichever fits; ages open items in working days | Tested across Ganesh Chaturthi and a second Saturday |
+| 9 | Scanned or photographed bank statements | Manual keying or a separate OCR service | Reads them in the browser and accepts a line only if every running balance proves it | 23 of 24 noisy scans read exactly; 0 wrong readings accepted |
+| 10 | Using AI without letting it move money | AI suggestions accepted within a configured tolerance | A model may only propose; code checks each proposal against the pool, the paid-out ledger, the tolerance, the calendar and the evidence, and a test fails if a model ever decides a payout | 0 wrong proposals past the verifier |
+| 11 | Knowing how far to trust an automatic result | Matched or unmatched | Shows a confidence calibrated against measured outcomes ("right 98% of the time at this score") | Calibration error 0.0901 to 0.0262 |
+| 12 | Understanding why a payout did not clear | An exception code | A plain-language reason in rupees, the deciding question, and answers to questions grounded in the recorded result | 29 of 29 fact questions answered; 15 of 15 declined where the record cannot answer |
+| 13 | A customer whose name resembles a sanctioned party | Handled in a separate screening system, if at all | Screens inside reconciliation; an exact hit blocks, a near spelling is flagged for a person, and the payout still reconciles | `FAILURE_LOG.md`, entry 49 |
+| 14 | Keeping payment data in-house | Hosted subscription | Self-hostable: the engine runs on one machine, with the data on it, and its source is public | 2,000,000 records reconciled on one development machine |
+| 15 | Proving a result was not altered afterwards | An audit trail | A hash-chained audit trail with receipts anyone can verify against the chain | The judges' brief verifies a receipt live |
+
+Items 2, 4 and 5 describe capabilities we found no vendor claiming at all.
+The rest are things established tools either leave to configuration, leave to
+a separate product, or do not publish, and which AmongResolver provides for a
+Razorpay merchant from the first upload.
+
+---
+
+## 2. Against arithmetic alone
 
 A payout is a sum of payments, so the obvious method is to search for the set
 of payments that adds up to it. On its own that method cannot identify a
@@ -47,7 +80,7 @@ set to the paisa.
 
 ---
 
-## 2. Against traditional matching rules
+## 3. Against traditional matching rules
 
 The blind test (`engine/scripts/blind_test.py`, 237 settlements) scores two
 traditional methods on exactly the same data as the engine.
@@ -80,7 +113,7 @@ wrongly, everywhere else.
 
 ---
 
-## 3. Against an enterprise-style matcher
+## 4. Against an enterprise-style matcher
 
 `engine/scripts/enterprise_baseline.py` models how rule-based reconciliation
 tools are typically configured, and gives that model every advantage they are
@@ -120,7 +153,7 @@ resolve them safely.
 
 ---
 
-## 4. Against published vendor figures
+## 5. Against published vendor figures
 
 Vendor figures come from their own product pages and case studies, on their
 customers' data, which mostly carries references. They cannot be re-run. Ours
@@ -141,11 +174,12 @@ design, and can be re-run from the repository.
 
 ---
 
-## 5. What is new, and what is not
+## 6. What is new, and what is not
 
 Reconciliation is not a new problem; every tool above matches payouts to
-books. Three capabilities are, as far as the vendors' public material shows,
-new.
+books. Section 1 lists fifteen things AmongResolver does for a Razorpay
+merchant that rule-based engines do not. Three of them are capabilities no
+vendor we reviewed claims at all.
 
 1. **Proving that a match is the only possible one.** A rules engine reports a
    match when a rule passes; it does not check whether a different set of
@@ -172,7 +206,7 @@ confidence, and needing no matching rules to be configured.
 
 ---
 
-## 6. Against other submissions to this track
+## 7. Against other submissions to this track
 
 On 22 September 2026 we reviewed four other public submissions to Track 04.
 None showed a Razorpay integration tested against a live account or real data,
@@ -182,7 +216,7 @@ limits test. This review has not been repeated since that date.
 
 ---
 
-## 7. Where others lead
+## 8. Where others lead
 
 - **Production use.** The vendors run at scale for real customers; AmongResolver
   has no merchant in production.
@@ -195,7 +229,7 @@ limits test. This review has not been repeated since that date.
 
 ---
 
-## 8. Positioning
+## 9. Positioning
 
 AmongResolver is not a replacement for a financial close platform. It is a
 settlement layer for Indian payment gateways: it establishes which payments

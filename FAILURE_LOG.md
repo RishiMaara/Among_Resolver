@@ -16,8 +16,8 @@ The tests that found these failures, and the results after each fix, are in
 
 ## Index
 
-52 entries: 41 fixed, 5 mitigated,
-1 partly resolved, 1 by design, and 4 known limits that remain.
+52 entries: 41 fixed, 6 mitigated, 1 partly resolved, 1 by design, and 3
+known limits that remain.
 
 | # | Failure | Severity | Failed safe | How it was resolved | Status |
 |---|---|---|---|---|---|
@@ -30,7 +30,7 @@ The tests that found these failures, and the results after each fix, are in
 | 7 | Q&A grounding check traces by value, not meaning | Low | Yes | Ungrounded answers are withheld; the limitation is stated. | Known limit |
 | 8 | Fuzzy recovery bundles have low precision | Low | Yes | Their confidence is capped below the clearing gate by assertion. | By design |
 | 9 | N:M reconciliation is structurally different | Moderate | Yes | Joint solver shares the single-settlement guards; not yet validated on real N:M data. | Known limit |
-| 10 | The 0.85 clearing gate is validated on two corpora | Moderate | Conservative | 103 of 103 and 27 of 27 correct above the gate; a corpus of degraded references remains untested. | Known limit |
+| 10 | The 0.85 clearing gate was validated on two corpora | Moderate | Conservative | Since tested on stripped and damaged references: 8 of 8 and 266 of 266 clears correct; real merchant data remains untested. | Mitigated |
 | 11 | External model APIs are unreliable | Low | Yes | Provider fallback chain, timeouts, a per-request budget and deterministic fallbacks. | Mitigated |
 | 12 | An enterprise layer that nothing called | High, to credibility | Yes | Removed; separation of duties rebuilt on the audit trail. | Fixed |
 | 13 | A benchmark labelled AI that measured none | High, to credibility | Yes | Relabelled as the linkage benchmark it is; the result, 0% to 65%, stands. | Fixed |
@@ -263,6 +263,13 @@ Measured at-or-above 0.85:
 Both corpora carry usable references. A corpus with systematically
 degraded references has not been tested against the gate, and that is
 where it would be most likely to fail.
+
+Update (2026-09-24): the gate has since been tested where references are
+damaged or absent. On ReconRiver with every reference stripped, all 8
+settlements cleared were correct. On the blind test (474 settlements over two
+seeds, with families whose settlement ids are rewritten, partly missing or
+absent), every one of the 266 clears was correct and nothing cleared wrongly.
+Both corpora are synthetic; a real merchant's degraded feed remains untested.
 
 ---
 
