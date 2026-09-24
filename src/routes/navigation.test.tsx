@@ -36,7 +36,7 @@ const SCREENS: Record<string, { route: any; self: string }> = {
   History: { route: HistoryRoute, self: "/history" },
   Rulebook: { route: RulebookRoute, self: "/rulebook" },
   Escalations: { route: EscalationsRoute, self: "/escalations" },
-  "For judges": { route: JudgeRoute, self: "/judge" },
+  "Judges' brief": { route: JudgeRoute, self: "/judge" },
   Payouts: { route: PayoutsRoute, self: "/payouts" },
 };
 /* eslint-enable @typescript-eslint/no-explicit-any */

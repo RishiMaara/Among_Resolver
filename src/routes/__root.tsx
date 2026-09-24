@@ -146,7 +146,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 // Readable without signing in. The sign-in exists so that decisions carry a
 // name; the judge page records none, and a judge sent there from the README —
-// or by the "For judges" link on the sign-in screen itself — met the login
+// or by the "Judges' brief" link on the sign-in screen itself — met the login
 // form instead of the page.
 const PUBLIC_PATHS = new Set(["/judge"]);
 

@@ -86,12 +86,12 @@ export function Wordmark({ pill }: { pill?: string }) {
 
       {/* Every header carries the way to the one page written for someone
           evaluating the engine — live checks and measured figures. */}
-      {pill !== "For judges" && (
+      {pill !== "Judges' brief" && (
         <Link
           to="/judge"
           className="ml-1 rounded-full border border-border px-2 py-0.5 text-[11.5px] text-muted-foreground no-underline hover:text-foreground"
         >
-          For judges
+          Judges' brief
         </Link>
       )}
     </div>

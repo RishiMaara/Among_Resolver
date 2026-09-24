@@ -339,7 +339,7 @@ function Check({ c, trigger = 0 }: { c: (typeof CHECKS)[number]; trigger?: numbe
       });
     }
   };
-  // "Run the three" bumps `trigger`; a card runs once per bump.
+  // "Run all three demonstrations" bumps `trigger`; a card runs once per bump.
   const lastTrigger = useRef(0);
   useEffect(() => {
     if (trigger > lastTrigger.current) {
@@ -560,6 +560,9 @@ const LIMITS = [
   "Two corpora are real — public government checkbooks, with the answer recorded by their own systems; the rest are generated. No card or UPI processor publishes settlement data, so none of them is a payment gateway's.",
   "The investigator was measured with reference and memo text removed, because the benchmark's labels live there; reading real narrations is not measured.",
   "The learned settlement cycle is kept per merchant when an upload names one (merchant_id); unnamed uploads share the deployment's single cycle.",
+  "Where no payment names the payout, it does not clear on arithmetic alone: in the limits test every such payout went to a person, even where exactly one set adds up. A learned payout cycle is what lets it clear some; see the ReconRiver figure.",
+  "Where deductions are not declared, the rate-card estimate drifts with each payment's own rounding, and past 5 paise the payout is withheld (at 100, 200 and 1,600 payments in the limits test). Declaring the deductions from the settlement advice removes this.",
+  "The tolerance is 5 paise: a credit 5 paise short clears with the shortfall shown, and one 6 paise short is refused.",
 ];
 
 /** Whether a model answers on this server — said before anything runs. */
@@ -600,7 +603,7 @@ function Judge() {
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-[1120px] items-center justify-between gap-4 px-4 py-2.5 sm:px-6">
-          <Wordmark pill="For judges" />
+          <Wordmark pill="Judges' brief" />
           <div className="flex items-center gap-3.5">
             <Link
               to="/"
@@ -629,17 +632,22 @@ function Judge() {
 
       <main className="mx-auto max-w-[900px] px-4 py-10 sm:px-6">
         <p className="label-ui m-0 text-[10px] uppercase text-muted-foreground">
-          AmongResolver · settlement reconciliation
+          AmongResolver · prepared for the Razorpay AI Buildathon judges
         </p>
-        <h1 className="mt-2 text-[30px] font-semibold leading-tight">Judge this in five minutes</h1>
+        <h1 className="mt-2 text-[30px] font-semibold leading-tight">
+          The evidence, for your review
+        </h1>
         <p className="mt-3 max-w-[680px] text-[14px] leading-[1.65]">
-          It finds which payments make up each payout, proves the answer to the paisa, and refuses
-          to clear what it cannot prove — then says what a person should do next. On every corpus it
-          has been measured on it clears no wrong set, including a blind test written after it,
-          whose two wrong clears were fixed and logged.
+          AmongResolver works out which payments make up each Razorpay payout, proves the answer to
+          the paisa, and declines to clear what it cannot prove, telling a person exactly what to
+          check next. On every dataset it has been measured on it clears no wrong set, including a
+          blind test written after the engine; that test's first run found two wrong clears, and
+          both are fixed and logged.
         </p>
         <p className="mt-2 text-[12px] text-muted-foreground">
-          Live checks below call the engine at <span className="font-mono">{ENGINE_HOST}</span>.
+          Every demonstration below runs live against the deployed engine at{" "}
+          <span className="font-mono">{ENGINE_HOST}</span>, and every figure links to the file that
+          produced it, so each claim can be checked rather than taken on trust.
         </p>
         <AiLine />
 
@@ -657,11 +665,12 @@ function Judge() {
             </li>
           </ul>
           <p className="m-0 mt-2 text-[12px] text-muted-foreground">
-            That is what this adds. The first three runs below show it, in that order.
+            This is what AmongResolver adds; the first three demonstrations below show each point,
+            in order.
           </p>
         </div>
 
-        <Section title="Run it">
+        <Section title="Live demonstrations">
           <div className="mb-3 flex flex-wrap items-center gap-3">
             <button
               type="button"
@@ -669,10 +678,11 @@ function Judge() {
               className="flex items-center gap-1.5 rounded-md bg-foreground px-3.5 py-2 text-[13px] font-medium text-background hover:opacity-90"
             >
               <Play className="size-3.5" />
-              Run the three
+              Run all three demonstrations
             </button>
             <span className="text-[12px] text-muted-foreground">
-              Clear and refuse a payout, Razorpay checked five ways, a scanned statement — at once.
+              A payout cleared and one declined, Razorpay's report verified five ways, and a scanned
+              statement read in your browser, run together.
             </span>
           </div>
           {/* The upload pages already exist; this page only runs fixed samples,
@@ -693,7 +703,8 @@ function Judge() {
               Upload a Razorpay recon report
             </Link>
             <span className="text-[12px] text-muted-foreground">
-              A gateway report, bank statement or ledger; sign in with the demo account shown there.
+              Your own gateway report, bank statement or ledger. The upload page offers a demo
+              account you can use in one click.
             </span>
           </div>
           <div className="grid gap-3">
@@ -703,7 +714,7 @@ function Judge() {
           </div>
           <details className="mt-3">
             <summary className="cursor-pointer text-[13px] text-muted-foreground hover:text-foreground">
-              More live checks — a text statement, tax by date, working days, open items
+              Further demonstrations — a text statement, tax by date, working days, open items
             </summary>
             <div className="mt-3 grid gap-3">
               {CHECKS.slice(PITCH_RUNS).map((c) => (
@@ -713,7 +724,7 @@ function Judge() {
           </details>
         </Section>
 
-        <Section title="Measured — with the file behind every figure">
+        <Section title="Measured results, each linked to the file that produced it">
           <div className="overflow-hidden rounded-[12px] border border-border">
             {MEASURED.map((m) => (
               <div
@@ -778,7 +789,7 @@ function Judge() {
           </p>
         </Section>
 
-        <Section title="What it does not do yet">
+        <Section title="Known limits, stated plainly">
           <ul className="m-0 list-disc space-y-1.5 pl-5 text-[13px] leading-[1.55]">
             {LIMITS.map((l) => (
               <li key={l}>{l}</li>
@@ -786,7 +797,7 @@ function Judge() {
           </ul>
         </Section>
 
-        <Section title="Read further">
+        <Section title="Further reading">
           <div className="flex flex-wrap gap-2 text-[12.5px]">
             {[
               ["README", `${REPO}/README.md`],

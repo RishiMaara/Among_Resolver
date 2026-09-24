@@ -22,6 +22,8 @@ export interface Measured {
     digits?: number;
     /** Divide by this path's value in thousands: a total becomes "per 1,000". */
     perThousandOf?: string;
+    /** Print with thousands separators: 200000 reads as 200,000. */
+    grouped?: boolean;
   };
 }
 
@@ -143,6 +145,18 @@ export const MEASURED: Measured[] = [
     source: { file: "qa_eval.json", path: "fact.right_and_shown", digits: 0 },
   },
   {
+    label: "Largest payout proved exactly, in payments (limits test)",
+    after: "200,000",
+    note: "every payment naming the settlement, among 5,000 others, in 16.75 s. Pushed from 1,000 to 200,000 payments with no wrong clear and no crash.",
+    source: { file: "limits.json", path: "largest_payout_proved", digits: 0, grouped: true },
+  },
+  {
+    label: "Largest file reconciled exactly, in records (limits test)",
+    after: "2,000,000",
+    note: "a 55-payment payout found with precision and recall 1.0, in 165.5 s on one machine. The hosted demo takes up to 4.5 MB a run, about 60,000 rows: a hosting limit, not the engine's.",
+    source: { file: "limits.json", path: "largest_file_reconciled", digits: 0, grouped: true },
+  },
+  {
     label: "One settlement inside 200,000 records",
     after: "55",
     note: "members found exactly — precision and recall 1.0, no exceptions.",
@@ -164,6 +178,11 @@ export const MEASURED: Measured[] = [
 /** A figure as the page prints it, from a raw value and the source's format. */
 export function format(value: number, source: Measured["source"]): string {
   const v = value * (source.scale ?? 1);
-  const s = v.toFixed(source.digits ?? 0);
+  const s = source.grouped
+    ? v.toLocaleString("en-US", {
+        minimumFractionDigits: source.digits ?? 0,
+        maximumFractionDigits: source.digits ?? 0,
+      })
+    : v.toFixed(source.digits ?? 0);
   return source.scale === 100 || source.path.endsWith("_pct") ? `${s}%` : s;
 }

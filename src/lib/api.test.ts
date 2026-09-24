@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { engineErrorMessage } from "@/lib/api";
+import { engineErrorMessage, errorBody } from "@/lib/api";
 
 describe("engineErrorMessage", () => {
   it("never returns [object Object] for a structured rejection", () => {
@@ -89,5 +89,20 @@ describe("FastAPI's own validation errors", () => {
   it("falls back rather than printing a field name nobody recognises", () => {
     const body = { detail: [{ loc: [], msg: "Field required" }] };
     expect(engineErrorMessage(body, "fallback")).toBe("fallback");
+  });
+});
+
+describe("what the hosted engine can carry", () => {
+  it("reads a non-JSON 413 as a size message, not a parse error", async () => {
+    const res = new Response("Request Entity Too Large", { status: 413 });
+    const body = (await errorBody(res)) as { detail: string };
+    expect(body.detail).toMatch(/larger than the hosted demo accepts/);
+  });
+
+  it("passes a JSON error body through unchanged", async () => {
+    const res = new Response(JSON.stringify({ detail: { plain: "no amount column" } }), {
+      status: 422,
+    });
+    expect(await errorBody(res)).toEqual({ detail: { plain: "no amount column" } });
   });
 });

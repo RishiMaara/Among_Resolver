@@ -970,3 +970,20 @@ exactly, so a set-aside member withholds. The form takes FX rates, a foreign
 payment left out for want of one is named with the fix, and a declared rate
 more than 3% from the ECB reference for the day is named too (advisory,
 offline-safe, never on the money path).
+
+## 52. A file over the hosted limit failed with a parse error
+
+Severity: Low (a confusing message, nothing wrong reconciled)
+Fails safe: Yes
+
+Found by the limits test (scripts/limits_test.py, docs/benchmarks/limits.json),
+which pushed each dimension until the engine stopped: 200,000 payments in one
+payout and 2,000,000 records in one file both reconciled exactly, with no
+wrong clear and no crash anywhere. The hosted engine sits behind Vercel's
+4.5 MB request limit: 60,000 rows (3.75 MB) cleared in 13 s, and 80,000 rows
+(5.01 MB) were refused by Vercel with a plain-text 413 before the engine saw
+them. The upload page read that reply as JSON and showed the parse error.
+
+Mitigation: the page checks the files' size before sending and says what the
+limit is and why; a non-JSON error reply is read as a sentence, and a 413 as
+the size limit (lib/api.ts, tested).

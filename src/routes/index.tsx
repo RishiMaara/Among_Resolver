@@ -18,7 +18,7 @@ import { FlowNarrative } from "@/components/flow-narrative";
 import type { AuditEntry } from "@/lib/agent-flow";
 import { HistoryLink } from "@/components/history-link";
 import { PayoutsLink } from "@/components/payouts-link";
-import { engineFetch, engineErrorMessage } from "@/lib/api";
+import { engineFetch, engineErrorMessage, errorBody, uploadTooLarge } from "@/lib/api";
 import { exportQueueCsv, type QueueRow } from "@/lib/queue-export";
 import { Wordmark } from "@/components/wordmark";
 
@@ -424,6 +424,14 @@ function Index() {
       toast.error(`Fill in ${list} before running.`);
       return;
     }
+    // The hosted engine sits behind a 4.5 MB request limit that answers with
+    // a bare 413; say so here, where the files are, instead.
+    const tooLarge = uploadTooLarge([gatewayFile, bankFile, erpFile]);
+    if (tooLarge) {
+      setFormError(tooLarge);
+      toast.error("These files are larger than the hosted demo accepts.");
+      return;
+    }
 
     clearTimers();
     setResults(null);
@@ -536,8 +544,7 @@ function Index() {
       });
 
       if (!response.ok) {
-        const err = await response.json();
-        throw new Error(engineErrorMessage(err, "Reconciliation failed."));
+        throw new Error(engineErrorMessage(await errorBody(response), "Reconciliation failed."));
       }
 
       const data = await response.json();

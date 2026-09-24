@@ -220,7 +220,7 @@ describe("the judge page", () => {
       }),
     );
     render(<Judge />);
-    await userEvent.click(screen.getByRole("button", { name: /run the three/i }));
+    await userEvent.click(screen.getByRole("button", { name: /run all three demonstrations/i }));
     await waitFor(() => expect(hits).toContain("statements/parse"));
     await waitFor(() => expect(hits).toContain("razorpay/reconcile/upload"));
     // The payout card reconciles twice: declared, then undeclared.

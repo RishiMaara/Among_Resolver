@@ -10,8 +10,8 @@ written after it, whose two wrong clears were fixed and logged (FAILURE_LOG 46).
 
 Built for the Razorpay AI Buildathon, Track 04 — AI Finance Controller.
 **[Live demo](https://among-resolver.vercel.app/)** ·
-**[Judge it in five minutes](https://among-resolver.vercel.app/judge)** — live
-checks against the engine, and every figure below with the file it came from.
+**[Judges' brief](https://among-resolver.vercel.app/judge)** — live
+demonstrations against the engine, and every figure below with the file it came from.
 
 It never writes to a ledger. It proposes; a person approves.
 
@@ -131,7 +131,7 @@ Part by part — every module, its check, and the measurement behind it:
 | Confidence calibration, ReconRiver, out-of-sample (`calibration_out_of_sample.py`) | ECE 0.0901 raw, **0.026** calibrated (`fit_calibration.py`) · 42 of 42 correct above the gate, 74 predictions |
 | **Real payments** — Baton Rouge and Fulton County public checkbooks, 100 payments, each against its whole day's payment run (`public_ledger_benchmark.py`) | payee known: **100 of 100** exact, 99 auto-cleared · amounts only: 2 of 100, the rest withheld · **0** wrong clears in 200 runs |
 | Scanned bank statements, 24 noisy scans (`ocr_eval.py`) | 11 read exactly right by OCR in the browser, **23** with Gemini on the rest, **0** wrong readings accepted |
-| Tests | **806** backend · **143** frontend |
+| Tests | **806** backend · **147** frontend |
 
 Every figure in that table except the two calibration rows is re-measured by
 `python scripts/generate_benchmarks.py`, which writes

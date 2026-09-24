@@ -2,7 +2,7 @@
  * The demo gate: every screen asks for a name, except one that records none.
  *
  * The judge page was behind it too, so the README's link to it — and the
- * "For judges" link on the sign-in screen itself — led to a login form.
+ * "Judges' brief" link on the sign-in screen itself — led to a login form.
  */
 
 import { describe, it, expect, beforeEach, vi } from "vitest";

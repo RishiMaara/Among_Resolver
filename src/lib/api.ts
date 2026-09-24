@@ -21,6 +21,41 @@ export const ENGINE_URL = RAW.replace(/\/+$/, "");
 export const ENGINE_HOST = ENGINE_URL.replace(/^https?:\/\//, "");
 
 /**
+ * What one request to the hosted engine can carry. Vercel refuses a larger
+ * body with 413 before the engine sees it (measured: 3.75 MB, 60,000 rows,
+ * cleared in 13 s; 5.01 MB refused). A local engine takes MAX_UPLOAD_MB.
+ */
+export const HOSTED_UPLOAD_LIMIT_BYTES = 4.5 * 1000 * 1000;
+export const ENGINE_IS_LOCAL = /^(localhost|127\.0\.0\.1)(:|$)/.test(ENGINE_HOST);
+
+/** A size problem to show before sending, or null when the files fit. */
+export function uploadTooLarge(files: (File | null | undefined)[]): string | null {
+  if (ENGINE_IS_LOCAL) return null;
+  const total = files.reduce((n, f) => n + (f?.size ?? 0), 0);
+  if (total <= HOSTED_UPLOAD_LIMIT_BYTES) return null;
+  const mb = (total / 1_000_000).toFixed(1);
+  return (
+    `These files come to ${mb} MB; the hosted demo accepts up to 4.5 MB in one run ` +
+    `(about 60,000 rows), a limit of the hosting, not the engine. Split the export, ` +
+    `or run the engine locally, where it has reconciled 1,000,000 records in one file.`
+  );
+}
+
+/** The engine's error body, or a stand-in when the reply was not JSON. */
+export async function errorBody(res: Response): Promise<unknown> {
+  try {
+    return await res.json();
+  } catch {
+    return {
+      detail:
+        res.status === 413
+          ? "The upload is larger than the hosted demo accepts (4.5 MB). Split the export, or run the engine locally."
+          : `The engine replied ${res.status} without an explanation.`,
+    };
+  }
+}
+
+/**
  * The API key, if this deployment uses one.
  *
  * Adding auth to the engine without teaching the frontend to send a key made
