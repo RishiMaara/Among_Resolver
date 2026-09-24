@@ -1,11 +1,78 @@
-# FAILURE_LOG
+# Failure Log
 
-Known weaknesses, measured edge cases, and failure modes.
-No marketing language. Only engineering truth.
+This log records every known weakness, measured edge case and defect found in
+AmongResolver: what failed, how seriously, whether the engine failed safely,
+and what was done about it. Resolved entries are kept rather than deleted, so
+the history of the engine's failures stays visible alongside its results.
 
-Every entry states what fails, how severely, whether the engine fails safe
-or fails dangerous, and what mitigates it. An entry that reads like a sales
-pitch has been written wrong.
+Each entry below states the failure, its severity, whether the engine failed
+safe (declined or withheld) or failed dangerously (cleared or reported
+something wrong), and the mitigation, with the command to reproduce the
+measurement where one exists. Entries are written plainly; an entry that
+reads like a claim of success has been written wrong.
+
+The tests that found these failures, and the results after each fix, are in
+`docs/FINAL_TEST_REPORT.md`.
+
+## Index
+
+52 entries: 41 fixed, 5 mitigated,
+1 partly resolved, 1 by design, and 4 known limits that remain.
+
+| # | Failure | Severity | Failed safe | How it was resolved | Status |
+|---|---|---|---|---|---|
+| 1 | Subset-sum alone cannot identify a settlement | Fatal, by design | Yes | Linkage narrows the pool to payments with evidence before the solver runs. | Design constraint, mitigated |
+| 2 | Linkage weights are hand-set, not learned | Moderate | Yes | Weights swept and shown within 3 points of the best; a learned Fellegi-Sunter model added alongside. | Mitigated |
+| 3 | Accuracy depends on reference quality | High | Yes | Measured and stated: 94.59% with references, 21.62% without; a learned payout cycle later raised the stripped case to 56.76%. | Known limit |
+| 4 | Calibration is in-sample | Moderate | Partly | Validated out of sample; calibrated confidence (error 0.0262) shown beside the raw score, which alone gates clearing. | Mitigated |
+| 5 | Fees assume one rate card per batch | High on mixed-method days | Yes | Declared deductions preferred; every fee audited after the match against a method-aware card. | Mitigated |
+| 6 | Sanctions screening is exact-match only | Moderate | Yes | Near spellings and low-quality aliases now flagged for a person (entry 49); transliteration and date of birth remain gaps. | Partly resolved |
+| 7 | Q&A grounding check traces by value, not meaning | Low | Yes | Ungrounded answers are withheld; the limitation is stated. | Known limit |
+| 8 | Fuzzy recovery bundles have low precision | Low | Yes | Their confidence is capped below the clearing gate by assertion. | By design |
+| 9 | N:M reconciliation is structurally different | Moderate | Yes | Joint solver shares the single-settlement guards; not yet validated on real N:M data. | Known limit |
+| 10 | The 0.85 clearing gate is validated on two corpora | Moderate | Conservative | 103 of 103 and 27 of 27 correct above the gate; a corpus of degraded references remains untested. | Known limit |
+| 11 | External model APIs are unreliable | Low | Yes | Provider fallback chain, timeouts, a per-request budget and deterministic fallbacks. | Mitigated |
+| 12 | An enterprise layer that nothing called | High, to credibility | Yes | Removed; separation of duties rebuilt on the audit trail. | Fixed |
+| 13 | A benchmark labelled AI that measured none | High, to credibility | Yes | Relabelled as the linkage benchmark it is; the result, 0% to 65%, stands. | Fixed |
+| 14 | A tax rate two years out of date | Medium | No | Default corrected and pinned by a test; rate and threshold configurable. | Fixed |
+| 15 | A chargeback marked taken that never took part | High | No | Reversals carry their filing time; only those inside the settlement window join the pool. | Fixed |
+| 16 | Razorpay's tax counted twice | Medium | Yes | The deduction is read as fees, with tax inside the fee; a test pins the reference figures. | Fixed |
+| 17 | A fee sum over the wrong set | High | No | Removed; fees are audited only on the matched payments. | Fixed |
+| 18 | A fee audit nobody could see | Medium, to credibility | Yes | Every result returns the fee audit, tested on the upload endpoint. | Fixed |
+| 19 | A learning model that learned nothing | Low | Yes | It fits only when anchors or a learned cycle identify members, and declines otherwise. | Fixed |
+| 20 | A tiebreak that overruled the evidence | Medium | Yes | The tiebreak defers to the learned cohort; exact sets rose from 15 to 21. | Fixed |
+| 21 | Machine-learned weights that counted words | Medium, to credibility | Yes | Removed; the learned model is linkage_em. | Fixed |
+| 22 | Refunds audited as sales | Low | Yes | Refunds and negative rows are skipped by the fee audit. | Fixed |
+| 23 | A trail-clearing helper cleared the wrong tier | Low, tests only | Yes | It now clears the SQLite rows and the chain head. | Fixed |
+| 24 | The narration reader in the wrong order | Low | Yes | Model first, rules where the model finds nothing, as the evaluation showed. | Fixed |
+| 25 | A verifier stricter than the engine it checks | Medium | Yes | The verifier applies the engine's own tolerance. | Fixed |
+| 26 | The model read the benchmark's labels | High, to credibility | Yes | Evaluation cases alias every id and remove label-bearing text. | Fixed |
+| 27 | An arithmetic tie passed as a finding | High | No | A match must carry more evidence than every rival set, or it is escalated. | Fixed |
+| 28 | A calibration map that returned coin flips | Medium | Yes | Ties pooled, blocks smoothed, monotonicity restored. | Fixed |
+| 29 | Overconfidence called underconfidence | Low | Yes | Wording and figures corrected. | Fixed |
+| 30 | The investigator saw part of the engine's proposal | High, to credibility | Partly | Every proposed record is shown with its feed. | Fixed |
+| 31 | The tiebreak ignored the declared member feed | Medium | Yes | The tiebreak searches the declared feed only. | Fixed |
+| 32 | A payment and its own ledger entry filed as a duplicate | Low | Yes | A pair across two feeds is filed as booked, not duplicated. | Fixed |
+| 33 | The test suite could spend a real model key | Medium | Yes | A fixture blanks model keys in every test. | Fixed |
+| 34 | The bank upload refused bank statements | Medium | Yes | Statement formats and scans are accepted. | Fixed |
+| 35 | A debit/credit column broke the statement parser | Low | Yes | A marker after the amount is allowed; the sign still comes from the running balance. | Fixed |
+| 36 | A payee code glued to an invoice number lost its anchor | Medium | Yes | The raw reference is kept, and ids anchor on whole delimited pieces. | Fixed |
+| 37 | The investigator's rules proposed sets bound to lose | Medium | Yes | Cases list evidence-built alternatives; the rules match only a set the evidence singles out. | Fixed |
+| 38 | A payment id shared by two feeds joined the matched set | Medium | Partly | Results carry feed-qualified keys, read everywhere. | Fixed |
+| 39 | A timed-out uniqueness check reported as proof | Low | Mostly | A timeout is recorded as such and lowers the arithmetic confidence to 0.90. | Fixed |
+| 40 | A batch cleared while a third of its payments were already paid out | Medium | No | Any payment already paid out withholds the clear. | Fixed |
+| 41 | Edge findings from the architecture review | Low | Yes | Shared ledger store, read order, thread pool for solves, demo endpoint off in production, and others as listed. | Fixed |
+| 42 | A test kept passing after the code it guarded had moved | Low | Yes | The test reads every API module and asserts it found a handler. | Fixed |
+| 43 | The paid-out ledger stopped answering callers that asked by bare id | Medium | Partly | The ledger answers for a payment by key or by bare id. | Fixed |
+| 44 | The verifier compared a match only with the sets it was shown | Medium | No | A pool-wide search for a rival set runs before a match passes. | Fixed |
+| 45 | One SQLite connection shared across the thread pool | High, self-hosted | No | One connection per thread. | Fixed |
+| 46 | Two wrong clears in a blind test written after the engine | Critical | No | A payment with no reference cannot complete a referenced set; the set is proposed and the payment named. | Fixed |
+| 47 | A reconcile run posted the journal before approval | High where an ERP is set | No, where set | A run only proposes the journal; posting follows a named approval. | Fixed |
+| 48 | Four smaller faults from the blind test and the site walk-through | Medium to low | Yes | Exact re-exports read once, zero amounts excluded, duplicates compared within one feed, the payout's own credit explained. | Fixed |
+| 49 | Common customer names blocked whole payouts | High | Yes | Near spellings and low-quality aliases flag for a person; exact hits still block; the page describes the code. | Fixed |
+| 50 | The payout cycle was learned in calendar days | Medium | Yes | Both calendar and working days are learned; the sharper is used per merchant. | Fixed |
+| 51 | What the engine noticed never reached the page | Medium | Yes | Notes shown; unreadable rows set aside and named; exchange rates can be entered. | Fixed |
+| 52 | A file over the hosted limit failed with a parse error | Low | Yes | Size checked before sending; the hosting limit explained. | Fixed |
 
 ---
 
@@ -126,6 +193,11 @@ using exact match after normalisation. It does not handle:
 
 These gaps are stated to any reviewer in the rulebook's
 threshold_applied field.
+
+Update (2026-09-24): near spellings (85% similar) and names the UN list rates
+only as low-quality aliases are now screened, and flagged for a person as a
+potential match rather than blocked (entry 49). Transliteration variants and
+date-of-birth disambiguation remain gaps.
 
 ---
 
@@ -898,11 +970,13 @@ returns a journal awaiting approval.
 Severity: Medium to Low
 Fails safe: Yes (refusals and mislabels, no wrong clear)
 
-- An export that repeats a row exactly (same id, amount, time, reference,
-  status), as overlapping date-range exports do, made every such settlement
-  ambiguous between the two copies: 12 of 12 refused. Exact repeats are now
-  read once, with a note; a repeated id with any field different is still
-  kept twice, and still refused.
+- An export that repeats a row exactly, as overlapping date-range exports
+  do, made every such settlement ambiguous between the two copies: 12 of 12
+  refused. A row identical in every column of the file to an earlier one is
+  now read once, with a note. The first version compared only the mapped
+  fields, and merged ten genuinely different bank rows whose distinguishing
+  UTR column was not mapped; the 50-case live suite caught it before release,
+  and the comparison now uses the file's own rows.
 - A blank amount cell reads as 0, and a zero-amount record naming the
   settlement ties with or without it: three one-answer settlements were
   called ambiguous. Zero amounts are now excluded from the pool with the

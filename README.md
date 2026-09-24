@@ -61,6 +61,24 @@ decides; each use has a deterministic fallback and a measurement:
 
 ---
 
+## Documentation
+
+| Document | What it contains |
+|---|---|
+| [Test report](docs/FINAL_TEST_REPORT.md) | Every test campaign, its result, and the command and file behind it |
+| [Comparisons](docs/COMPARISONS.md) | Against arithmetic alone, traditional rules, an enterprise-style matcher, published vendor figures and other submissions |
+| [Failure log](FAILURE_LOG.md) | Every failure found, how serious it was, and how it was resolved |
+| [Architecture](docs/ARCHITECTURE.md) | The layers, the money path and the measured results |
+| [Capabilities](docs/CAPABILITIES.md) | Each module and what measured it |
+| [AI evaluation](docs/AI_EVALUATION.md) | Where models are used and how each answer is checked |
+| [Linkage](docs/LINKAGE.md) | How payments are tied to a payout before the arithmetic |
+| [Why not just an LLM](docs/WHY_NOT_AN_LLM.md) | Why a model does not decide which payments make a payout |
+| [Industry comparison](docs/INDUSTRY_COMPARISON.md) | A feature-by-feature view against established tools |
+| [Roadmap](docs/ROADMAP.md) | Known edges and what would come next |
+| [Pitch script](docs/FINAL_PITCH_SCRIPT.md) | The five-minute presentation and likely questions |
+
+---
+
 ## The finding this engine is built around
 
 Subset-sum cannot **identify** a settlement, and no better solver fixes that.
@@ -109,8 +127,9 @@ card, and when it has to estimate, it says so in the report.
 one costs review time. The engine is built to pay the second to avoid the
 first — 0 false clears everywhere it has been measured.
 
-More on how this compares with established tools, and what it does not yet
-do that they do: **[Industry Comparison](docs/INDUSTRY_COMPARISON.md)**.
+How this compares with arithmetic alone, traditional rules, an
+enterprise-style matcher run on the same data, and published vendor figures:
+**[Comparisons](docs/COMPARISONS.md)**.
 
 Part by part — every module, its check, and the measurement behind it:
 **[Capabilities](docs/CAPABILITIES.md)**.
@@ -258,7 +277,7 @@ engine/        Python engine
   tests/                     806 tests
   benchmarks/                measurement snapshots
   data/                      Sanctions lists, test ledgers
-docs/                      ARCHITECTURE.md · FINAL_PITCH_SCRIPT.md · FINAL_TEST_REPORT.md · INDUSTRY_COMPARISON.md
+docs/                      FINAL_TEST_REPORT.md · COMPARISONS.md · ARCHITECTURE.md · and others above
 sample-data/               a settlement you can drop into the form
 ```
 

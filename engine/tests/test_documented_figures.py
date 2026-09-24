@@ -37,7 +37,7 @@ DOCUMENTED = [
     (ROOT / "README.md", r"\*\*(\d+)\*\* backend"),
     (ROOT / "README.md", r"tests/\s+(\d+) tests"),
     (ROOT / "docs" / "ARCHITECTURE.md", r"pytest tests/ -q\s+# (\d+) tests"),
-    (ROOT / "docs" / "FINAL_TEST_REPORT.md", r"covered by (\d+) rigorous backend tests"),
+    (ROOT / "docs" / "FINAL_TEST_REPORT.md", r"The backend suite has (\d+) tests"),
 ]
 
 
