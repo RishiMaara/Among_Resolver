@@ -869,6 +869,11 @@ should-clear still clears), because a member that lost its settlement id
 there still shares its batch reference. test_blind_findings.py pins both
 directions.
 
+The test is engine/scripts/blind_test.py; its final results, on the
+original seed and a fresh one, are docs/benchmarks/blind_test_*.json, and
+scripts/enterprise_baseline.py runs two enterprise-style matchers on the
+same cases (enterprise_comparison.json).
+
 ## 47. A reconcile run tried to post the journal before anyone approved it
 
 Severity: High on a deployment with ERP_JOURNAL_URL set; Medium on the demo

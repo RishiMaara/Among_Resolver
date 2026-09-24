@@ -1,0 +1,970 @@
+{
+ "20260923": {
+  "totals": {
+   "E-rules": {
+    "CLEAR_OK": 133,
+    "FALSE_CLEAR": 0,
+    "REFUSED": 104,
+    "REJECTED": 0
+   },
+   "E-auto": {
+    "CLEAR_OK": 145,
+    "FALSE_CLEAR": 12,
+    "REFUSED": 80,
+    "REJECTED": 0
+   },
+   "AmongResolver": {
+    "CLEAR_OK": 133,
+    "FALSE_CLEAR": 0,
+    "REFUSED": 104,
+    "REJECTED": 0
+   }
+  },
+  "families": {
+   "01 named_clean": {
+    "E-rules": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    }
+   },
+   "02 named_with_decoys": {
+    "E-rules": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    }
+   },
+   "03 named_mangled_separators": {
+    "E-rules": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    }
+   },
+   "04 unnamed_small_pool": {
+    "E-rules": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    }
+   },
+   "05 unnamed_fixed_price_catalogue": {
+    "E-rules": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 12,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    }
+   },
+   "06 twin_interchangeable": {
+    "E-rules": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    }
+   },
+   "07 short_paid": {
+    "E-rules": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    }
+   },
+   "08 over_paid": {
+    "E-rules": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    }
+   },
+   "09 missing_member": {
+    "E-rules": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    }
+   },
+   "10 missing_member_same_amount_decoy": {
+    "E-rules": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    }
+   },
+   "11 refunds_netted": {
+    "E-rules": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    }
+   },
+   "12 non_captured_rows_named": {
+    "E-rules": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    }
+   },
+   "13 duplicate_export_row": {
+    "E-rules": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    }
+   },
+   "14a double_claim_first": {
+    "E-rules": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    }
+   },
+   "14b double_claim_second": {
+    "E-rules": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    }
+   },
+   "15a fx_rate_declared": {
+    "E-rules": {
+     "CLEAR_OK": 4,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 4,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 4,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    }
+   },
+   "15b fx_no_rate": {
+    "E-rules": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 4,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 4,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 4,
+     "REJECTED": 0
+    }
+   },
+   "15c fx_wrong_rate": {
+    "E-rules": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 4,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 4,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 4,
+     "REJECTED": 0
+    }
+   },
+   "16 ist_timestamps_near_midnight": {
+    "E-rules": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    }
+   },
+   "17 named_member_with_same_amount_stranger": {
+    "E-rules": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    }
+   },
+   "18 unreadable_amount_row": {
+    "E-rules": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    }
+   },
+   "19 fees_estimated_from_rate_card": {
+    "E-rules": {
+     "CLEAR_OK": 6,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 6,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 6,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    }
+   },
+   "20 scale": {
+    "E-rules": {
+     "CLEAR_OK": 3,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 3,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 3,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    }
+   }
+  }
+ },
+ "777001": {
+  "totals": {
+   "E-rules": {
+    "CLEAR_OK": 133,
+    "FALSE_CLEAR": 0,
+    "REFUSED": 104,
+    "REJECTED": 0
+   },
+   "E-auto": {
+    "CLEAR_OK": 145,
+    "FALSE_CLEAR": 12,
+    "REFUSED": 80,
+    "REJECTED": 0
+   },
+   "AmongResolver": {
+    "CLEAR_OK": 133,
+    "FALSE_CLEAR": 0,
+    "REFUSED": 104,
+    "REJECTED": 0
+   }
+  },
+  "families": {
+   "01 named_clean": {
+    "E-rules": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    }
+   },
+   "02 named_with_decoys": {
+    "E-rules": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    }
+   },
+   "03 named_mangled_separators": {
+    "E-rules": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    }
+   },
+   "04 unnamed_small_pool": {
+    "E-rules": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    }
+   },
+   "05 unnamed_fixed_price_catalogue": {
+    "E-rules": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 12,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    }
+   },
+   "06 twin_interchangeable": {
+    "E-rules": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    }
+   },
+   "07 short_paid": {
+    "E-rules": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    }
+   },
+   "08 over_paid": {
+    "E-rules": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    }
+   },
+   "09 missing_member": {
+    "E-rules": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    }
+   },
+   "10 missing_member_same_amount_decoy": {
+    "E-rules": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    }
+   },
+   "11 refunds_netted": {
+    "E-rules": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    }
+   },
+   "12 non_captured_rows_named": {
+    "E-rules": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    }
+   },
+   "13 duplicate_export_row": {
+    "E-rules": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    }
+   },
+   "14a double_claim_first": {
+    "E-rules": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    }
+   },
+   "14b double_claim_second": {
+    "E-rules": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 12,
+     "REJECTED": 0
+    }
+   },
+   "15a fx_rate_declared": {
+    "E-rules": {
+     "CLEAR_OK": 4,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 4,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 4,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    }
+   },
+   "15b fx_no_rate": {
+    "E-rules": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 4,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 4,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 4,
+     "REJECTED": 0
+    }
+   },
+   "15c fx_wrong_rate": {
+    "E-rules": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 4,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 4,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 0,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 4,
+     "REJECTED": 0
+    }
+   },
+   "16 ist_timestamps_near_midnight": {
+    "E-rules": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    }
+   },
+   "17 named_member_with_same_amount_stranger": {
+    "E-rules": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    }
+   },
+   "18 unreadable_amount_row": {
+    "E-rules": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 12,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    }
+   },
+   "19 fees_estimated_from_rate_card": {
+    "E-rules": {
+     "CLEAR_OK": 6,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 6,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 6,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    }
+   },
+   "20 scale": {
+    "E-rules": {
+     "CLEAR_OK": 3,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "E-auto": {
+     "CLEAR_OK": 3,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    },
+    "AmongResolver": {
+     "CLEAR_OK": 3,
+     "FALSE_CLEAR": 0,
+     "REFUSED": 0,
+     "REJECTED": 0
+    }
+   }
+  }
+ }
+}

@@ -39,6 +39,24 @@ export const MEASURED: Measured[] = [
     },
   },
   {
+    label: "Blind test written after the engine: right sets cleared (of 237, fresh seed)",
+    after: "133",
+    note: "0 wrong clears, and the same on the original seed. The other 104 were refused: 92 must not clear, and 12 are unreferenced sets it will not clear on arithmetic alone. Its first run found two wrong clears, since fixed (FAILURE_LOG 46).",
+    source: { file: "blind_test_777001.json", path: "totals.engine.CLEAR_OK", digits: 0 },
+  },
+  {
+    label: "Wrong clears on that blind test: FIFO-style matcher → this engine (of 237)",
+    before: "12",
+    after: "0",
+    note: "a rules matcher set up the way enterprise tools usually are, with oldest-first sum matching where no reference exists; a model of that approach, not any vendor's code.",
+    source: {
+      file: "enterprise_comparison.json",
+      beforePath: "777001.totals.E-auto.FALSE_CLEAR",
+      path: "777001.totals.AmongResolver.FALSE_CLEAR",
+      digits: 0,
+    },
+  },
+  {
     label: "Learned linkage, references stripped (ReconRiver, third-party)",
     before: "24.32%",
     after: "56.76%",
