@@ -71,6 +71,33 @@ from settlement_list import (  # noqa: E402,F401 - re-exported; file_agent is th
 )
 
 
+def _set_aside_unreadable(filename: str, unreadable: list[str], readable: int,
+                          mapping: dict, warnings_out: list[str] | None) -> None:
+    """
+    Rows whose amount cannot be read are set aside and named, never read as a
+    number. One garbled cell used to refuse the whole export, which a blind
+    test showed cost 9 of 237 settlements that rule-based tools reconcile by
+    skipping the row. The rest still clears only if it ties exactly, so a
+    set-aside row that belongs to the settlement withholds it rather than
+    being guessed. More than a tenth unreadable is a broken column or format,
+    and the file is refused, naming the first rows.
+    """
+    if not unreadable:
+        return
+    if readable == 0 or len(unreadable) > max(1, (readable + len(unreadable)) // 10):
+        raise FileRejected(
+            filename, unreadable[:5],
+            list(mapping.keys()) if isinstance(mapping, dict) else [], {},
+            "Fix the amounts in those rows, or remove them. This engine will "
+            "not guess a settlement amount.",
+        )
+    if warnings_out is not None:
+        warnings_out.extend(
+            f"{r} — set aside, not read as any amount. If that payment belongs to "
+            f"this settlement the total will not tie, and nothing clears."
+            for r in unreadable)
+
+
 def parse_csv(content: str, filename_hint: str = "CSV input",
               warnings_out: list[str] | None = None) -> list[dict[str, Any]]:
     """Parse CSV content and map to target schema."""
@@ -110,6 +137,7 @@ def parse_csv(content: str, filename_hint: str = "CSV input",
     id_source = next((c for c, t in mapping.items() if t == "txn_id"), None)         or next((c for c, t in mapping.items() if t == "ref_id"), None)
 
     results = []
+    unreadable: list[str] = []
     for _row_no, row in enumerate(raw_rows, start=1):
         mapped_row: dict[str, Any] = {
             "txn_id": "",
@@ -121,6 +149,7 @@ def parse_csv(content: str, filename_hint: str = "CSV input",
             "status": "",
         }
         
+        set_aside = False
         for raw_col, target_col in mapping.items():
             val = row.get(raw_col, "")
             raw_str = str(val).strip()
@@ -134,20 +163,15 @@ def parse_csv(content: str, filename_hint: str = "CSV input",
             if not raw_str:
                 continue
             if target_col == "amount":
-                # An amount this parser cannot read must stop the file, not
-                # crash the request and not quietly become a number. The row
-                # is named so the operator can go and look at it.
+                # An amount this parser cannot read never becomes a number and
+                # never crashes the request: the row is set aside and named
+                # (_set_aside_unreadable), or the file refused if many are.
                 try:
                     mapped_row[target_col] = _clean_amount(val)
                 except AmountUnreadable as exc:
-                    raise FileRejected(
-                        filename_hint,
-                        [f"row {_row_no}, column {raw_col!r}: {exc}"],
-                        list(mapping.keys()) if isinstance(mapping, dict) else [],
-                        {},
-                        "Fix the amount in that row, or remove it. This engine "
-                        "will not guess a settlement amount.",
-                    ) from exc
+                    unreadable.append(f"row {_row_no}, column {raw_col!r}: {exc}")
+                    set_aside = True
+                    break
             elif target_col in MULTI_VALUED_TARGETS:
                 # Reference columns accumulate instead of overwriting. Linkage
                 # tokenises this field, so carrying both the order id and the
@@ -159,6 +183,8 @@ def parse_csv(content: str, filename_hint: str = "CSV input",
             else:
                 mapped_row[target_col] = raw_str
                 
+        if set_aside:
+            continue
         # If no txn_id but there is a ref_id, mirror it (or vice-versa) to prevent blanks
         if not mapped_row["txn_id"] and mapped_row["ref_id"]:
             mapped_row["txn_id"] = mapped_row["ref_id"]
@@ -178,6 +204,7 @@ def parse_csv(content: str, filename_hint: str = "CSV input",
 
         results.append(mapped_row)
 
+    _set_aside_unreadable(filename_hint, unreadable, len(results), mapping, warnings_out)
     _validate_rows(filename_hint, results, headers, mapping)
     return results
 
@@ -207,6 +234,7 @@ def parse_json(content: str, filename_hint: str = "JSON input",
     _validate_schema(filename_hint, headers, report)
 
     results = []
+    unreadable: list[str] = []
     for item in data:
         if not isinstance(item, dict):
             continue
@@ -221,6 +249,7 @@ def parse_json(content: str, filename_hint: str = "JSON input",
             "status": "",
         }
         
+        set_aside = False
         for raw_col, target_col in mapping.items():
             val = item.get(raw_col, "")
             raw_str = str(val).strip()
@@ -229,20 +258,15 @@ def parse_json(content: str, filename_hint: str = "JSON input",
             if not raw_str:
                 continue
             if target_col == "amount":
-                # An amount this parser cannot read must stop the file, not
-                # crash the request and not quietly become a number. The row
-                # is named so the operator can go and look at it.
+                # An amount this parser cannot read never becomes a number and
+                # never crashes the request: the row is set aside and named
+                # (_set_aside_unreadable), or the file refused if many are.
                 try:
                     mapped_row[target_col] = _clean_amount(val)
                 except AmountUnreadable as exc:
-                    raise FileRejected(
-                        filename_hint,
-                        [f"row {_row_no}, column {raw_col!r}: {exc}"],
-                        list(mapping.keys()) if isinstance(mapping, dict) else [],
-                        {},
-                        "Fix the amount in that row, or remove it. This engine "
-                        "will not guess a settlement amount.",
-                    ) from exc
+                    unreadable.append(f"row {_row_no}, column {raw_col!r}: {exc}")
+                    set_aside = True
+                    break
             elif target_col in MULTI_VALUED_TARGETS:
                 # Reference columns accumulate instead of overwriting. Linkage
                 # tokenises this field, so carrying both the order id and the
@@ -254,6 +278,8 @@ def parse_json(content: str, filename_hint: str = "JSON input",
             else:
                 mapped_row[target_col] = raw_str
                 
+        if set_aside:
+            continue
         if not mapped_row["txn_id"] and mapped_row["ref_id"]:
             mapped_row["txn_id"] = mapped_row["ref_id"]
         elif not mapped_row["ref_id"] and mapped_row["txn_id"]:
@@ -261,6 +287,7 @@ def parse_json(content: str, filename_hint: str = "JSON input",
             
         results.append(mapped_row)
 
+    _set_aside_unreadable(filename_hint, unreadable, len(results), mapping, warnings_out)
     _validate_rows(filename_hint, results, headers, mapping)
     return results
 

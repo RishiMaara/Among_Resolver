@@ -99,6 +99,30 @@ def extract(root: ET.Element) -> set[str]:
     return names
 
 
+def low_quality_only(root: ET.Element) -> set[str]:
+    """
+    Multi-token names that appear on the list ONLY as aliases the UN itself
+    rates "Low" quality, never as a primary name or a better alias. They stay
+    screened, but a hit flags a potential match for a person rather than
+    blocking: "MUHAMMAD YUNUS" is one, and it is also a common name.
+    """
+    seen: dict[str, set[str]] = {}
+    for record in root.iter():
+        if record.tag.upper() not in ("INDIVIDUAL", "ENTITY"):
+            continue
+        parts = [(record.findtext(p) or "").strip() for p in NAME_PARTS]
+        full = normalize(" ".join(p for p in parts if p))
+        if full:
+            seen.setdefault(full, set()).add("Primary")
+        for child in record:
+            if not child.tag.upper().endswith(ALIAS_TAG_SUFFIX):
+                continue
+            alias = normalize(child.findtext(ALIAS_NAME_TAG) or "")
+            if alias and len(alias.split()) >= 2:
+                seen.setdefault(alias, set()).add((child.findtext("QUALITY") or "").strip())
+    return {n for n, q in seen.items() if q == {"Low"}}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--url", default=UN_CONSOLIDATED_XML)
@@ -134,8 +158,15 @@ def main() -> int:
         f.write(f"# entries: {len(names)}\n")
         f.write("# Normalised: uppercase, punctuation folded to spaces. Primary\n")
         f.write("# names and multi-token aliases. Exact match after normalisation\n")
-        f.write("# only -- no fuzzy matching, transliteration or DOB disambiguation.\n")
+        f.write("# only -- no transliteration or DOB disambiguation.\n")
         for n in sorted(names):
+            f.write(n + "\n")
+    weak = out.with_name(out.stem + "_low_quality.txt")
+    with weak.open("w", encoding="utf-8") as f:
+        f.write("# UN Consolidated List: names present ONLY as low-quality aliases\n")
+        f.write(f"# generated: {generated}\n")
+        f.write("# Still screened; a hit flags a potential match for a person, not a block.\n")
+        for n in sorted(low_quality_only(root) & names):
             f.write(n + "\n")
 
     print(f"Wrote {len(names)} identifiers to {out} (list generated {generated}).")

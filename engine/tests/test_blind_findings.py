@@ -142,3 +142,32 @@ def test_rows_that_differ_only_in_an_unmapped_column_are_not_merged():
     assert j["summary"]["cleared"], j["plain_summary"]
     assert j["summary"]["matched_count"] == 10
     assert not any("read once" in n for n in j["ingestion_notes"])
+
+
+def _rows(prefix, n, amount="100.00"):
+    return "".join(f"{prefix}{i},{prefix}7701-{i},{amount},INR,2026-09-16T08:{i:02d}:00Z,captured\n"
+                   for i in range(n))
+
+
+def test_an_unreadable_amount_is_set_aside_and_named_not_the_whole_file():
+    body = ("txn_id,ref_id,amount,currency,timestamp,status\n" + _rows("UA", 5)
+            + "UAbad,OTHER-REF-1,abc,INR,2026-09-16T09:00:00Z,captured\n")
+    j = _upload(body, "UA7701", "500.00")
+    assert j["summary"]["cleared"], j["plain_summary"]
+    assert any("row 6" in n and "set aside" in n for n in j["ingestion_notes"])
+
+
+def test_a_set_aside_member_withholds_rather_than_being_guessed():
+    body = ("txn_id,ref_id,amount,currency,timestamp,status\n" + _rows("UB", 5)
+            + "UBbad,UB-SET-9,1O0.00,INR,2026-09-16T09:00:00Z,captured\n")
+    j = _upload(body, "UB7701", "600.00")      # the unreadable row is a member
+    assert not j["summary"]["cleared"]
+
+
+def test_many_unreadable_amounts_still_refuse_the_file():
+    body = ("txn_id,ref_id,amount,currency,timestamp,status\n" + _rows("UC", 5)
+            + "".join(f"UCbad{i},UC7701-x{i},n/a,INR,2026-09-16T09:0{i}:00Z,captured\n" for i in range(3)))
+    r = TestClient(main.app).post("/reconcile/upload", data={
+        "batch_id": "UC7701", "net_amount": "500.00", "settled_at": "2026-09-17T11:30:00Z",
+        "declared_deductions": "0"}, files={"gateway_file": ("g.csv", body.encode())})
+    assert r.status_code == 422

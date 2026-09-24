@@ -70,9 +70,10 @@ MAX_CYCLE_DEPTH = 4
 
 # ── Sanctions screening list ──
 # Loaded from SANCTIONS_LIST_PATH (one identifier per line); without it a tiny
-# illustrative set is used and the engine says so loudly. Screening is exact
-# after normalisation: no fuzzy names, aliases, transliteration or DOB, as the
-# rulebook states.
+# illustrative set is used and the engine says so loudly. An exact hit on a
+# listed name blocks; a near spelling, or a name the UN itself rates only a
+# low-quality alias, flags a potential match for a person (rulebook:
+# SANCTIONS_POTENTIAL_MATCH). No transliteration or DOB disambiguation.
 
 # Stored already folded, in the same form normalize_party produces. A constant
 # written in a different shape from the list it stands in for is a trap: the
@@ -250,11 +251,33 @@ def sanctions_provenance() -> dict:
         "entry_count": len(SANCTIONS_LIST),
         "list_generated": SANCTIONS_LIST_META.get("generated"),
         "retrieved": SANCTIONS_LIST_META.get("retrieved"),
-        "match_mode": "exact after normalisation; no fuzzy, transliteration or DOB matching",
+        "match_mode": ("exact after normalisation blocks; a near spelling (85% similar) or a "
+                       "low-quality alias flags for a person; no transliteration or DOB matching"),
+        "low_quality_aliases": len(SANCTIONS_LOW_QUALITY),
     }
 
 
 SANCTIONS_LIST = _load_sanctions_list()
+
+
+def _load_low_quality_aliases() -> set[str]:
+    """
+    Names the list carries ONLY as aliases the UN rates "Low" quality, from
+    the file fetch_sanctions_list.py writes beside the list. Still screened;
+    a hit flags rather than blocks. None when the list is the illustrative one.
+    """
+    if SANCTIONS_LIST_SOURCE == "illustrative-builtin":
+        return set()
+    path = pathlib.Path(SANCTIONS_LIST_SOURCE)
+    companion = path.with_name(path.stem + "_low_quality.txt")
+    try:
+        lines = companion.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return set()
+    return {normalize_party(ln) for ln in lines if ln.strip() and not ln.startswith("#")} & SANCTIONS_LIST
+
+
+SANCTIONS_LOW_QUALITY = _load_low_quality_aliases()
 
 SANCTIONS_PREFIX_INDEX = defaultdict(list)
 for s in SANCTIONS_LIST:
@@ -416,11 +439,24 @@ def check_sanctions(transactions: List[NormalizedTxn]):
                     hits.append(f"{p} (fuzzy match for {s})")
                     break
 
-        if hits:
+        # Only an exact hit on a name the list gives with confidence blocks.
+        # A near spelling, or a name the UN rates only a low-quality alias, is
+        # a potential match: common names ("MOHAMMAD ALI" is 85% like a listed
+        # "MOHAMMAD WALI") blocked whole payouts on a name alone. It is held
+        # for a person with the DOB or ID to decide, never closed by the engine.
+        exact = [h for h in hits if " (fuzzy match for " not in h and h not in SANCTIONS_LOW_QUALITY]
+        if exact:
             _log(
                 t, "SANCTIONS_HIT",
-                f"Counterparty {', '.join(hits)} matches the screened sanctions list",
+                f"Counterparty {', '.join(exact)} matches the screened sanctions list",
                 "HIGH", "BLOCKED",
+            )
+        elif hits:
+            _log(
+                t, "SANCTIONS_POTENTIAL_MATCH",
+                f"Counterparty {', '.join(h if ' (fuzzy' in h else h + ' (a low-quality alias on the list)' for h in hits)} "
+                f"resembles the screened sanctions list; a person must confirm or rule out the match",
+                "HIGH", "FLAGGED",
             )
 
 def check_keywords(transactions: List[NormalizedTxn]):

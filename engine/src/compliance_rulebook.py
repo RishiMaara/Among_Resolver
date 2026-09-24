@@ -69,9 +69,11 @@ def scope_note() -> str:
             f"It screens the UN Consolidated List"
             f"{f' ({n:,} identifiers' if n else ''}"
             f"{f', generated {generated}' if generated else ''}"
-            f"{')' if n else ''}. Matching is exact after normalisation — no "
-            f"fuzzy matching, transliteration variants or date-of-birth "
-            f"disambiguation — so a misspelt name will pass. "
+            f"{')' if n else ''}. An exact match after normalisation blocks; a "
+            f"near spelling, or a name the list itself rates only a low-quality "
+            f"alias, is flagged for a person to confirm. There is no "
+            f"transliteration or date-of-birth disambiguation, so a "
+            f"transliterated name can pass. "
         )
     return _SCOPE_HEAD + listing + _SCOPE_TAIL
 
@@ -129,11 +131,13 @@ COMPLIANCE_RULES: Dict[str, ComplianceRule] = {
         ),
         threshold_applied=(
             "Exact match of payer or payee identifier against the screened list, "
-            "after normalisation. LIMITATION: matching is exact only — no fuzzy "
-            "matching, transliteration variants or date-of-birth disambiguation "
-            "— so a misspelt or transliterated name will pass. The list itself "
-            "and the date it was retrieved are reported by /health; run "
-            "scripts/fetch_sanctions_list.py to refresh it."
+            "after normalisation, on a primary name or an alias the list does not "
+            "rate low quality. A near (fuzzy, 85% similar) spelling or a low-quality "
+            "alias is flagged instead, under SANCTIONS_POTENTIAL_MATCH. LIMITATION: "
+            "no transliteration variants or date-of-birth disambiguation, so a "
+            "transliterated name can pass. The list itself and the date it was "
+            "retrieved are reported by /health; run scripts/fetch_sanctions_list.py "
+            "to refresh it."
         ),
         why=(
             "Dealing with a designated person or entity is prohibited outright. "
@@ -145,6 +149,47 @@ COMPLIANCE_RULES: Dict[str, ComplianceRule] = {
             "confirm the match against the live official lists, screen for "
             "false positives on common names, and file the required report if "
             "the match is confirmed."
+        ),
+    ),
+
+    "SANCTIONS_POTENTIAL_MATCH": ComplianceRule(
+        rule_id="SANCTIONS_POTENTIAL_MATCH",
+        title="Possible sanctioned-party match",
+        severity="HIGH",
+        action="FLAGGED",
+        basis=ComplianceBasis.STATUTORY,
+        authority="UN Security Council; Government of India (UAPA s.51A); US Treasury OFAC",
+        source_name="UN Security Council Consolidated List",
+        citation=(
+            "UNSC Consolidated List; Unlawful Activities (Prevention) Act 1967 "
+            "s.51A (India); RBI Master Direction – KYC (sanctions screening); "
+            "31 CFR Ch. V (OFAC, US)"
+        ),
+        reference_url=UN_CONSOLIDATED,
+        rule_text=(
+            "Funds and financial assets of designated individuals and entities "
+            "must be frozen without delay, and no funds may be made available to "
+            "them. Regulated entities must screen customers and counterparties "
+            "against the applicable designation lists on an ongoing basis."
+        ),
+        threshold_applied=(
+            "A payer or payee name 85% or more similar to a listed name after "
+            "normalisation, or exactly a name the UN list carries only as a "
+            "low-quality alias. Not a confirmed match: common names meet it, so "
+            "the payment is held for a person rather than blocked on the name."
+        ),
+        why=(
+            "A name alone does not identify a person. Blocking on near spellings "
+            "and low-quality aliases held whole payouts for common customer names "
+            "such as MOHAMMAD ALI and MUHAMMAD YUNUS. The obligation is to confirm "
+            "a match and then freeze and report; a person with the date of birth "
+            "or ID can confirm it, and the engine never closes it on its own."
+        ),
+        remediation=(
+            "Compare the counterparty's date of birth, nationality or ID with the "
+            "listing. If it is the listed party, treat it as SANCTIONS_HIT: do not "
+            "release the funds and file the required report. If not, record why "
+            "it was ruled out."
         ),
     ),
 

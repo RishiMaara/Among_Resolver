@@ -20,6 +20,7 @@ from dataclasses import replace
 from datetime import datetime, timezone
 
 import razorpay_source as rz
+import linkage_em
 import settlement_cycle
 from fee_audit import run_fee_audit
 from fee_decomposition import FeeRateCard
@@ -43,13 +44,14 @@ def _blind(txn: NormalizedTxn, item: dict) -> NormalizedTxn:
                                                          "ref_raw")})
 
 
-def _lags(settlement: dict, items: list[dict]) -> list[int]:
-    """Capture-to-payout lag in days for one settlement's payments."""
+def _lags(settlement: dict, items: list[dict], unit: str = "calendar") -> list[int]:
+    """Capture-to-payout lag, in calendar or working days, for one settlement's payments."""
     paid = datetime.fromtimestamp(int(settlement.get("created_at") or 0), tz=timezone.utc).date()
     out = []
     for i in rz.members_of(str(settlement.get("id") or ""), items):
         if i.get("type") == "payment" and i.get("created_at"):
-            out.append((paid - datetime.fromtimestamp(int(i["created_at"]), tz=timezone.utc).date()).days)
+            out.append(linkage_em.lag_days(
+                datetime.fromtimestamp(int(i["created_at"]), tz=timezone.utc).date(), paid, unit))
     return out
 
 
@@ -66,7 +68,8 @@ def blind_check(settlement: dict, items: list[dict], window_days: int = 7,
     batch = rz.settlement_to_batch(settlement)
     batch = replace(batch, batch_id=f"{batch.batch_id}:blind")
     other_lags = [d for o in (others or []) for d in _lags(o, items)]
-    cycle = settlement_cycle.profile_from(other_lags, len(others or []))
+    working_lags = [d for o in (others or []) for d in _lags(o, items, "working")]
+    cycle = settlement_cycle.profile_from(other_lags, len(others or []), working_lags)
     try:
         with settlement_cycle.using(cycle):
             report = reconcile_settlement(batch, pool, settlement_window_days=window_days,

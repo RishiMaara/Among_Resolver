@@ -508,6 +508,11 @@ def _learned_posteriors(batch: SettlementBatch, pool: list[NormalizedTxn],
         return {}, None, set()
 
     settled_day = batch.settled_at_utc.date()
+    import settlement_cycle  # pylint: disable=import-outside-toplevel
+    member_feed = (batch.member_source.value if batch.member_source else "gateway")
+    cycle = settlement_cycle.profile(member_feed, batch.currency,
+                                     merchant=getattr(batch, "merchant", ""))
+    unit = (cycle or {}).get("unit", "calendar")
 
     def vector(t: NormalizedTxn) -> dict[str, str]:
         s = signals[txn_key(t)]
@@ -517,7 +522,7 @@ def _learned_posteriors(batch: SettlementBatch, pool: list[NormalizedTxn],
             "ref_names_batch": "yes" if s.ref_prefix_cluster else "no",
             "amount_peer": "yes" if s.cross_source_amount_peer else "no",
             "currency": "yes" if t.currency == batch.currency else "no",
-            "lag": linkage_em.lag_level((settled_day - t.timestamp_utc.date()).days),
+            "lag": linkage_em.lag_level(linkage_em.lag_days(t.timestamp_utc.date(), settled_day, unit)),
         }
 
     vectors = {txn_key(t): vector(t) for t in scope}
@@ -526,10 +531,6 @@ def _learned_posteriors(batch: SettlementBatch, pool: list[NormalizedTxn],
     typical = amounts[len(amounts) // 2] if amounts else 0
     expected = (abs(target) / typical) if typical else None
 
-    import settlement_cycle  # pylint: disable=import-outside-toplevel
-    member_feed = (batch.member_source.value if batch.member_source else "gateway")
-    cycle = settlement_cycle.profile(member_feed, batch.currency,
-                                     merchant=getattr(batch, "merchant", ""))
     model = linkage_em.fit(list(vectors.values()), expected_members=expected,
                            lag_m=cycle["m"] if cycle else None)
     if model is None:
@@ -539,7 +540,7 @@ def _learned_posteriors(batch: SettlementBatch, pool: list[NormalizedTxn],
     summary = model.summary()
     if cycle:
         summary["cycle_learned_from"] = {"settlements": cycle["settlements"],
-                                         "members": cycle["members"]}
+                                         "members": cycle["members"], "unit": unit}
     summary["cohort_size"] = len(cohort)
     return posteriors, summary, cohort
 

@@ -2,7 +2,8 @@
 The processor's settlement cycle, learned from settlements that cleared.
 
 Where references are gone, timing is the evidence left: members of a payout
-were captured a fixed number of days before it (Razorpay T+2 working days).
+were captured a fixed number of days before it (Razorpay: T+2 working days);
+lags are learned in calendar and in working days, and the sharper is used.
 Each verified clear adds to a lag histogram, which linkage_em.py uses as the
 m-probability for lag. Only clears teach it, and a profile needs
 MIN_SETTLEMENTS clears before use; it also learns within a queue run. Kept
@@ -14,6 +15,7 @@ SETTLEMENT_CYCLE_STORE=memory keeps it in-process (benchmarks).
 from __future__ import annotations
 
 import json
+import math
 import logging
 import os
 import sqlite3
@@ -26,7 +28,7 @@ from contextlib import contextmanager
 
 import audit
 import stores
-from linkage_em import LAG_LEVELS, lag_level
+from linkage_em import LAG_LEVELS, lag_level, payout_lag
 
 logger = logging.getLogger(__name__)
 
@@ -148,6 +150,7 @@ def record_clear(batch_id: str, member_source: str, currency: str,
         return
     key = _key(member_source, currency, merchant)
     lags = Counter(lag_level((settled_at.date() - t.date()).days) for t in member_times)
+    working = Counter(lag_level(payout_lag(t.date(), settled_at.date())) for t in member_times)
     with _lock:
         body = _load(key)
         seen = body.get("batches") or []
@@ -155,7 +158,10 @@ def record_clear(batch_id: str, member_source: str, currency: str,
             return          # re-running a batch is checking it, not new evidence
         counts = Counter(body.get("counts") or {})
         counts.update(lags)
-        body = {"counts": dict(counts), "settlements": int(body.get("settlements", 0)) + 1,
+        counts_working = Counter(body.get("counts_working") or {})
+        counts_working.update(working)
+        body = {"counts": dict(counts), "counts_working": dict(counts_working),
+                "settlements": int(body.get("settlements", 0)) + 1,
                 "members": int(body.get("members", 0)) + len(member_times),
                 "batches": (seen + [batch_id])[-500:]}
         _save(key, body)
@@ -177,14 +183,44 @@ def using(profile_body: dict | None):
         _OVERRIDE.reset(token)
 
 
-def profile_from(lags: list[int], settlements: int) -> dict | None:
+def _smoothed(counts: dict) -> dict[str, float]:
+    total = sum(counts.values()) + 0.5 * len(LAG_LEVELS)
+    return {lv: (counts.get(lv, 0) + 0.5) / total for lv in LAG_LEVELS}
+
+
+def _entropy(m: dict[str, float]) -> float:
+    return -sum(p * math.log(p) for p in m.values() if p > 0)
+
+
+def _sharper(calendar: dict, working: dict | None) -> tuple[dict[str, float], str]:
+    """
+    The lag histogram in whichever unit this processor actually keeps.
+
+    Razorpay pays T+2 WORKING days, so in calendar days one cycle reads as 2 to
+    5 around every weekend and holiday; a processor paying on calendar days is
+    sharp in calendar days and smeared in working ones. Hard-coding working
+    days took the third-party ReconRiver benchmark from 56.76% to 43.24%
+    exact, because its generator pays on calendar days. So both are learned,
+    and working days are used only where clearly sharper (lower entropy);
+    otherwise calendar days, the unit used before.
+    """
+    m_cal = _smoothed(calendar)
+    if not working:
+        return m_cal, "calendar"
+    m_work = _smoothed(working)
+    if _entropy(m_work) < _entropy(m_cal) - 0.05:
+        return m_work, "working"
+    return m_cal, "calendar"
+
+
+def profile_from(lags: list[int], settlements: int,
+                 working_lags: list[int] | None = None) -> dict | None:
     """A profile built from raw lags, as profile() would build it."""
     if settlements < MIN_SETTLEMENTS or not lags:
         return None
-    counts = Counter(lag_level(d) for d in lags)
-    total = sum(counts.values()) + 0.5 * len(LAG_LEVELS)
-    return {"m": {lv: (counts.get(lv, 0) + 0.5) / total for lv in LAG_LEVELS},
-            "settlements": settlements, "members": len(lags)}
+    m, unit = _sharper(Counter(lag_level(d) for d in lags),
+                       Counter(lag_level(d) for d in working_lags) if working_lags else None)
+    return {"m": m, "unit": unit, "settlements": settlements, "members": len(lags)}
 
 
 def profile(member_source: str, currency: str, merchant: str = "") -> dict | None:
@@ -201,10 +237,10 @@ def profile(member_source: str, currency: str, merchant: str = "") -> dict | Non
     body = _load(_key(member_source, currency, merchant))
     if int(body.get("settlements", 0)) < MIN_SETTLEMENTS:
         return None
-    counts = body.get("counts") or {}
-    total = sum(counts.values()) + 0.5 * len(LAG_LEVELS)
+    m, unit = _sharper(body.get("counts") or {}, body.get("counts_working"))
     return {
-        "m": {lv: (counts.get(lv, 0) + 0.5) / total for lv in LAG_LEVELS},
+        "m": m,
+        "unit": unit,
         "settlements": int(body["settlements"]),
         "members": int(body.get("members", 0)),
     }

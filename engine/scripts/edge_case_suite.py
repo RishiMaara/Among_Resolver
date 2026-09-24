@@ -233,8 +233,9 @@ def build_cases() -> list[Case]:
 
     a(Case("unreadable amount", "a value that is not a number",
            to_csv([row("bad0", "EC19", "NOT_A_NUMBER")] + sales(5, "EC19")),
-           "5000.00", expect="rejected",
-           note="must be a plain rejection naming the row, never a crash"))
+           "4850.00", "150.00", expect="cleared",
+           note="the row is set aside and named, never read as a number or a crash; "
+                "the five readable payments tie on their own"))
 
     a(Case("JSON instead of CSV", "the other input format",
            json.dumps([{"txn_id": uid(f"j{i}"), "ref_id": "EC20", "amount": 1000.00,

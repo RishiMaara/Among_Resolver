@@ -505,3 +505,18 @@ describe("saying which answers came from a model", () => {
     expect(screen.getByText(/skipped — this visitor's model budget/)).toBeInTheDocument();
   });
 });
+
+describe("what the engine noticed in the files", () => {
+  it("shows every ingestion note, so a set-aside row or an assumed column is visible", () => {
+    const note =
+      "g.csv: row 6, column 'amount': 'abc' is not a plain amount — set aside, not read as any amount.";
+    render(<ResultsPanel results={base({ ingestion_notes: [note] })} />);
+    expect(screen.getByText("What we noticed in your files")).toBeInTheDocument();
+    expect(screen.getByText(note)).toBeInTheDocument();
+  });
+
+  it("shows nothing when there is nothing to report", () => {
+    render(<ResultsPanel results={base()} />);
+    expect(screen.queryByText("What we noticed in your files")).not.toBeInTheDocument();
+  });
+});

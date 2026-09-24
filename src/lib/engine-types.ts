@@ -208,6 +208,9 @@ export interface ReconcileResult {
     calibrated_confidence?: number | null;
   };
   plain_summary?: string;
+  // What the engine noticed reading the files: a column it chose between two,
+  // a zone or currency it assumed, a row it set aside. Each is a thing to check.
+  ingestion_notes?: string[];
   reasoning?: string;
   matched_txn_ids?: string[];
   matched_transactions?: import("@/components/matched-payments").MatchedTxn[];

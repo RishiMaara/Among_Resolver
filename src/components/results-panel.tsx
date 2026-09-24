@@ -702,6 +702,20 @@ export function ResultsPanel({ results }: { results: ReconcileResult }) {
         <p className="text-sm text-muted-foreground -mt-2">{headline}</p>
       )}
 
+      {/* The engine wrote these for the reviewer and the page used to drop
+          them: a column chosen over another, a zone assumed, an unreadable
+          row set aside. Any of them can change what the result means. */}
+      {(results.ingestion_notes?.length ?? 0) > 0 && (
+        <div className="surface-card p-4">
+          <p className="text-xs font-medium mb-2">What we noticed in your files</p>
+          <ul className="m-0 list-disc space-y-1 pl-4 text-xs text-muted-foreground">
+            {(results.ingestion_notes ?? []).map((note, i) => (
+              <li key={i}>{note}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="surface-card p-5">
           <p className="text-xs text-muted-foreground mb-1">Pool Coverage</p>

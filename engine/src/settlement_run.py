@@ -22,6 +22,7 @@ from datetime import datetime, timedelta
 import audit
 import chargeback_engine
 import history
+import fx_reference
 import investigation_agent
 import llm_provider
 import model_budget
@@ -202,6 +203,10 @@ def finish_upload_run(
                            detail=f"Run requested by {who}.")
         formatted["reviewer"] = who
 
+    # Foreign payments: which were left out for want of a rate, and a declared
+    # rate far from the ECB reference. Advisory; the rate that converts is the
+    # declared one (fx.py).
+    notes.extend(fx_reference.notes_for(batch, candidates))
     _note_earlier_runs(batch.batch_id, notes)
     if notes:
         formatted["ingestion_notes"] = notes

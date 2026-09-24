@@ -18,8 +18,12 @@ from __future__ import annotations
 from collections.abc import Mapping
 
 import math
+from datetime import date
+from functools import lru_cache
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
+
+import india_calendar
 
 LAG_LEVELS = ("0", "1", "2", "3", "4-7", "other")
 FEATURES: dict[str, tuple[str, ...]] = {
@@ -41,6 +45,26 @@ SMOOTHING = 0.5          # Laplace pseudo-count per level
 MAX_ITERATIONS = 200
 TOLERANCE = 1e-7
 LIKELY_MEMBER = 0.5      # posterior at which a candidate joins the learned tier
+
+
+@lru_cache(maxsize=4096)
+def payout_lag(captured: date, paid: date) -> int:
+    """
+    Working days from capture to payout, the unit processors settle in
+    (Razorpay: T+2 working days, second and fourth Saturdays, Sundays and bank
+    holidays skipped). Counted in calendar days, one T+2 cycle read as 2 to 5
+    days depending on the weekend or festival in between, which smeared the
+    learned cycle exactly where it had to be sharp. A payout dated before the
+    capture stays negative, which lag_level() reads as "other".
+    """
+    if paid < captured:
+        return (paid - captured).days
+    return india_calendar.working_days_between(captured, paid)
+
+
+def lag_days(captured: date, paid: date, unit: str = "calendar") -> int:
+    """Capture-to-payout lag in the unit a merchant's learned cycle chose."""
+    return payout_lag(captured, paid) if unit == "working" else (paid - captured).days
 
 
 def lag_level(days: int) -> str:

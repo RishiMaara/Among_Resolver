@@ -909,3 +909,59 @@ Fails safe: Yes (refusals and mislabels, no wrong clear)
   unexplained" beside the clear that explained it. When cleared, the credit
   named by the batch id, or the only one of exactly the net amount, is
   counted as explained and a note says which.
+
+## 49. Common customer names blocked whole payouts, and the page said there was no fuzzy matching
+
+Severity: High (a legitimate payout held on a name alone)
+Fails safe: Yes (nothing cleared wrongly; payouts were withheld)
+
+Checked while weighing a proposal to let a model downgrade sanctions hits
+(rejected: a model must not clear a sanctions finding). Screening forty
+common names against the real UN list blocked nine, among them ABDUL RAHMAN,
+ABDUL KARIM and MUHAMMAD YUNUS on exact aliases and MOHAMMAD ALI through an
+85%-similarity match to MOHAMMAD WALI. The rulebook, the page and /health all
+said matching was exact with no fuzzy matching; the code blocked on fuzzy
+hits. A blocked payment leaves the pool, so one customer's name withheld the
+whole payout.
+
+Mitigation: an exact hit on a primary name or an alias the UN does not rate
+"Low" still blocks (SANCTIONS_HIT). A near spelling, or a name the list
+carries only as a low-quality alias (427 of them, now written beside the list
+by fetch_sanctions_list.py), is SANCTIONS_POTENTIAL_MATCH: flagged, HIGH,
+statutory, never closed by the engine, and the payout still reconciles. The
+rulebook, scope note and /health now describe what the code does. What stays
+blocked is still a name match: ABDUL RAHMAN is a good-quality alias. There is
+no date-of-birth or transliteration disambiguation.
+
+## 50. The payout cycle was learned in calendar days
+
+Severity: Medium (weaker timing evidence exactly around weekends and holidays)
+Fails safe: Yes
+
+Razorpay pays T+2 working days, so a Friday capture before a second Saturday,
+a Sunday and a holiday is paid five calendar days later, and the learned
+histogram smeared one cycle over lags 2 to 5. Switching to working days
+outright took the third-party ReconRiver benchmark from 56.76% to 43.24%
+exact, because its generator pays on calendar days. Both units are now
+learned per merchant and the sharper (lower entropy) is used; ReconRiver
+stays at 56.76% with 0 wrong clears, and a T+2-working-day merchant is
+learned in working days (test_settlement_cycle_units).
+
+## 51. What the engine noticed never reached the page
+
+Severity: Medium
+Fails safe: Yes
+
+The website dropped ingestion_notes, so "chose column X over Y — verify",
+"read as INR", "assumed UTC" never reached the person reconciling. One
+unreadable amount also refused the whole file, which the blind comparison
+showed cost 9 of 237 settlements that rule-based tools reconcile by skipping
+the row, and the upload form had no way to enter a declared FX rate.
+
+Mitigation: the result shows the notes under "What we noticed in your
+files". Up to a tenth of rows with an unreadable amount are set aside and
+named rather than refusing the file; the rest clears only if it ties
+exactly, so a set-aside member withholds. The form takes FX rates, a foreign
+payment left out for want of one is named with the fix, and a declared rate
+more than 3% from the ECB reference for the day is named too (advisory,
+offline-safe, never on the money path).

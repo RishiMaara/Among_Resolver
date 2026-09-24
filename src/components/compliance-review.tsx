@@ -347,10 +347,10 @@ export function ComplianceReview({
       </div>
 
       <p className="m-0 mt-4 text-[11px] leading-[1.5] text-muted-foreground">
-        This is automated screening to support a human review. It does not file CTRs or STRs, and it
-        screens sanctions names by exact match after normalisation, so a misspelt or transliterated
-        name will pass — these are advisory inputs to a reviewer, not compliance decisions in their
-        own right.
+        This is automated screening to support a human review. It does not file CTRs or STRs. An
+        exact sanctions-name match blocks; a near spelling or a low-quality alias is flagged for a
+        person to confirm, and a transliterated name can still pass — these are advisory inputs to a
+        reviewer, not compliance decisions in their own right.
       </p>
     </div>
   );

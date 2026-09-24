@@ -212,6 +212,9 @@ function Index() {
   // Exact deductions from the settlement advice, when known. Supplying them
   // makes the gross target a fact rather than a rate-card estimate.
   const [declaredDeductions, setDeclaredDeductions] = useState("");
+  // Rates from the settlement advice, "USD=83.1250, EUR=90.40". Without one
+  // a foreign payment is left out rather than summed across currencies.
+  const [fxRates, setFxRates] = useState("");
   // Fee terms. Blank means "use the engine's default card", which the engine
   // announces in its run notes — it is a guess, not anyone's contract, and a
   // wrong card eliminates the match rather than degrading it.
@@ -497,6 +500,7 @@ function Index() {
       if (who) formData.append("reviewer", who);
       if (declaredDeductions.trim())
         formData.append("declared_deductions", declaredDeductions.trim());
+      if (fxRates.trim()) formData.append("fx_rates", fxRates.trim());
       // Only send terms that were actually given. An omitted field means the
       // engine falls back to its default for that one and says so.
       if (gatewayFeeBps.trim()) formData.append("gateway_fee_bps", gatewayFeeBps.trim());
@@ -581,6 +585,7 @@ function Index() {
     windowDays,
     memberSource,
     declaredDeductions,
+    fxRates,
     gatewayFeeBps,
     taxWithholdingBps,
     flatFeeCents,
@@ -603,6 +608,7 @@ function Index() {
       setWindowDays(preset.windowDays);
       setMemberSource(preset.memberSource);
       setDeclaredDeductions(preset.declaredDeductions);
+      setFxRates("");
       setGatewayFile(files.gateway);
       setBankFile(files.bank);
       setErpFile(files.erp);
@@ -857,6 +863,18 @@ function Index() {
                         placeholder="optional"
                         value={declaredDeductions}
                         onChange={(e) => setDeclaredDeductions(e.target.value)}
+                        className={FIELD}
+                      />
+                    </Field>
+                    <Field
+                      label="FX rates"
+                      hint="from the settlement advice; blank ⇒ foreign payments left out"
+                    >
+                      <input
+                        type="text"
+                        placeholder="USD=83.1250"
+                        value={fxRates}
+                        onChange={(e) => setFxRates(e.target.value)}
                         className={FIELD}
                       />
                     </Field>

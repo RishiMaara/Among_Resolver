@@ -62,4 +62,6 @@ def _no_real_model(monkeypatch):
     """
     monkeypatch.setenv("GEMINI_API_KEY", "")
     monkeypatch.setenv("GOOGLE_API_KEY", "")
+    # Nor the ECB: the FX reference note is advisory and tests stay offline.
+    monkeypatch.setenv("FX_REFERENCE", "0")
     yield

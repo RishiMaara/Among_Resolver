@@ -1,11 +1,11 @@
 # UN Security Council Consolidated List
 # source: https://scsanctions.un.org/resources/xml/en/consolidated.xml
-# generated: 2026-09-11T23:00:03.157Z
-# retrieved: 2026-09-12T10:26:20+00:00
+# generated: 2026-09-23T23:00:06.747Z
+# retrieved: 2026-09-24T03:43:17+00:00
 # entries: 3422
 # Normalised: uppercase, punctuation folded to spaces. Primary
 # names and multi-token aliases. Exact match after normalisation
-# only -- no fuzzy matching, transliteration or DOB disambiguation.
+# only -- no transliteration or DOB disambiguation.
 1 P
 2ND ACADEMY OF NATURAL SCIENCES
 7TH OF TIR

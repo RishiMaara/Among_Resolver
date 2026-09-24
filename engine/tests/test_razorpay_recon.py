@@ -115,9 +115,9 @@ class TestTheBlindCheck:
         seen = []
         real = settlement_cycle.profile_from
 
-        def spy(lags, n):
+        def spy(lags, n, *rest):
             seen.append(n)
-            return real(lags, n)
+            return real(lags, n, *rest)
 
         settlement_cycle.profile_from = spy
         try:
