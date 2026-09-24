@@ -118,6 +118,9 @@ engine/data/history/
 # A fresh fetch into data/sanctions/ (repo root) still takes priority locally.
 engine/data/sanctions/*
 !engine/data/sanctions/un_consolidated.txt
+# Its companion: names the UN rates only as low-quality aliases, which flag
+# rather than block (FAILURE_LOG 49). Written by the same fetch.
+!engine/data/sanctions/un_consolidated_low_quality.txt
 data/sanctions/
 
 # Build and tooling caches that were reaching git only because nothing
