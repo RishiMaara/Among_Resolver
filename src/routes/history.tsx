@@ -9,15 +9,11 @@
  * system could answer and could not be asked.
  */
 
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Flag, ScrollText } from "lucide-react";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { SessionMenu } from "@/components/session-menu";
-import { Wordmark } from "@/components/wordmark";
-import { PayoutsLink } from "@/components/payouts-link";
 import { LoadingMark } from "@/components/loading-mark";
 import { engineFetch, ENGINE_HOST } from "@/lib/api";
+import { SiteHeader } from "@/components/site-header";
 
 export const Route = createFileRoute("/history")({ component: HistoryScreen });
 
@@ -83,36 +79,7 @@ function HistoryScreen() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[1120px] items-center justify-between gap-4 px-4 py-2.5 sm:px-6">
-          <Wordmark pill="History" />
-          <div className="flex items-center gap-3.5">
-            <Link
-              to="/"
-              className="whitespace-nowrap text-[14px] text-muted-foreground hover:text-foreground"
-            >
-              ← Agent Flow
-            </Link>
-            <Link
-              to="/escalations"
-              className="nav-flag flex items-center gap-1.5 whitespace-nowrap text-[14px] text-muted-foreground hover:text-foreground"
-            >
-              <Flag className="size-4" />
-              <span className="hidden sm:inline">Escalations</span>
-            </Link>
-            <Link
-              to="/rulebook"
-              className="nav-scroll flex items-center gap-1.5 whitespace-nowrap text-[14px] text-muted-foreground hover:text-foreground"
-            >
-              <ScrollText className="size-4" />
-              <span className="hidden sm:inline">Rulebook</span>
-            </Link>
-            <PayoutsLink />
-            <SessionMenu />
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
+      <SiteHeader current="History" />
 
       <div className="mx-auto max-w-[1120px] px-4 pb-24 sm:px-6">
         <section className="py-12">

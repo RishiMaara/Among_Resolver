@@ -16,7 +16,7 @@ The tests that found these failures, and the results after each fix, are in
 
 ## Index
 
-55 entries: 44 fixed, 6 mitigated, 1 partly resolved, 1 by design, and 3
+56 entries: 45 fixed, 6 mitigated, 1 partly resolved, 1 by design, and 3
 known limits that remain.
 
 | # | Failure | Severity | Failed safe | How it was resolved | Status |
@@ -76,6 +76,7 @@ known limits that remain.
 | 53 | Every run read the whole run history, and the history listed batches alphabetically | Medium, performance | Yes | Filtered on the file name before reading: 3.4 s to 0.025 s a run; sorted by time. | Fixed |
 | 54 | Settlement ids that survived only in the description were ignored | Medium | Yes | Description identifiers read (numbers only); a solver tier for records carrying the settlement's number; 82-85% on held-out seeds. | Fixed |
 | 55 | The page re-rendered ten times a second during a run | Medium, usability | Yes | The clock ticks in its own component; an unchanged audit trail is not replaced: 4.3 s to 1.2 s blocked on a slow CPU. | Fixed |
+| 56 | Six hand-copied headers had drifted, and every screen scrolled sideways on a phone | Low, usability | Yes | One header component; the judges' link becomes an icon on phones; tested for order and measured at 360 px. | Fixed |
 
 ---
 
@@ -1147,3 +1148,23 @@ blocked, 6 long tasks, 6 frames over 50 ms. The largest pause left, about
 0.8 seconds, is the report being drawn once when the run ends.
 src/components/elapsed-clock.test.tsx pins that ticking re-renders the clock
 and not the page.
+
+## 56. Six hand-copied headers had drifted, and every screen scrolled sideways on a phone
+
+Severity: Low (usability; nothing shown wrongly)
+Fails safe: Yes
+
+Each screen carried its own copy of the header, and the copies had drifted:
+the links came in a different order on each, the rulebook was "Compliance
+Rulebook" on the main screen and "Rulebook" elsewhere, the judges' brief had
+no icons, and the rulebook's bar was taller, a different colour and a
+different width, so the logo moved when a visitor changed screen. Page titles
+came in two unrelated styles. Measured in a browser at 375 px, the header
+needed 407 px, so every screen scrolled sideways on a phone.
+
+Mitigation: one header and one title style (src/components/site-header.tsx)
+on every screen; the current screen is named beside the logo and left out of
+the links. On a phone the "Judges' brief" pill becomes an icon link and the
+spacing tightens. Measured on all six screens: the header is 53 px high with
+the logo in the same place, and nothing scrolls sideways at 360, 375 or
+1,280 px. src/routes/navigation.test.tsx pins the link order on every screen.

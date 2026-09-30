@@ -1,11 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronUp, Flag, Play, RotateCcw, ScrollText, Wand2 } from "lucide-react";
+import { ChevronUp, Play, RotateCcw, Wand2 } from "lucide-react";
 import { LoadingMark } from "@/components/loading-mark";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { SessionMenu } from "@/components/session-menu";
 import { DropzoneInline } from "@/components/dropzone-inline";
 import { loadRateCards, saveRateCard, type RateCard } from "@/lib/rate-cards";
 import { SAMPLE_PRESETS, loadSampleFiles, type SamplePreset } from "@/lib/sample-preset";
@@ -17,11 +15,9 @@ import { AgentFlow } from "@/components/agent-flow";
 import { ElapsedClock, type RunClock } from "@/components/elapsed-clock";
 import { FlowNarrative } from "@/components/flow-narrative";
 import type { AuditEntry } from "@/lib/agent-flow";
-import { HistoryLink } from "@/components/history-link";
-import { PayoutsLink } from "@/components/payouts-link";
 import { engineFetch, engineErrorMessage, errorBody, uploadTooLarge } from "@/lib/api";
 import { exportQueueCsv, type QueueRow } from "@/lib/queue-export";
-import { Wordmark } from "@/components/wordmark";
+import { SiteHeader } from "@/components/site-header";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -689,32 +685,7 @@ function Index() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* ── header ──────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[1180px] items-center justify-between gap-4 px-4 py-2.5 sm:px-6">
-          <Wordmark pill="Agent Flow" />
-          <div className="flex items-center gap-3.5">
-            <HistoryLink className="flex items-center gap-1.5 whitespace-nowrap text-[14px] text-muted-foreground hover:text-foreground" />
-            <Link
-              to="/escalations"
-              className="nav-flag flex items-center gap-1.5 whitespace-nowrap text-[14px] text-muted-foreground hover:text-foreground"
-            >
-              <Flag className="size-4" />
-              <span className="hidden sm:inline">Escalations</span>
-            </Link>
-            <Link
-              to="/rulebook"
-              className="nav-scroll flex items-center gap-1.5 whitespace-nowrap text-[14px] text-muted-foreground hover:text-foreground"
-            >
-              <ScrollText className="size-4" />
-              <span className="hidden sm:inline">Compliance Rulebook</span>
-            </Link>
-            <PayoutsLink />
-            <SessionMenu />
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
+      <SiteHeader current="Agent Flow" />
 
       {/* Before a run, the upload IS the page.
           A reconciliation tool's first screen was a strip of dropzones above

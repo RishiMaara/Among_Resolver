@@ -20,7 +20,13 @@
 import { Link } from "@tanstack/react-router";
 import { History, Flag, ScrollText, Network, Landmark } from "lucide-react";
 
-export function Wordmark({ pill }: { pill?: string }) {
+export function Wordmark({
+  pill,
+  briefOnPhones = true,
+}: {
+  pill?: string;
+  briefOnPhones?: boolean;
+}) {
   return (
     <div className="flex items-center gap-2.5">
       <svg
@@ -63,7 +69,7 @@ export function Wordmark({ pill }: { pill?: string }) {
         {/* Two weights, one word. The supplied lockup sets "Among" light and
             "Resolver" heavy, which is what makes the compound read as a name
             rather than as two words that happen to be adjacent. */}
-        <span className="brand-name text-[17px] text-foreground">
+        <span className="brand-name text-[15px] text-foreground sm:text-[17px]">
           <span className="brand-name-light">Among</span>Resolver
         </span>
       </Link>
@@ -85,11 +91,13 @@ export function Wordmark({ pill }: { pill?: string }) {
       )}
 
       {/* Every header carries the way to the one page written for someone
-          evaluating the engine — live checks and measured figures. */}
+          evaluating the engine — live checks and measured figures. On a phone
+          the site header shows it as an icon instead, because the pill pushed
+          the header 64px past a 375px screen. */}
       {pill !== "Judges' brief" && (
         <Link
           to="/judge"
-          className="ml-1 rounded-full border border-border px-2 py-0.5 text-[11.5px] text-muted-foreground no-underline hover:text-foreground"
+          className={`${briefOnPhones ? "" : "hidden sm:inline-block "}ml-1 rounded-full border border-border px-2 py-0.5 text-[11.5px] text-muted-foreground no-underline hover:text-foreground`}
         >
           Judges' brief
         </Link>

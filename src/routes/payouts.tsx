@@ -12,20 +12,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Landmark, Upload, Play, ChevronDown, Flag, ScrollText } from "lucide-react";
+import { Upload, Play, ChevronDown } from "lucide-react";
 import { engineFetch, engineErrorMessage } from "@/lib/api";
 import { cn, inr } from "@/lib/utils";
-import { Wordmark } from "@/components/wordmark";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { SessionMenu } from "@/components/session-menu";
-import { HistoryLink } from "@/components/history-link";
 import { LoadingMark } from "@/components/loading-mark";
 import { RecoveryClaims, type Recovery } from "@/components/recovery-claims";
+import { SiteHeader, PageIntro } from "@/components/site-header";
 
 export const Route = createFileRoute("/payouts")({ component: Payouts });
-
-const NAV =
-  "flex items-center gap-1.5 whitespace-nowrap text-[14px] text-muted-foreground hover:text-foreground";
 
 // ── Razorpay ─────────────────────────────────────────────────────────────
 
@@ -560,37 +554,13 @@ function OpenItemsSection() {
 function Payouts() {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[1120px] items-center justify-between gap-4 px-4 py-2.5 sm:px-6">
-          <Wordmark pill="Payouts" />
-          <div className="flex items-center gap-3.5">
-            <Link
-              to="/"
-              className="whitespace-nowrap text-[14px] text-muted-foreground hover:text-foreground"
-            >
-              ← Agent Flow
-            </Link>
-            <HistoryLink className={NAV} />
-            <Link to="/escalations" className={NAV}>
-              <Flag className="size-4" />
-              <span className="hidden sm:inline">Escalations</span>
-            </Link>
-            <Link to="/rulebook" className={NAV}>
-              <ScrollText className="size-4" />
-              <span className="hidden sm:inline">Rulebook</span>
-            </Link>
-            <SessionMenu />
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
+      <SiteHeader current="Payouts" />
 
-      <main className="mx-auto max-w-[960px] px-4 py-10 sm:px-6">
-        <p className="label-ui m-0 flex items-center gap-1.5 text-[10px] uppercase text-muted-foreground">
-          <Landmark className="size-3.5" />
-          Payouts · Razorpay and what is still waiting
-        </p>
-        <h1 className="mt-2 text-[30px] font-semibold leading-tight">Where the money is</h1>
+      <main className="mx-auto max-w-[960px] px-4 py-12 sm:px-6">
+        <PageIntro
+          eyebrow="Payouts · Razorpay and what is still waiting"
+          title="Where the money is"
+        />
         <RazorpaySection />
         <OpenItemsSection />
       </main>

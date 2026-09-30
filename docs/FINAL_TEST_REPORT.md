@@ -23,7 +23,7 @@ Related documents:
 | Campaign | What it establishes | Result |
 |---|---|---|
 | Backend test suite | Behaviour of every module, including every past defect | 815 of 815 pass |
-| Frontend test suite | Page behaviour, and that published figures match their files | 150 of 150 pass |
+| Frontend test suite | Page behaviour, and that published figures match their files | 151 of 151 pass |
 | Static analysis | Types, lint errors, security | mypy clean on 78 files; pylint and bandit report no issues |
 | Blind adversarial test | Behaviour on cases written after the engine, with an independent answer key | 133 correct clears, 0 wrong, on two seeds of 237 settlements |
 | 1,000-case edge suite | Behaviour across 29 hazard families and joint (N:M) runs | 1,050 batches scored, 0 wrong clears, 0 crashes |
@@ -71,7 +71,7 @@ engine. `python engine/scripts/fetch_sanctions_list.py` refreshes it.
 npx vitest run --config vitest.config.ts
 ```
 
-Result: 150 passed, 0 failed. Two of these suites protect the documentation
+Result: 151 passed, 0 failed. Two of these suites protect the documentation
 itself: `src/lib/measured.test.ts` fails if any figure on the judges' brief
 differs from the benchmark file it cites, and
 `src/lib/documented-figures.test.ts` fails if the README's test counts differ
@@ -509,7 +509,7 @@ a record that names the settlement, or a pool of 20 or fewer candidates.
 **Nothing else moved.** Blind test, three seeds including a new one (20260930):
 133 correct, 0 wrong, 104 refused on each. ReconRiver: 94.59% with references,
 56.76% without, 0 wrong clears. The 1,000-case edge suite: 0 wrong clears.
-Backend 815 and frontend 150 tests pass.
+Backend 815 and frontend 151 tests pass.
 
 **Speed.** Every reconciliation looked up earlier runs of its own batch by
 opening and decoding every run record ever written: 3,305 files and 3.4

@@ -16,10 +16,7 @@ import { MEASURED } from "@/lib/measured";
 import { inr } from "@/lib/utils";
 import { readScan } from "@/lib/scan-ocr";
 import { aiStatus, useAiStatus } from "@/lib/ai";
-import { Wordmark } from "@/components/wordmark";
-import { PayoutsLink } from "@/components/payouts-link";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { HistoryLink } from "@/components/history-link";
+import { SiteHeader, PageIntro } from "@/components/site-header";
 
 export const Route = createFileRoute("/judge")({ component: Judge });
 
@@ -601,49 +598,21 @@ function Judge() {
   const [runAll, setRunAll] = useState(0);
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[1120px] items-center justify-between gap-4 px-4 py-2.5 sm:px-6">
-          <Wordmark pill="Judges' brief" />
-          <div className="flex items-center gap-3.5">
-            <Link
-              to="/"
-              className="whitespace-nowrap text-[14px] text-muted-foreground hover:text-foreground"
-            >
-              ← Agent Flow
-            </Link>
-            <HistoryLink className="flex items-center gap-1.5 whitespace-nowrap text-[14px] text-muted-foreground hover:text-foreground" />
-            <Link
-              to="/escalations"
-              className="whitespace-nowrap text-[14px] text-muted-foreground hover:text-foreground"
-            >
-              Escalations
-            </Link>
-            <Link
-              to="/rulebook"
-              className="whitespace-nowrap text-[14px] text-muted-foreground hover:text-foreground"
-            >
-              Rulebook
-            </Link>
-            <PayoutsLink />
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
+      <SiteHeader current="Judges' brief" />
 
-      <main className="mx-auto max-w-[900px] px-4 py-10 sm:px-6">
-        <p className="label-ui m-0 text-[10px] uppercase text-muted-foreground">
-          AmongResolver · prepared for the Razorpay AI Buildathon judges
-        </p>
-        <h1 className="mt-2 text-[30px] font-semibold leading-tight">
-          The evidence, for your review
-        </h1>
-        <p className="mt-3 max-w-[680px] text-[14px] leading-[1.65]">
-          AmongResolver works out which payments make up each Razorpay payout, proves the answer to
-          the paisa, and declines to clear what it cannot prove, telling a person exactly what to
-          check next. On every dataset it has been measured on it clears no wrong set, including a
-          blind test written after the engine; that test's first run found two wrong clears, and
-          both are fixed and logged.
-        </p>
+      <main className="mx-auto max-w-[900px] px-4 py-12 sm:px-6">
+        <PageIntro
+          eyebrow="AmongResolver · prepared for the Razorpay AI Buildathon judges"
+          title="The evidence, for your review"
+        >
+          <p className="m-0 text-foreground">
+            AmongResolver works out which payments make up each Razorpay payout, proves the answer
+            to the paisa, and declines to clear what it cannot prove, telling a person exactly what
+            to check next. On every dataset it has been measured on it clears no wrong set,
+            including a blind test written after the engine; that test's first run found two wrong
+            clears, and both are fixed and logged.
+          </p>
+        </PageIntro>
         <p className="mt-2 text-[12px] text-muted-foreground">
           Every demonstration below runs live against the deployed engine at{" "}
           <span className="font-mono">{ENGINE_HOST}</span>, and every figure links to the file that

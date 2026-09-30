@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { CitationLink } from "@/components/citation-link";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -6,7 +6,6 @@ import {
   Building2,
   CheckCircle2,
   ChevronDown,
-  Flag,
   Info,
   Layers,
   ListChecks,
@@ -15,13 +14,9 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { HistoryLink } from "@/components/history-link";
 import { LoadingMark } from "@/components/loading-mark";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { SessionMenu } from "@/components/session-menu";
 import { engineFetch } from "@/lib/api";
-import { Wordmark } from "@/components/wordmark";
-import { PayoutsLink } from "@/components/payouts-link";
+import { SiteHeader } from "@/components/site-header";
 
 export const Route = createFileRoute("/rulebook")({
   component: Rulebook,
@@ -110,45 +105,16 @@ function Rulebook() {
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 font-sans">
-      {/* Top Navigation */}
-      <header className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800">
-        <div className="flex items-center gap-4">
-          <Wordmark pill="Rulebook" />
-        </div>
-        <div className="flex items-center gap-4">
-          <Link
-            to="/"
-            className="text-sm font-medium text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors mr-2"
-          >
-            ← Agent Flow
-          </Link>
-          {/* Parity with the other screens. This header reached home and
-              nowhere else, so a reviewer checking a rule had to go back
-              through the main page to get to history or escalations. */}
-          <HistoryLink className="flex items-center gap-1.5 whitespace-nowrap text-sm font-medium text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors">
-            History
-          </HistoryLink>
-          <Link
-            to="/escalations"
-            className="nav-flag flex items-center gap-1.5 whitespace-nowrap text-sm font-medium text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors"
-          >
-            <Flag className="size-4" />
-            <span className="hidden sm:inline">Escalations</span>
-          </Link>
-          <PayoutsLink />
-          <ThemeToggle />
-          <SessionMenu />
-        </div>
-      </header>
+      <SiteHeader current="Rulebook" />
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="mx-auto max-w-[1180px] px-4 py-12 sm:px-6">
         {/* ── masthead (from visual reference) ──────────────────────────── */}
         <section className="grid items-end gap-12 mb-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
           <div>
             <p className="font-[family-name:var(--font-eyebrow)] text-[12px] m-0 mb-4 uppercase tracking-[0.09em] text-neutral-500">
               Published control set · Agent 7
             </p>
-            <h1 className="m-0 mb-5 font-[family-name:var(--font-display)] text-[52px] font-normal leading-[1.03] tracking-[-0.025em] text-neutral-900 dark:text-neutral-100">
+            <h1 className="m-0 mb-5 font-[family-name:var(--font-display)] text-[38px] font-normal leading-[1.05] tracking-[-0.025em] text-neutral-900 dark:text-neutral-100">
               {data?.rules?.length === 0
                 ? "The control set"
                 : data?.rules?.length === 12

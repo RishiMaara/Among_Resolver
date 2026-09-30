@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 
 vi.mock("@tanstack/react-router", async (orig) => ({
   ...(await orig<typeof import("@tanstack/react-router")>()),
@@ -78,6 +78,24 @@ describe("getting back to the main screen", () => {
       const { unmount } = render(<Screen />);
       const home = screen.getAllByRole("link").filter((a) => a.getAttribute("href") === "/");
       expect(home.length, `${name} has no way home`).toBeGreaterThan(0);
+      unmount();
+    }
+  });
+});
+
+describe("the header", () => {
+  it("lists the other screens in the same order on every screen", () => {
+    // Six hand-copied headers had drifted into five orders and two names for
+    // the rulebook. One component now draws them; this keeps it that way.
+    const ORDER = ["/", "/history", "/escalations", "/rulebook", "/payouts"];
+    for (const [name, { route, self }] of Object.entries(SCREENS)) {
+      const Screen = route.options.component as React.ComponentType;
+      const { unmount } = render(<Screen />);
+      const nav = screen.getByRole("navigation", { name: "Screens" });
+      const hrefs = within(nav)
+        .getAllByRole("link")
+        .map((a) => a.getAttribute("href"));
+      expect(hrefs, name).toEqual(ORDER.filter((h) => h !== self));
       unmount();
     }
   });
