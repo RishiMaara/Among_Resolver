@@ -9,22 +9,22 @@
     "correct_abstention_pct": 100.0,
     "mean_precision": 0.0176,
     "mean_recall": 0.0238,
-    "median_latency_s": 0.166,
-    "p95_latency_s": 1.395,
+    "median_latency_s": 0.663,
+    "p95_latency_s": 2.802,
     "total_txns": 47775,
-    "wall_clock_s": 50.0
+    "wall_clock_s": 153.4
   },
   "with_linkage": {
     "false_clears": 0,
     "auto_clear_correct_pct": 62.0,
-    "truth_identified_pct": 65.0,
+    "truth_identified_pct": 84.0,
     "correct_abstention_pct": 100.0,
-    "mean_precision": 0.6658,
-    "mean_recall": 0.742,
-    "median_latency_s": 0.018,
-    "p95_latency_s": 1.208,
+    "mean_precision": 0.8528,
+    "mean_recall": 0.928,
+    "median_latency_s": 0.04,
+    "p95_latency_s": 2.936,
     "total_txns": 47775,
-    "wall_clock_s": 27.7
+    "wall_clock_s": 106.6
   },
   "improvement": {
     "false_clears": {
@@ -39,8 +39,8 @@
     },
     "truth_identified_pct": {
       "baseline": 0.0,
-      "augmented": 65.0,
-      "delta": 65.0
+      "augmented": 84.0,
+      "delta": 84.0
     },
     "correct_abstention_pct": {
       "baseline": 100.0,
@@ -49,23 +49,23 @@
     },
     "mean_precision": {
       "baseline": 0.0176,
-      "augmented": 0.6658,
-      "delta": 0.6482
+      "augmented": 0.8528,
+      "delta": 0.8352
     },
     "mean_recall": {
       "baseline": 0.0238,
-      "augmented": 0.742,
-      "delta": 0.7182
+      "augmented": 0.928,
+      "delta": 0.9042
     },
     "median_latency_s": {
-      "baseline": 0.166,
-      "augmented": 0.018,
-      "delta": -0.148
+      "baseline": 0.663,
+      "augmented": 0.04,
+      "delta": -0.623
     },
     "p95_latency_s": {
-      "baseline": 1.395,
-      "augmented": 1.208,
-      "delta": -0.187
+      "baseline": 2.802,
+      "augmented": 2.936,
+      "delta": 0.134
     },
     "total_txns": {
       "baseline": 47775,
@@ -73,9 +73,9 @@
       "delta": 0
     },
     "wall_clock_s": {
-      "baseline": 50.0,
-      "augmented": 27.7,
-      "delta": -22.3
+      "baseline": 153.4,
+      "augmented": 106.6,
+      "delta": -46.8
     }
   }
 }

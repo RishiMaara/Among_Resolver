@@ -23,7 +23,8 @@ if TYPE_CHECKING:
     from recon_report import ReconciliationReport
 
 from schema import MatchResult, SettlementBatch, NormalizedTxn, ExceptionRecord
-from linkage import LinkageResult, link_confidence, txn_key, members_of, tokenize_ref, _raw_ref
+from linkage import (LinkageResult, link_confidence, txn_key, members_of, tokenize_ref, _raw_ref,
+                     description_tokens)
 import audit
 
 
@@ -62,7 +63,7 @@ assert FUZZY_RECOVERY_CONFIDENCE < MIN_AUTOCLEAR_CONFIDENCE, (
 
 
 def _reference_tokens(t: NormalizedTxn) -> set[str]:
-    return tokenize_ref(t.ref_id_canonical) | tokenize_ref(_raw_ref(t))
+    return tokenize_ref(t.ref_id_canonical) | tokenize_ref(_raw_ref(t)) | description_tokens(t)
 
 
 def _unreferenced_members(result: MatchResult, pool: list[NormalizedTxn],

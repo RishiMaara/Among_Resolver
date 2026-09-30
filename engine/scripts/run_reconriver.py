@@ -220,6 +220,11 @@ def _strip_settlement_ref(txns: list[NormalizedTxn], batch_ids: set[str]) -> Non
         # The raw copy still names the settlement; linkage ignores a raw
         # reference that no longer matches, but a stripped one is stripped.
         (t.extra or {}).pop("ref_raw", None)
+        # So is the description, now that linkage reads ids from it.
+        for b in batch_ids:
+            if b and t.memo_raw and b in t.memo_raw:
+                t.memo_raw = t.memo_raw.replace(b, "")
+                t.memo_normalized = t.memo_raw.lower()
 
 
 def build_pool(scenario: str, strip_anchor: bool) -> list[NormalizedTxn]:

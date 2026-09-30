@@ -159,8 +159,8 @@ def _solve_in_tiers(
 ) -> _SolveOutcome:
     """Agent 3 end to end: tiered solve, empty-linkage fallback, safety net."""
     # Exact subset-sum in tiers of decreasing evidence, first tier to CLEAR wins:
-    # records naming the settlement, then the learned cohort, then strong links,
-    # then everything linked. Weak signals admitted beside strong ones add
+    # records naming the settlement, then records sharing the settlement's own
+    # number, then the learned cohort, then strong links, then everything linked. Weak signals admitted beside strong ones add
     # degeneracy, not information (solving anchors first took near-collision from
     # 0% to solved; one pooled tier took ref_partial from 100% to 13%).
     STRONG_LINK = 0.25
@@ -183,6 +183,16 @@ def _solve_in_tiers(
     # with the anchors. Where references are gone this is the capture-day
     # cohort the learned settlement cycle points at; where some survive it
     # is the anchors plus records that look like them but lost their id.
+    # Records in a reference or description cluster whose shared token is the
+    # settlement's own number: short of naming it, the closest thing to it.
+    # Solved before the learned cohort, which is timing: with the ids gone from
+    # the reference column, a 104-record pool held four records sharing the
+    # settlement's number and a coincidental five-record sum, and the cohort's
+    # tier proposed the coincidence.
+    named_keys = {txn_key(c.txn) for c in link_result.scored if c.signals.ref_prefix_cluster}
+    named_txns = [t for t in solver_candidates
+                  if txn_key(t) in named_keys or txn_key(t) in anchor_keys]
+
     learned_keys = getattr(link_result, "learned_keys", None) or set()
     learned_txns = [t for t in solver_candidates
                     if txn_key(t) in learned_keys or txn_key(t) in anchor_keys]
@@ -190,6 +200,8 @@ def _solve_in_tiers(
     tiers: list[tuple[str, list[NormalizedTxn]]] = []
     if anchor_txns:
         tiers.append(("anchor", anchor_txns))
+    if len(anchor_txns) < len(named_txns) < len(solver_candidates):
+        tiers.append(("names_settlement_number", named_txns))
     if len(anchor_txns) < len(learned_txns) < len(solver_candidates):
         tiers.append(("learned", learned_txns))
     if len(strong_txns) > len(anchor_txns):

@@ -483,6 +483,9 @@ def main():
     ap.add_argument("--json", type=str, default="")
     ap.add_argument("--declare-source", action="store_true",
                     help="Tell the engine which feed the settlement members live in.")
+    ap.add_argument("--blank-memos", action="store_true",
+                    help="Erase every description, so a result can be shown not to "
+                         "depend on what the descriptions carry.")
     args = ap.parse_args()
 
     rng = random.Random(args.seed)
@@ -493,6 +496,12 @@ def main():
         density = densities[(i // len(FAMILIES)) % len(densities)]
         scenarios.append(build_scenario(i, family, solvable, density, rng,
                                         declare_source=args.declare_source))
+    if args.blank_memos:
+        # After generation, so the random stream and every scenario are
+        # identical to a normal run; only the descriptions differ.
+        for sc in scenarios:
+            for t in sc.candidates:
+                t.memo_raw = t.memo_normalized = ""
 
     print(f"Running {len(scenarios)} scenarios "
           f"({len(FAMILIES)} families x {len(densities)} pool densities)…\n")

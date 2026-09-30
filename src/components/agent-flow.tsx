@@ -11,7 +11,7 @@
  * actually happened — there is no second source of truth to disagree with.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   AGENT_COUNT,
   AGENT_KEYS,
@@ -44,7 +44,7 @@ interface Props {
   batchId: string;
   statusLabel: string;
   statusTone: "cleared" | "withheld" | "blocked" | "idle";
-  elapsedText: string;
+  elapsed: ReactNode;
   onOpenReport?: () => void;
   hasReport?: boolean;
   runError?: string | null;
@@ -58,7 +58,7 @@ export function AgentFlow({
   batchId,
   statusLabel,
   statusTone,
-  elapsedText,
+  elapsed,
   onOpenReport,
   hasReport,
   runError,
@@ -210,7 +210,7 @@ export function AgentFlow({
         </div>
         <div className="flex items-baseline gap-1.5">
           <span className="label-ui text-[10px] uppercase text-muted-foreground">Elapsed</span>
-          <span className="font-mono text-[12.5px] tabular-nums">{elapsedText}</span>
+          <span className="font-mono text-[12.5px] tabular-nums">{elapsed}</span>
         </div>
         <div className="ml-auto flex gap-5">
           {counters.map((c) => (

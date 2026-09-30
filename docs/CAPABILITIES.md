@@ -81,9 +81,21 @@ here from the README unchanged, except where a figure has since changed.
   absorb is never dropped from the queue.
 - **What linkage buys, measured** (`scripts/baseline_comparison.py`). The same
   engine with linkage disabled identifies the true set in 0% of 120 benchmark
-  scenarios; with it, 65%, with zero wrong approvals in both arms. This is
+  scenarios; with it, 84% (65% before the tuning of 30 September, and 82-85%
+  on benchmark seeds not used for that tuning), with zero wrong approvals in
+  both arms. This is
   deterministic entity resolution, not AI — the script says so, because it
   was first written claiming otherwise.
+- **Identifiers read from descriptions** (`linkage.description_tokens`). When
+  the reference column is empty or cut short, the id often survives in the
+  description or narration. Linkage reads numbers of four or more digits from
+  it, never words, years, dates or the payment's own amount; records sharing
+  the settlement's number are solved first and tell the engine which feed holds
+  the members. A description containing the full settlement id anchors, except
+  on the settlement's own feed. Missing and truncated references went from 0%
+  to 90-100% identified; with every description erased the benchmark returns
+  exactly to its old figure. Such a set is proposed, not cleared, unless a
+  record names the settlement.
 - **Learned linkage for payouts with no reference** (`linkage_em.py`,
   `settlement_cycle.py`). A Fellegi-Sunter model — the method behind Splink —
   with m-probabilities learned by EM from anchored records, or from the
@@ -115,6 +127,16 @@ here from the README unchanged, except where a figure has since changed.
   so the tie-out is marked as by construction and the bank credit (UTR and
   amount) is the independent check; a report read in the wrong unit is off by
   100x from its bank credit and is not verified.
+- **Recovery claims** (`recovery_claims.py`, the Payouts page). What the payout
+  check finds that someone owes the merchant is drafted as a claim: to Razorpay
+  for fees above the rate card, GST above 18% of the fee, a payout missing
+  from the statement, or lines that sum to more than was paid; to the bank for
+  a credit short of the payout under the same UTR. Each claim carries the
+  amount, a message ready to paste, the evidence line by line as a CSV, and
+  what its figure rests on: the data alone, or the rate card, which a merchant
+  with negotiated pricing must confirm first. A fee below the rate card is not
+  a claim. On the sample: Rs 43.09 to Razorpay and Rs 10.00 to the bank.
+  Nothing is sent.
 - **Bank statements as banks send them** (`statement_parsers.py`): SWIFT
   MT940, ISO 20022 CAMT.053, OFX and text PDFs, straight into the bank slot of
   any reconciliation, or `POST /statements/parse` to check the read on its own.

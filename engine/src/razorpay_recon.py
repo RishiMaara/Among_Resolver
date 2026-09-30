@@ -23,6 +23,7 @@ import razorpay_source as rz
 import linkage_em
 import settlement_cycle
 from fee_audit import run_fee_audit
+import recovery_claims
 from fee_decomposition import FeeRateCard
 from india_tax import ist_date
 from schema import NormalizedTxn, SourceType
@@ -206,6 +207,7 @@ def reconcile(settlements: list[dict], recon: list[dict],
             "summary": fee_summary,
             "findings": [{"category": f.category.value, "severity": f.severity.value,
                           "txn_id": f.txn_id, "difference_cents": f.difference_cents,
+                          "expected_cents": f.expected_cents, "actual_cents": f.actual_cents,
                           "citation": f.citation, "description": f.description}
                          for f in fee_findings[:20]],
         }
@@ -245,6 +247,7 @@ def reconcile(settlements: list[dict], recon: list[dict],
                                           s.get("currency") or "INR", paid, times)
 
     unsettled = [i for i in recon if not i.get("settlement_id")]
+    report_claims = recovery_claims.build_claims({"results": results})
     tally = {k: sum(1 for r in results if r["status"] == k)
              for k in ("verified", "verified_with_findings", "not_verified", "no_lines")}
     return {
@@ -258,4 +261,5 @@ def reconcile(settlements: list[dict], recon: list[dict],
                       f"on hold, or waiting for the next payout." if unsettled else ""),
         },
         "results": results,
+        "recovery": report_claims,
     }

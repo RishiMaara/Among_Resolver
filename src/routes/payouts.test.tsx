@@ -102,6 +102,68 @@ function engine(routes: Record<string, unknown>, failing: string[] = []) {
 
 afterEach(() => vi.unstubAllGlobals());
 
+const RECOVERY = {
+  claims: [
+    {
+      claim_id: "setl_B:short_credit",
+      settlement_id: "setl_B",
+      kind: "short_credit",
+      to: "Your bank",
+      amount_cents: 1000,
+      basis: "stated",
+      check_first: "",
+      subject: "Payout credited short: UTR UTR2",
+      message: "Hello,\n\nRs 10.00 less.",
+      evidence_csv: "",
+    },
+    {
+      claim_id: "setl_A:fee_overcharge",
+      settlement_id: "setl_A",
+      kind: "fee_overcharge",
+      to: "Razorpay Support",
+      amount_cents: 4309,
+      basis: "estimated",
+      check_first: "If your account has negotiated pricing, confirm the expected figures.",
+      subject: "Fee above the expected rate on settlement setl_A",
+      message: "Hello,\n\nRs 43.09 in total.",
+      evidence_csv: "payment_id,expected_fee,charged_fee,difference\npay_1,172.36,215.45,43.09\n",
+    },
+  ],
+  total_cents: 5309,
+  stated_cents: 1000,
+  estimated_cents: 4309,
+  plain: "2 claims drafted, Rs 53.09 in total. Nothing has been sent.",
+};
+
+describe("recovery claims", () => {
+  it("drafts each claim with its addressee, basis and evidence, and sends nothing", async () => {
+    const fetch = engine({
+      "razorpay/reconcile/upload": { ...RAZORPAY, recovery: RECOVERY },
+      "open-items": OPEN,
+    });
+    vi.stubGlobal("fetch", fetch);
+    render(<Payouts />);
+    await userEvent.click(screen.getByRole("button", { name: /Sample: API responses/ }));
+    expect(await screen.findByText(/2 claims drafted/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/To Your bank · both figures come from your files/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/To Razorpay Support · the expected figure comes from the rate card/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/negotiated pricing/)).toBeInTheDocument();
+    // Evidence is offered only where there is some.
+    expect(screen.getAllByRole("button", { name: /Download evidence/ })).toHaveLength(1);
+    await userEvent.click(screen.getAllByRole("button", { name: /Read message/ })[0]!);
+    expect(screen.getByText(/Rs 10.00 less/)).toBeInTheDocument();
+    // Drafting is local: no request beyond the reconcile call and the page's own reads.
+    const posts = fetch.mock.calls.filter(
+      (call) => ((call as unknown[])[1] as RequestInit | undefined)?.method === "POST",
+    );
+    expect(posts).toHaveLength(1);
+  });
+});
+
 describe("Razorpay payouts", () => {
   it("checks the sample payouts and says which could not be verified", async () => {
     vi.stubGlobal("fetch", engine({ "razorpay/reconcile/upload": RAZORPAY, "open-items": OPEN }));

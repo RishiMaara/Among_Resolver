@@ -20,6 +20,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { SessionMenu } from "@/components/session-menu";
 import { HistoryLink } from "@/components/history-link";
 import { LoadingMark } from "@/components/loading-mark";
+import { RecoveryClaims, type Recovery } from "@/components/recovery-claims";
 
 export const Route = createFileRoute("/payouts")({ component: Payouts });
 
@@ -46,6 +47,7 @@ interface RazorpayRun {
   results: PayoutResult[];
   unsettled_lines?: { count: number; value_cents: number; plain: string };
   read?: { recon: string; units: string; settlements: string };
+  recovery?: Recovery;
 }
 
 const STATUS: Record<PayoutResult["status"], { label: string; tone: string }> = {
@@ -328,6 +330,7 @@ function RazorpaySection() {
               </tbody>
             </table>
           </div>
+          {run.recovery && <RecoveryClaims recovery={run.recovery} />}
           {run.unsettled_lines?.plain && (
             <p className="mt-3 text-xs text-muted-foreground">{run.unsettled_lines.plain}</p>
           )}

@@ -14,6 +14,7 @@ import { aiStatus } from "@/lib/ai";
 import { currentSession } from "@/lib/session";
 import { ResultsPanel, ResultsSkeleton } from "@/components/results-panel";
 import { AgentFlow } from "@/components/agent-flow";
+import { ElapsedClock, type RunClock } from "@/components/elapsed-clock";
 import { FlowNarrative } from "@/components/flow-narrative";
 import type { AuditEntry } from "@/lib/agent-flow";
 import { HistoryLink } from "@/components/history-link";
@@ -152,7 +153,10 @@ function Index() {
   // Polled DURING the request, since /reconcile/upload blocks for the
   // whole run while the audit store is written as it goes.
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
-  const [elapsedMs, setElapsedMs] = useState(0);
+  // When the run started and ended, not how long it has been: the ticking
+  // lives in ElapsedClock, so a running clock re-renders one number instead
+  // of this page and the canvas ten times a second.
+  const [clock, setClock] = useState<RunClock>(null);
   const [runError, setRunError] = useState<string | null>(null);
   // Kept apart from runError on purpose. This is a short instruction about the
   // form and belongs beside the button that was pressed; runError is the
@@ -438,8 +442,8 @@ function Index() {
     setAuditEntries([]);
     setRunError(null);
     setFormError(null);
-    setElapsedMs(0);
     const startedAt = performance.now();
+    setClock({ start: startedAt, end: null });
     // The audit trail is append-only and keyed by batch_id, which is correct
     // — it is the durable record, and a re-run must not erase what the last
     // one decided. But it means a second run on the same batch id returns
@@ -447,8 +451,6 @@ function Index() {
     // histories as though it were one. So the view is scoped by time; the
     // stored trail keeps everything.
     const runStartedIso = new Date(Date.now() - 1000).toISOString();
-    const tick = window.setInterval(() => setElapsedMs(performance.now() - startedAt), 100);
-    timers.current.push(tick);
     setStatus("running");
     setUploadOpen(false);
     setProgress(0);
@@ -471,7 +473,14 @@ function Index() {
           const trail: AuditEntry[] = (j.trail ?? []).filter(
             (e: AuditEntry) => e.timestamp_utc >= runStartedIso,
           );
-          setAuditEntries(trail);
+          // Only a trail that grew is news. A new array every 350 ms re-rendered
+          // the page and the canvas whether or not an agent had reported.
+          setAuditEntries((prev) =>
+            prev.length === trail.length &&
+            prev[prev.length - 1]?.timestamp_utc === trail[trail.length - 1]?.timestamp_utc
+              ? prev
+              : trail,
+          );
           const agents = new Set(trail.map((e) => e.agent)).size;
           setProgress(Math.min(94, Math.round((agents / 15) * 100)));
         } catch {
@@ -563,8 +572,7 @@ function Index() {
 
       stopped = true;
       window.clearInterval(poll);
-      window.clearInterval(tick);
-      setElapsedMs(performance.now() - startedAt);
+      setClock({ start: startedAt, end: performance.now() });
       setProgress(100);
       setResults(data);
       setStatus("done");
@@ -577,7 +585,7 @@ function Index() {
     } catch (e: unknown) {
       stopped = true;
       window.clearInterval(poll);
-      window.clearInterval(tick);
+      setClock({ start: startedAt, end: performance.now() });
       const msg = e instanceof Error ? e.message : String(e);
       setRunError(msg);
       // A rejection is a structured block; the panel below shows all
@@ -640,7 +648,7 @@ function Index() {
     setResults(null);
     setAuditEntries([]);
     setRunError(null);
-    setElapsedMs(0);
+    setClock(null);
     setProgress(0);
     setStatus("idle");
     setGatewayFile(null);
@@ -1145,11 +1153,7 @@ function Index() {
                 batchId={batchId}
                 statusLabel={statusLabel}
                 statusTone={statusTone}
-                elapsedText={
-                  elapsedMs < 1000
-                    ? `${Math.round(elapsedMs)}ms`
-                    : `${(elapsedMs / 1000).toFixed(2)}s`
-                }
+                elapsed={<ElapsedClock clock={clock} />}
                 hasReport={status === "done" && !!results}
                 onOpenReport={() =>
                   document.getElementById("report")?.scrollIntoView({ behavior: "smooth" })

@@ -31,7 +31,7 @@ export const MEASURED: Measured[] = [
   {
     label: "Linkage vs arithmetic alone (own benchmark, 120 scenarios)",
     before: "0%",
-    after: "65%",
+    after: "84%",
     note: "true sets identified; 0 wrong approvals in both arms. Deterministic, not AI.",
     source: {
       file: "baseline_comparison.json",

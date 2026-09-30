@@ -144,13 +144,13 @@ Part by part — every module, its check, and the measurement behind it:
 | 50,000-record stress run | exact 55/55 set by ID, precision **1.0**, recall **1.0**, **3.1–3.2s** to reconcile (about 4.0s including load and parse) |
 | ReconRiver corpus (references intact) | **94.59%** exact set identified, 91.89% auto-cleared and correct |
 | ReconRiver corpus (references stripped) | 24.32% exact, **56.76%** once the payout cycle is learned from earlier payouts; 21.62% auto-cleared, the rest withheld, none wrong |
-| Own benchmark, 120 scenarios (`benchmark.py` default) | 62% auto-clear, 65% truth identified, 0 false clears |
+| Own benchmark, 120 scenarios (`benchmark.py` default) | 62% auto-clear, 84% truth identified, 0 false clears |
 | **False clears, everywhere above** | **0** |
 | Confidence calibration, 180 scenarios, in-sample (`calibration.py` default) | ECE 0.0538 · MCE 0.20 · Brier 0.0439 — 103 of 103 correct at or above the 0.85 gate |
 | Confidence calibration, ReconRiver, out-of-sample (`calibration_out_of_sample.py`) | ECE 0.0901 raw, **0.026** calibrated (`fit_calibration.py`) · 42 of 42 correct above the gate, 74 predictions |
 | **Real payments** — Baton Rouge and Fulton County public checkbooks, 100 payments, each against its whole day's payment run (`public_ledger_benchmark.py`) | payee known: **100 of 100** exact, 99 auto-cleared · amounts only: 2 of 100, the rest withheld · **0** wrong clears in 200 runs |
 | Scanned bank statements, 24 noisy scans (`ocr_eval.py`) | 11 read exactly right by OCR in the browser, **23** with Gemini on the rest, **0** wrong readings accepted |
-| Tests | **806** backend · **147** frontend |
+| Tests | **815** backend · **150** frontend |
 
 Every figure in that table except the two calibration rows is re-measured by
 `python scripts/generate_benchmarks.py`, which writes
@@ -274,7 +274,7 @@ engine/        Python engine
   src/orchestrator.py        the money path's entry points; layers enforced by
                              tests/test_architecture.py; mypy-clean
   scripts/                   benchmarks, calibration, stress runs, data fetch
-  tests/                     806 tests
+  tests/                     815 tests
   benchmarks/                measurement snapshots
   data/                      Sanctions lists, test ledgers
 docs/                      FINAL_TEST_REPORT.md · COMPARISONS.md · ARCHITECTURE.md · and others above

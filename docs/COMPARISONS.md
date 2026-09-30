@@ -35,7 +35,7 @@ as the vendors' public material shows, and what AmongResolver does instead.
 
 | # | The merchant's problem | What a rule-based engine does | What AmongResolver does | Evidence |
 |---|---|---|---|---|
-| 1 | A payout is many payments, and nothing in the bank credit names them | Matches on a configured key; without one, raises an exception or falls back to amount or oldest-first rules | Identifies the members with linkage, a learned payout cycle and exact subset-sum, to the paisa | True sets 0% with arithmetic alone, 65% with linkage; 24% to 57% with references stripped; 0 wrong clears |
+| 1 | A payout is many payments, and nothing in the bank credit names them | Matches on a configured key; without one, raises an exception or falls back to amount or oldest-first rules | Identifies the members with linkage, a learned payout cycle and exact subset-sum, to the paisa | True sets 0% with arithmetic alone, 84% with linkage (82-85% on benchmark seeds not used for tuning); 24% to 57% with references stripped; 0 wrong clears |
 | 2 | Several different sets of payments add up to the same payout | Oldest-first matching picks one | Proves whether another set also fits, refuses if one does, and names the one payment that decides it | FIFO-style matching wrong in 12 of 12 fixed-price cases; AmongResolver wrong in none |
 | 3 | A payment is missing and an unrelated payment has exactly its amount | Clears if the amounts fit | Withholds, and names the payment that completes the total without a reference | Blind test; `FAILURE_LOG.md`, entry 46 |
 | 4 | The processor's own settlement report could be wrong | Treats it as the source of truth to match against | Re-derives each payout without Razorpay's ids, checks the bank credit by UTR and amount, and audits every fee and tax | Live: a Rs 10 bank shortfall and a Rs 43.09 fee overcharge found |
@@ -50,6 +50,7 @@ as the vendors' public material shows, and what AmongResolver does instead.
 | 13 | A customer whose name resembles a sanctioned party | Handled in a separate screening system, if at all | Screens inside reconciliation; an exact hit blocks, a near spelling is flagged for a person, and the payout still reconciles | `FAILURE_LOG.md`, entry 49 |
 | 14 | Keeping payment data in-house | Hosted subscription | Self-hostable: the engine runs on one machine, with the data on it, and its source is public | 2,000,000 records reconciled on one development machine |
 | 15 | Proving a result was not altered afterwards | An audit trail | A hash-chained audit trail with receipts anyone can verify against the chain | The judges' brief verifies a receipt live |
+| 16 | Getting back money the processor or the bank kept | A variance on a report for someone to chase | Drafts the claim: to whom, how much, the evidence line by line, and whether the figure rests on the data or on the rate card; nothing is sent | Sample: Rs 43.09 fee claim to Razorpay, Rs 10.00 short-credit claim to the bank |
 
 Items 2, 4 and 5 describe capabilities we found no vendor claiming at all.
 The rest are things established tools either leave to configuration, leave to
@@ -70,7 +71,7 @@ with the engine's evidence stage (linkage) switched off and on.
 
 | | Arithmetic alone | AmongResolver |
 |---|---|---|
-| True sets identified | 0% | 65% |
+| True sets identified | 0% | 84% |
 | Auto-cleared | 0% | 62% |
 | Wrong clears | 0 | 0 |
 
@@ -177,7 +178,7 @@ design, and can be re-run from the repository.
 ## 6. What is new, and what is not
 
 Reconciliation is not a new problem; every tool above matches payouts to
-books. Section 1 lists fifteen things AmongResolver does for a Razorpay
+books. Section 1 lists sixteen things AmongResolver does for a Razorpay
 merchant that rule-based engines do not. Three of them are capabilities no
 vendor we reviewed claims at all.
 
@@ -202,7 +203,11 @@ grouping on a shared key, audit trails, exception workflows, records of matched
 items, fee accounting and sanctions screening. The following are improvements
 rather than new problems: Indian tax by date, the working-day calendar, reading
 scanned statements in the browser, model proposals checked by code, calibrated
-confidence, and needing no matching rules to be configured.
+confidence, needing no matching rules to be configured, reading identifiers
+from descriptions (enterprise matchers can be configured to match on a memo
+field), and drafting recovery claims (deduction-management products do this
+for customers' short payments; here it is aimed at the processor and the
+bank).
 
 ---
 

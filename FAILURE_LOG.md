@@ -16,7 +16,7 @@ The tests that found these failures, and the results after each fix, are in
 
 ## Index
 
-52 entries: 41 fixed, 6 mitigated, 1 partly resolved, 1 by design, and 3
+55 entries: 44 fixed, 6 mitigated, 1 partly resolved, 1 by design, and 3
 known limits that remain.
 
 | # | Failure | Severity | Failed safe | How it was resolved | Status |
@@ -33,7 +33,7 @@ known limits that remain.
 | 10 | The 0.85 clearing gate was validated on two corpora | Moderate | Conservative | Since tested on stripped and damaged references: 8 of 8 and 266 of 266 clears correct; real merchant data remains untested. | Mitigated |
 | 11 | External model APIs are unreliable | Low | Yes | Provider fallback chain, timeouts, a per-request budget and deterministic fallbacks. | Mitigated |
 | 12 | An enterprise layer that nothing called | High, to credibility | Yes | Removed; separation of duties rebuilt on the audit trail. | Fixed |
-| 13 | A benchmark labelled AI that measured none | High, to credibility | Yes | Relabelled as the linkage benchmark it is; the result, 0% to 65%, stands. | Fixed |
+| 13 | A benchmark labelled AI that measured none | High, to credibility | Yes | Relabelled as the linkage benchmark it is; the result, 0% to 65%, stood, and is 84% since entry 54. | Fixed |
 | 14 | A tax rate two years out of date | Medium | No | Default corrected and pinned by a test; rate and threshold configurable. | Fixed |
 | 15 | A chargeback marked taken that never took part | High | No | Reversals carry their filing time; only those inside the settlement window join the pool. | Fixed |
 | 16 | Razorpay's tax counted twice | Medium | Yes | The deduction is read as fees, with tax inside the fee; a test pins the reference figures. | Fixed |
@@ -73,6 +73,9 @@ known limits that remain.
 | 50 | The payout cycle was learned in calendar days | Medium | Yes | Both calendar and working days are learned; the sharper is used per merchant. | Fixed |
 | 51 | What the engine noticed never reached the page | Medium | Yes | Notes shown; unreadable rows set aside and named; exchange rates can be entered. | Fixed |
 | 52 | A file over the hosted limit failed with a parse error | Low | Yes | Size checked before sending; the hosting limit explained. | Fixed |
+| 53 | Every run read the whole run history, and the history listed batches alphabetically | Medium, performance | Yes | Filtered on the file name before reading: 3.4 s to 0.025 s a run; sorted by time. | Fixed |
+| 54 | Settlement ids that survived only in the description were ignored | Medium | Yes | Description identifiers read (numbers only); a solver tier for records carrying the settlement's number; 82-85% on held-out seeds. | Fixed |
+| 55 | The page re-rendered ten times a second during a run | Medium, usability | Yes | The clock ticks in its own component; an unchanged audit trail is not replaced: 4.3 s to 1.2 s blocked on a slow CPU. | Fixed |
 
 ---
 
@@ -1068,3 +1071,79 @@ them. The upload page read that reply as JSON and showed the parse error.
 Mitigation: the page checks the files' size before sending and says what the
 limit is and why; a non-JSON error reply is read as a sentence, and a 413 as
 the size limit (lib/api.ts, tested).
+
+## 53. Every run read the whole run history, and the history listed batches alphabetically
+
+Severity: Medium (performance, and a misleading order on the history page)
+Fails safe: Yes (nothing reconciled wrongly)
+
+Found when the user asked for the tests to run faster. A profile of twelve
+blind-test settlements spent 41 of 44 seconds in history.list_runs. Before it
+finishes, every reconciliation notes whether its batch was reconciled before,
+and the lookup opened and decoded every run record ever written, 3,305 files,
+before filtering on the batch: 3.4 seconds a run, growing with every run, on a
+deployed engine as much as in the tests. The same function sorted by file name,
+so the history page, whose purpose is "what this engine said, and when",
+listed batches alphabetically.
+
+Mitigation: records are filtered on the file name, which carries the batch id,
+before any is read (0.025 seconds), and listed by the time in the name, newest
+first. tests/test_history_lookup.py pins both. A blind-test seed now runs in
+about a minute instead of eleven.
+
+## 54. Settlement ids that survived only in the description were ignored
+
+Severity: Medium (settlements proposed wrongly or not at all; none cleared wrongly)
+Fails safe: Yes
+
+The 120-scenario benchmark identified 0% of settlements whose reference column
+was missing or truncated, although each payment's description still carried
+the settlement's number: linkage read the reference column and nothing else.
+Reading descriptions naively would have been worse than not reading them: the
+benchmark's descriptions carry label words ("Settlement", "Unrelated"), and a
+matcher clustering on words would have read the answer key, the mistake of
+entry 26.
+
+Mitigation: linkage reads identifier numbers only (four or more digits, never
+words, years, dates or the record's own amount); a description containing the
+full settlement id anchors, except on the settlement's own feed. With no
+anchor, the member feed is inferred from records carrying the settlement's
+number, and those records are solved before the learned payout cycle. The
+first version found the right records but let a coincidental five-payment sum
+from the cohort tier win on a held-out seed; the solver tier fixed it.
+
+Measured on seeds never looked at while tuning, from an untouched copy of the
+previous commit: 63% to 82% and 65% to 85% of true sets identified, 0 wrong
+clears; with every description erased the result returns exactly to 65%. The
+blind test (133 correct, 0 wrong, three seeds), ReconRiver and the 1,000-case
+suite did not move. Such a set is proposed, not cleared, unless a record names
+the settlement, so the auto-clear rate is unchanged.
+
+A flaw in the benchmark itself, recorded rather than fixed so earlier figures
+stay comparable: an ERP mirror row's reference quotes the original payment's id,
+and a true member's id contains the word TRUE, which clusters the mirrors. It
+works against the engine (it clusters the wrong feed), and it disappears when
+the member feed is known.
+
+## 55. The page re-rendered ten times a second during a run
+
+Severity: Medium (the page stuttered during a run on slower machines)
+Fails safe: Yes (nothing shown wrongly)
+
+Found by measuring rather than by looking: a browser with the CPU slowed four
+times, as on a laptop on battery, pressing Run on the sample and recording
+every task that held the main thread over 50 ms. The main thread was blocked
+for 17.8 seconds in 88 long tasks. Entry 53 took it to 4.3 seconds; the rest
+was the page. The run clock was state on the main screen, set every 100 ms,
+so the page, the agent canvas and everything under them re-rendered ten times
+a second to change one number; and the progress poll replaced the audit trail
+with a new array every 350 ms, which re-rendered them again whether or not an
+agent had reported.
+
+Mitigation: the page stores when a run started and ended, and the clock ticks
+in its own component (src/components/elapsed-clock.tsx); the poll keeps the
+trail it has unless the new one has grown. Measured the same way: 1.2 seconds
+blocked, 6 long tasks, 6 frames over 50 ms. The largest pause left, about
+0.8 seconds, is the report being drawn once when the run ends.
+src/components/elapsed-clock.test.tsx pins that ticking re-renders the clock
+and not the page.

@@ -16,7 +16,8 @@ import os
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import timedelta
+from datetime import date, timedelta
+from functools import lru_cache
 
 import linkage_em
 from schema import NormalizedTxn, SettlementBatch
@@ -162,6 +163,54 @@ def tokenize_ref(ref: str) -> set[str]:
     return {t.upper() for t in _TOKEN_RE.findall(ref) if len(t) >= MIN_TOKEN_LEN}
 
 
+_DIGITS = re.compile(r"\d+")
+
+
+def _looks_like_date(tok: str) -> bool:
+    """A year, or a whole date written without separators: 2026, 20260917, 17092026."""
+    if len(tok) == 4:
+        return 1900 <= int(tok) <= 2099
+    if len(tok) == 8:
+        for y, m, d in ((tok[:4], tok[4:6], tok[6:]), (tok[4:], tok[2:4], tok[:2])):
+            try:
+                date(int(y), int(m), int(d))
+                return True
+            except ValueError:
+                pass
+    return False
+
+
+@lru_cache(maxsize=65536)
+def _description_ids(memo: str, amount_cents: int) -> frozenset[str]:
+    rupees = {str(abs(amount_cents) // 100), str(abs(amount_cents))}
+    return frozenset(tok for tok in _DIGITS.findall(memo)
+                     if len(tok) >= MIN_TOKEN_LEN and not _looks_like_date(tok)
+                     and tok not in rupees)
+
+
+def description_tokens(t: NormalizedTxn) -> frozenset[str]:
+    """
+    Identifier numbers a record's description carries: "Receipt against
+    STL0042", a Tally narration naming the invoice. When the reference column
+    is empty or cut short, the description is often where the id survived, and
+    enterprise matchers read it for that reason.
+
+    Numbers only, never words. A word in a description is how a person
+    describes a payment ("Settlement", "Refund", "Unrelated"), and a matcher
+    that clusters on words learns the describer, not the payment; the
+    benchmark's own descriptions would have handed it the answer (FAILURE_LOG
+    26 is the same mistake once already made). Years, whole dates and the
+    record's own amount are dropped: they are shared by coincidence.
+
+    These tokens cluster records; they never anchor one to a settlement. Only
+    the settlement's full id inside a description anchors (see
+    _canonical_anchor_hits).
+    """
+    if not t.memo_raw:
+        return frozenset()
+    return _description_ids(t.memo_raw, t.amount_cents)
+
+
 def _is_identifier_token(tok: str) -> bool:
     """
     Can this token ANCHOR, i.e. is it an identifier rather than a word? Real
@@ -264,6 +313,11 @@ def _canonical_anchor_hits(batch: SettlementBatch, pool: list[NormalizedTxn]) ->
         txn_key(t) for t in pool
         if _contains_identifier(canonical_key(t.ref_id_canonical), canon)
         or _names_by_its_separators(_raw_ref(t), canon)
+        # A description naming the whole settlement id anchors too, except in
+        # the feed the settlement itself arrived on: a bank line whose
+        # narration names the payout is the payout, not one of its members.
+        or (t.memo_raw and t.source is not batch.source
+            and _contains_identifier(canonical_key(t.memo_raw), canon))
     }
 
 
@@ -289,11 +343,16 @@ def build_candidate_links(
     stmt_tokens = _settlement_tokens(batch)
 
     # ── index the pool once ───────────────────────────────────────────────
+    # Reference tokens can anchor; reference and description ids can cluster.
     by_token: dict[str, list[NormalizedTxn]] = defaultdict(list)
+    by_cluster: dict[str, list[NormalizedTxn]] = defaultdict(list)
     by_amount: dict[int, list[NormalizedTxn]] = defaultdict(list)
     for t in pool:
-        for tok in tokenize_ref(t.ref_id_canonical):
+        ref_tokens = tokenize_ref(t.ref_id_canonical)
+        for tok in ref_tokens:
             by_token[tok].append(t)
+        for tok in ref_tokens | description_tokens(t):
+            by_cluster[tok].append(t)
         by_amount[t.amount_cents].append(t)
 
     # ── signal 1: transactions naming the settlement directly ─────────────
@@ -321,7 +380,7 @@ def build_candidate_links(
     # informative; a token shared by half the pool is not a reference, it is
     # boilerplate, so it is ignored.
     cluster_limit = max(2, min(60, len(pool) // 8))
-    for tok, members in by_token.items():
+    for tok, members in by_cluster.items():
         if 2 <= len(members) <= cluster_limit:
             for t in members:
                 signals[txn_key(t)].shared_ref_token = True
@@ -389,9 +448,17 @@ def build_candidate_links(
 
     if member_source is None:
         anchor_sources = {c.txn.source for c in linked if c.signals.settlement_id_match}
+        # With no anchor, a cluster that carries the settlement's own number
+        # is the next best witness to where the members live. One payment in
+        # two feeds sums the same either way, so without this the solver chose
+        # between a payment and its own ERP line by arithmetic, which cannot.
+        named_sources = {c.txn.source for c in linked if c.signals.ref_prefix_cluster}
         if len(anchor_sources) == 1:
             member_source = next(iter(anchor_sources))
             scope_basis = "inferred from anchors"
+        elif not anchor_sources and len(named_sources) == 1:
+            member_source = next(iter(named_sources))
+            scope_basis = "inferred from records carrying the settlement's number"
 
     scope_note = ""
     if member_source is not None:
