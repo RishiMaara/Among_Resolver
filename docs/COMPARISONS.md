@@ -35,7 +35,7 @@ as the vendors' public material shows, and what AmongResolver does instead.
 
 | # | The merchant's problem | What a rule-based engine does | What AmongResolver does | Evidence |
 |---|---|---|---|---|
-| 1 | A payout is many payments, and nothing in the bank credit names them | Matches on a configured key; without one, raises an exception or falls back to amount or oldest-first rules | Identifies the members with linkage, a learned payout cycle and exact subset-sum, to the paisa | True sets 0% with arithmetic alone, 84% with linkage (82-85% on benchmark seeds not used for tuning); 24% to 57% with references stripped; 0 wrong clears |
+| 1 | A payout is many payments, and nothing in the bank credit names them | Matches on a configured key; without one, raises an exception or falls back to amount or oldest-first rules | Identifies the members with linkage, a learned payout cycle and exact subset-sum, to the paisa | True sets 0% with arithmetic alone, 95% with linkage and 89% cleared without review (93-95% and 89-90% on benchmark seeds not used for tuning); 24% to 57% with references stripped; 0 wrong clears |
 | 2 | Several different sets of payments add up to the same payout | Oldest-first matching picks one | Proves whether another set also fits, refuses if one does, and names the one payment that decides it | FIFO-style matching wrong in 12 of 12 fixed-price cases; AmongResolver wrong in none |
 | 3 | A payment is missing and an unrelated payment has exactly its amount | Clears if the amounts fit | Withholds, and names the payment that completes the total without a reference | Blind test; `FAILURE_LOG.md`, entry 46 |
 | 4 | The processor's own settlement report could be wrong | Treats it as the source of truth to match against | Re-derives each payout without Razorpay's ids, checks the bank credit by UTR and amount, and audits every fee and tax | Live: a Rs 10 bank shortfall and a Rs 43.09 fee overcharge found |
@@ -71,8 +71,8 @@ with the engine's evidence stage (linkage) switched off and on.
 
 | | Arithmetic alone | AmongResolver |
 |---|---|---|
-| True sets identified | 0% | 84% |
-| Auto-cleared | 0% | 62% |
+| True sets identified | 0% | 95% |
+| Auto-cleared | 0% | 89% |
 | Wrong clears | 0 | 0 |
 
 Result file: `engine/docs/benchmarks/baseline_comparison.json`. Linkage decides

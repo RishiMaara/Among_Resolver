@@ -253,187 +253,47 @@ would misrepresent the law to whoever relies on the output.
 
 ## Measured results
 
-**ReconRiver** — third-party dataset, ingested through Agent 0, ground truth by
-transaction ID:
-
-| condition | batches | exact | auto-cleared correct | false clears | mean latency | max latency |
-|---|---|---|---|---|---|---|
-| anchored | 37 | **94.59%** | 91.89% | **0** | 0.36s | 4.20s |
-| settlement id stripped | 37 | 24.32% | 21.62% | **0** | 0.87s | 4.67s |
-
-**Batch close** — 738 records across 60 settlements, every one attempted,
-hazards seeded at one settlement in sixteen:
-
-| records | settlements | match rate | false clears | false alarms | throughput |
-|---|---|---|---|---|---|
-| 738 | 60 | **95.0%** | **0** | **0** | 190–250 rec/sec (3–4 s) |
-
-Every unresolved settlement returns a reason carrying an amount and a
-direction — `scripts/close_batch.py`.
-
-**Own benchmark** — 180 scenarios, 12 families × 3 pool densities, 30
-unsolvable by construction:
+Each figure's command, file and history are in
+[FINAL_TEST_REPORT.md](FINAL_TEST_REPORT.md); figures that were once wrong, and
+why, are in [FAILURE_LOG.md](../FAILURE_LOG.md). The ones this design is judged
+by:
 
 | | |
 |---|---|
-| Auto-clear correct | 68.67% (member feed declared) / 62.0% (not) |
-| Truth identified | 78.67% (declared) / 65.33% (not) |
-| **False clears** | **0** |
-| Correct abstentions | **100%** |
+| ReconRiver (third-party), references intact | 94.59% exact, 91.89% cleared and right, 0 false clears |
+| ReconRiver, settlement references stripped | 24.32% exact; 56.76% with the payout cycle learned; 0 false clears |
+| Batch close, 738 records, 60 settlements | 95.0% match rate, 0 false clears, 0 false alarms |
+| Own benchmark, 120 scenarios | 89% cleared and right, 95% true set identified, 0 false clears |
+| 50,000 records, one settlement | exact 55/55, precision and recall 1.0, 3.1–3.2 s to reconcile |
+| Calibration, own benchmark, 180 (in-sample) | ECE 0.0783, Brier 0.0223; 133 of 133 right at or above the 0.85 gate |
+| Calibration, ReconRiver, 74 (out-of-sample) | ECE 0.0901 raw, 0.026 with the fitted map; 42 of 42 right at or above the gate |
 
-At the default 120-scenario count (`--scenarios` omitted) truth-identified
-(not declared) is 64.0% rather than 65.33% — the two counts sample slightly
-different scenario mixes at the same family proportions; both are real,
-reproducible runs of the same script, not a discrepancy.
+**Where the confidence number can be trusted.** At and above the 0.85 gate,
+every prediction on both corpora was the exact true set, so the number errs
+low there, which costs review time rather than money. Below the gate it is a
+ranking: out-of-sample, the low band says 0.14 and is right 6.3% of the time
+(2 of 32). That band never clears. A fuzzy recovery bundle, which once
+reported its own similarity threshold (0.90) as a confidence and was the exact
+set 0% of the time, is fixed at 0.05, below the gate by assertion. In-sample
+ECE rose from 0.0538 to 0.0783 on 30 September, and Brier fell from 0.0439 to
+0.0223: the band for a complete named set says 0.88 and was right in 80 of 80
+cases. That is underconfidence, kept on purpose, since all 80 came from one
+generator.
 
-**50K stress** — 50,000 records, target contested by 49,999 of them: exact
-55/55 by ID, precision/recall 1.0000, **2.0-2.3s to reconcile** (~1s to load
-and parse; 3.0-3.5s total wall clock), ties out to 0c. A range, because it is
-wall-clock on one machine and moves with load; the exact figure from
-the last run is in [`benchmarks/latest.json`](benchmarks/latest.json), written
-by `scripts/generate_benchmarks.py` with the commit it was measured at.
-
-**Scenario counts differ by script, which is not a contradiction.**
-`benchmark.py` defaults to 120 scenarios and `--scenarios` raises it;
-`calibration.py` and the runs quoted here use 180; `realistic_benchmark.py`
-defaults to 48 per profile. Any figure below names the count it came from.
-
-**Calibration** — ECE **0.0538**, MCE 0.2, Brier 0.0439 over 180 scenarios
-at seed 7 (`calibration.py`, in-sample). Bucketed:
-
-| confidence | n | said | actual | verdict |
-|---|---:|---:|---:|---|
-| [0.00, 0.50) | 72 | 0.150 | 0.139 | well calibrated |
-| [0.70, 0.85) | 5 | 0.800 | 1.000 | underconfident |
-| [0.85, 0.93) | 41 | 0.876 | 1.000 | underconfident |
-| [0.93, 1.01) | 62 | 0.955 | 1.000 | well calibrated |
-
-**No bucket is overconfident in-sample**, and above the gate none is in
-either corpus: wherever this engine claims enough confidence to clear, it is
-at least that accurate. The [0.50, 0.70) bucket that used to sit here —
-claiming 0.54, right 36.4% — is gone, because the constant feeding it was
-re-measured; see below. One bucket IS overconfident out-of-sample, and it is
-named in "Known limitations" rather than left out of this sentence.
-
-The [0.85, 0.93) band is the one that matters, because it sits right at the
-auto-clear gate. It used to claim 88.6% and be right 57.8% of the time. It now
-claims 87.6% and is right 100% of the time — every one of the 103 predictions
-at or above the gate was the exact true set.
-
-**What changed, and why the old number was so bad.** The fuzzy recovery pass —
-the fallback that runs when exact subset-sum finds nothing — reported
-`fuzz_cfg.confidence_threshold` as its confidence. That constant is the
-similarity score above which a fuzzy PAIR is worth acting on; it is not a
-statement about the recovered SET, and assigning one to the other is a
-category error that happened to land on 0.90, just above the gate. Measured
-over 167 such bundles (`scripts/edge_case_suite_1000.py`): the exact set was
-right **0%** of the time, about 4% of what the bundle contained belonged to
-the settlement, and the median bundle was 63 transactions. A 63-record dragnet
-was reporting the same confidence as a fully anchored three-record match.
-
-Those bundles are now reported at 0.05, below the gate by construction and
-asserted to stay there, with what they are actually good for — the true
-members are somewhere inside 39.5% of the time — stated in the reasoning where
-a reviewer can use it. **The last overconfident band, and how it was closed.** [0.50, 0.70) held
-the ambiguous-exact-match constant: a set whose arithmetic admits more than
-one answer. It has now been re-measured twice and come back lower both
-times — the 0.65 band was right 54.5%, the 0.54 band that replaced it was
-right 36.4% (n=11 each, the same small sample). The error was in the
-dangerous direction both times, so it is set at the observed 0.36. It sits
-below the auto-clear gate either way, so the change costs no coverage; it
-only stops the number misleading whoever reads it.
-
-The confidence number is now worth reading as a probability at and above the
-gate. Below it, it remains a ranking signal — and clearing still requires this
-figure **and** the three other independent guards to agree (see
-"Governance"), which is what has kept the false-clear rate at 0 throughout.
-
-### Calibration measured out-of-sample — and the gate does not fully hold
-
-ECE 0.0538 is measured on 180 scenarios we wrote, using the buckets the 0.85
-gate was picked from. Real, and in-sample, and those are not the same claim.
-`scripts/calibration_out_of_sample.py` measures it on a corpus the gate was
-never tuned against:
-
-| corpus | predictions | ECE | at/above 0.85 | wrong above gate | of those, auto-cleared |
-|---|---:|---:|---:|---:|---:|
-| own benchmark *(in-sample)* | 180 | 0.0538 | 103 | **0** | 0 |
-| ReconRiver *(out-of-sample)* | 74 | 0.0901 | 42 | **0** | 0 |
-
-The safety-relevant column is "wrong above gate", and it is now zero in both:
-every prediction at or above 0.85 was the exact true set, on our own corpus
-and on a third-party one the gate was never tuned against. Previously 4 of 46
-ReconRiver predictions above the gate were wrong.
-
-**One number moved the wrong way and is reported rather than dropped.**
-Out-of-sample ECE rose, 0.0766 to 0.1037, while in-sample ECE fell from
-0.1567 to 0.0544 (since FAILURE_LOG 31: 0.0901 out-of-sample, 0.0538 in).
-(Out-of-sample MCE — the worst single bucket, which is the
-figure that actually bounds how wrong any one claim can be — improved from
-0.46 to 0.13.) The two are measuring different things about the same change: the
-fuzzy bundles that used to sit at 0.90 now sit at 0.05, which removes a large
-block of confident-and-wrong predictions (in-sample ECE falls, and the
-above-gate errors go to zero) but concentrates the remaining error in the
-low band, where the engine now says 0.136 on a ReconRiver set it gets right
-about 3% of the time. That is OVERconfidence (an earlier version of this
-paragraph called it underconfidence), harmless only because the band never
-clears — every proposal in it goes to a person — but it is still a gap, and
-averaging it into a single ECE makes the out-of-sample headline worse while
-the thing that can cost money got strictly better.
-
-Two caveats kept deliberately: two corpora is validation, not proof, and both
-carry usable references — what the gate does where references are absent
-entirely is not measured by either.
-
-### Why the numbers used to move
-
-Three ECE figures once appeared across these documents — 0.067, 0.073, 0.0763
-— and each was a real number from a real run. They disagreed because CP-SAT's
-parallel search is not deterministic: with several workers, whichever finds an
-optimal solution first wins, and on a scenario where more than one subset
-genuinely satisfies the sum the answer differs run to run. Three of the 180
-scenarios are like that. Diffing three runs showed exactly those three
-flipping and the other 177 identical.
-
-The engine was not wrong on them. It reported 0.19–0.54 confidence, which is
-what "the data does not determine this" is supposed to look like. What was
-wrong was quoting a headline from a harness that could not produce it twice.
-
-`benchmark.run_scenario` now pins the solver to one worker: three runs of 180
-scenarios differ in zero. Production keeps the parallel search, where speed
-matters and the non-determinism is harmless because those cases already report
-low confidence and never auto-clear.
-
-The stripped-condition number is the honest one to quote alongside the
-headline: it says how much of the accuracy is carried by reference quality
-rather than by the engine.
-
-**A separate, larger drift was found while re-measuring for this pass**: the
-headline ECE (0.0863), the own-benchmark truth-identified figure (82%), and
-the "103 of 103 correct above the gate" claim were all stale — not from
-nondeterminism this time, but simply never re-measured after the scenario
-generator grew the `ref_missing` / `ref_truncated` / `ref_partial` /
-`ref_collision` families. Running `calibration.py` against the last commit
-before this pass of fixes reproduces the *current* 0.1567/30.87/0.1808
-exactly, so nothing below changed the number — it only got measured honestly
-for the first time. The "103" itself was not invented: it is the true count
-of correct predictions at or above 0.85 (41 in the [0.85,0.93) band, 62 in
-[0.93,1.01)) — the number that was wrong was the implied denominator. The
-true one is 133, not 103, and 30 of those 133 were wrong.
+**Why the numbers are reproducible.** CP-SAT's parallel search is not
+deterministic: where more than one subset satisfies the sum, whichever worker
+finishes first wins, and three different figures for one ECE once circulated
+for that reason. The benchmarks pin the solver to one worker, and three runs
+of 180 scenarios differ in zero. Production keeps the parallel search, since
+those cases report low confidence and never clear.
 
 ---
 
 ## The module that was split
 
-`engine/src/main.py` was ~2,060 lines: 20 route handlers plus roughly 30
-module-level functions carrying real business logic — `compliance_review`,
-`interchangeable_note`, `matched_rows`, `contested_payments`, `_rate_card`,
-`_settlement_instant`, `_format_report`. None of it was unit-testable
-without the API layer, and `test_endpoints.py` was doing work that belonged
-to a unit test.
-
-Everything else in this repo is decomposed one concern per module, so this
-stood out more for the contrast, not less. It is now `engine/src/api/`:
+`engine/src/main.py` was ~2,060 lines: 20 route handlers and about 30
+functions of business logic that could not be tested without the API layer.
+It is now `engine/src/api/` and the modules beside it:
 
 | module | lines | holds |
 |---|---:|---|
@@ -456,19 +316,9 @@ stood out more for the contrast, not less. It is now `engine/src/api/`:
 | `fee_model.py` | 111 | the finding types and fee-field helpers both share |
 
 `models` and `presentation` import nothing from FastAPI beyond pydantic, so
-they can be exercised without a running app. The split was made against the
-full suite — tests passing before and after, `pylint --errors-only`
-clean — and route registration moved to `include_router` rather than
-changing any path.
-
-One test had to change with it, and the reason is worth stating.
-`test_every_upload_path_goes_through_the_cap` read `main.py`'s source
-looking for a bare `await ....read()` that bypasses the upload ceiling. That
-test was true when every endpoint lived in one file and would have gone
-silently vacuous the moment one moved — passing because it was looking at
-the wrong file, not because the property held. It now scans all 32 modules
-under `src/`. A test that guards against code someone writes later has to
-look where they will write it.
+they run without an app. The test that checks every upload goes through the
+size cap used to read `main.py` alone, and would have passed vacuously once an
+endpoint moved; it now scans every module under `src/`.
 
 ---
 
@@ -551,42 +401,19 @@ What a streaming deployment would add, and what each piece is for:
 
 ## Known limitations
 
-- **The confidence score is well calibrated at and above the gate, and not
-  below it out-of-sample.** Every prediction at or above 0.85 was the exact
-  true set — 103 of 103 in-sample, 42 of 42 out-of-sample on ReconRiver. Above
-  the gate it errs low (says 0.87, is right every time), which costs review
-  time rather than money. Below the gate the out-of-sample low band is
-  overconfident: it says 0.14 and is right 6.3% of the time (2 of 32). That band
-  never clears anything, so the harm is a reviewer seeing a hopeful number on
-  a proposal already routed to them — but it is the reason out-of-sample ECE
-  (0.0901) is worse than in-sample (0.0538). The in-sample band that used to
-  be overconfident — [0.50, 0.70), claiming 0.54 against 36.4% — was set to
-  its measured 0.36. See "Calibration measured out-of-sample" above for the
-  full breakdown.
-- **Sanctions screening is a point-in-time list** and exact-match after
-  normalisation. Real screening also needs transliteration variants, fuzzy
-  name matching and date-of-birth disambiguation, none of which this does.
-  See *Sanctions screening* below for how the list is configured and what
-  the engine reports about it.
-- **Linkage weights are hand-set**, reasoned from forgeability rather than
-  learned.
-- **Where references are missing or truncated the engine declines** rather than
-  guessing. Correct, but declining does not clear settlements.
-- **LLM features use an external API**, confined to
-  `llm_provider.py`. Verified live: Agent 0b resolved `val_dt -> timestamp` on
-  a schema where rule-based mapping found no timestamp at all, and correctly
-  refused to map a fee column to `amount`. Agent 9 answered questions about the
-  50K reconciliation with figures that tie to the recorded state exactly, and
-  described the Rs 5 crore ceiling as internal policy rather than law.
-- **External LLM APIs can be intermittently unavailable** (503) or grant
-  zero quota (429, `limit: 0`). Both paths retry transient failures and
-  then degrade to the deterministic result — observed repeatedly against a live
-  key, not just asserted.
-- **The Q&A cache is in-process.** The audit trail is not: it is durable
-  SQLite in WAL mode, which `GET /health` reports, with a file-backed trail
-  and then an in-memory list as fallbacks. Tamper-evidence — signing or an
-  append-only log the process cannot rewrite — is still a deployment concern
-  this does not solve.
+- **Below the gate, confidence is a ranking, not a probability** (above).
+- **Sanctions screening is exact-match against a point-in-time list**, with a
+  near spelling flagged for a person; no transliteration or date-of-birth
+  matching (below).
+- **Linkage weights are hand-set**, with a learned Fellegi-Sunter model beside
+  them; a sweep puts them within 3 points of the best (FAILURE_LOG 2).
+- **Where nothing ties records to a settlement, the engine declines.**
+  Correct, but a declined settlement is still a person's work.
+- **Model APIs can be unavailable or out of quota.** Every model use retries
+  transient failures, then falls back to the deterministic result and says so.
+- **Tamper-evidence stops at the hash chain.** A receipt proves the trail was
+  not rewritten against the chain; a store the process itself cannot rewrite
+  is a deployment concern.
 
 ---
 
@@ -605,7 +432,7 @@ python scripts/run_reconriver.py          # accuracy, third-party data
 python scripts/pull_razorpay.py --month YYYY-MM   # live Razorpay settlements
 python scripts/close_batch.py --generate  # batch close: match rate + exceptions
 python scripts/calibration.py             # is the confidence real
-python -m pytest tests/ -q                # 815 tests
+python -m pytest tests/ -q                # 820 tests
 ```
 
 Frontend: `npm run dev` (port 8080).
@@ -613,83 +440,25 @@ Frontend: `npm run dev` (port 8080).
 
 ## Sanctions screening
 
-`SANCTIONS_HIT` is the only rule in this engine that blocks funds on a
-statutory basis, so the list behind it deserves more scrutiny than any other
-configuration here.
+`SANCTIONS_HIT` is the only rule that blocks funds on a statutory basis. Its
+list is the UN Security Council Consolidated List, which India implements
+through the UAPA Order: public, free and machine-readable.
+`python scripts/fetch_sanctions_list.py` writes it to
+`data/sanctions/un_consolidated.txt` with the source URL, the list's own
+generation date and when it was retrieved; `SANCTIONS_LIST_PATH` points at a
+different list. A snapshot is tracked so a deployed engine, which is built
+from git, screens against the real list (3,422 identifiers); CI fetches a
+fresh one, and a list older than 30 days is warned about by age.
 
-**Getting a real list.** The UN Security Council Consolidated List is public,
-free, machine-readable and needs no registration. It is also the list India
-implements domestically through the UAPA Order, which is the jurisdiction this
-engine targets.
+`/compliance/rulebook` and `/compliance/attestation/{batch_id}` say which list
+was used: `is_illustrative`, `entry_count`, `list_generated`, `retrieved` and
+the match mode. With no list at all the engine screens four illustrative names
+and says so at every startup, and `test_compliance.py` skips its real-list
+check by name rather than pass quietly against them.
 
-```
-cd engine
-python scripts/fetch_sanctions_list.py
-```
-
-That writes `data/sanctions/un_consolidated.txt` — primary names plus
-multi-token aliases, one per line, normalised — with a provenance header
-recording the source URL, the list's own generation date, and when it was
-retrieved. The engine picks that path up automatically; `SANCTIONS_LIST_PATH`
-overrides it for a different list.
-
-**Why the file is not committed.** A sanctions list is a snapshot of something
-that changes continuously. A copy in the repository is stale the week after it
-lands, and stale screening is the failure mode that matters: it passes a party
-designated after the snapshot while looking exactly like screening that works.
-So the list is fetched deliberately, stamped, and `data/sanctions/` is
-gitignored.
-
-**What the engine tells you about it.** `/compliance/rulebook` and
-`/compliance/attestation/{batch_id}` both return a `sanctions_list` block:
-
-An earlier pass could not reach `scsanctions.un.org` and screened against
-the four-name demo set. The fetch now succeeds, and the block this checkout
-actually returns is the real one — 3,422 identifiers, with the list's own
-generation stamp, verbatim:
-
-```json
-{
-  "source": ".../data/sanctions/un_consolidated.txt",
-  "is_illustrative": false,
-  "entry_count": 3422,
-  "list_generated": "2026-09-11T23:00:03.157Z",
-  "retrieved": "2026-09-12T10:26:20+00:00",
-  "match_mode": "exact after normalisation blocks; a near spelling (85% similar) or a low-quality alias flags for a person; no transliteration or DOB matching"
-}
-```
-
-With no list fetched, the same block instead reports
-`"source": "illustrative-builtin"`, `"is_illustrative": true` and
-`"entry_count": 4`, and the engine says so at every startup.
-
-The suite is honest about which of the two it ran against. A fresh clone
-now carries a real list — `engine/data/sanctions/un_consolidated.txt` is
-tracked so a deployed engine, which is built from git, screens against the UN
-Consolidated List instead of silently dropping to four demo names — so the
-run is **815 passed** with or without a fetch. If neither list is present,
-`test_compliance.py` skips its real-list assertion and names itself, rather
-than passing quietly against the demo set. A fresh fetch into `data/sanctions/`
-at the repo root takes priority over the tracked snapshot, and CI does one.
-
-`is_illustrative` is the field that matters. A block produced by the four-name
-demo list and a block produced by the UN Consolidated List are indistinguishable
-in a report otherwise, and they mean entirely different things. With no list
-configured the engine screens the demo set and says so at every startup; a list
-older than 30 days is warned about by age.
-
-**Normalisation, and why screening needs it.** Both the list and the
-counterparty are folded to uppercase alphanumerics with punctuation collapsed
-to spacing, so `Al-Qaida`, `al qaida` and `AL QAIDA` are one designation rather
-than three strings. Without that fold, screening compares a raw `payer_id`
-against a list of real names by exact equality and matches nothing — a clean
-screen against a list it is structurally unable to hit, which is worse than no
-screening because it looks like the real thing. The fold lives in two places by
-necessity (the fetch script writes the list, the agent reads it); a test asserts
-the two implementations agree, because if they drift the list silently stops
-matching itself.
-
-**What it still misses.** A misspelling, a transliteration the list does not
-carry, or two people sharing a name. Those are stated to any reviewer in
-`compliance_rulebook.SANCTIONS_HIT.threshold_applied` rather than left to be
-discovered.
+Names are folded to uppercase alphanumerics first, so `Al-Qaida`, `al qaida`
+and `AL QAIDA` are one designation; the fetch script and the agent each fold,
+and a test asserts the two agree. An exact match blocks; a near spelling (85%
+similar) or a low-quality alias is flagged for a person. A transliteration
+the list does not carry, or two people sharing a name, is not caught, and the
+rulebook says so.

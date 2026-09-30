@@ -81,9 +81,9 @@ here from the README unchanged, except where a figure has since changed.
   absorb is never dropped from the queue.
 - **What linkage buys, measured** (`scripts/baseline_comparison.py`). The same
   engine with linkage disabled identifies the true set in 0% of 120 benchmark
-  scenarios; with it, 84% (65% before the tuning of 30 September, and 82-85%
-  on benchmark seeds not used for that tuning), with zero wrong approvals in
-  both arms. This is
+  scenarios; with it, 95%, and 89% cleared without review (65% and 62%
+  before the tuning of 30 September; 93-95% and 89-90% on benchmark seeds not
+  used for that tuning), with zero wrong approvals in both arms. This is
   deterministic entity resolution, not AI — the script says so, because it
   was first written claiming otherwise.
 - **Identifiers read from descriptions** (`linkage.description_tokens`). When
@@ -94,8 +94,11 @@ here from the README unchanged, except where a figure has since changed.
   the members. A description containing the full settlement id anchors, except
   on the settlement's own feed. Missing and truncated references went from 0%
   to 90-100% identified; with every description erased the benchmark returns
-  exactly to its old figure. Such a set is proposed, not cleared, unless a
-  record names the settlement.
+  exactly to its old figure. A set clears when it is exactly the records
+  carrying the settlement's number, all of them and nothing else, and adds up
+  to the paisa: a set fixed before the arithmetic and confirmed by it. One
+  such record left out, or one without the number let in, and it is proposed
+  instead.
 - **Learned linkage for payouts with no reference** (`linkage_em.py`,
   `settlement_cycle.py`). A Fellegi-Sunter model — the method behind Splink —
   with m-probabilities learned by EM from anchored records, or from the

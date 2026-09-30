@@ -22,15 +22,15 @@ Related documents:
 
 | Campaign | What it establishes | Result |
 |---|---|---|
-| Backend test suite | Behaviour of every module, including every past defect | 815 of 815 pass |
-| Frontend test suite | Page behaviour, and that published figures match their files | 151 of 151 pass |
+| Backend test suite | Behaviour of every module, including every past defect | 820 of 820 pass |
+| Frontend test suite | Page behaviour, and that published figures match their files | 152 of 152 pass |
 | Static analysis | Types, lint errors, security | mypy clean on 78 files; pylint and bandit report no issues |
 | Blind adversarial test | Behaviour on cases written after the engine, with an independent answer key | 133 correct clears, 0 wrong, on two seeds of 237 settlements |
 | 1,000-case edge suite | Behaviour across 29 hazard families and joint (N:M) runs | 1,050 batches scored, 0 wrong clears, 0 crashes |
 | 50-case live edge suite | The HTTP path end to end, including rejected files | 50 of 50 behave as specified, 0 wrong clears |
 | Limits test | Where the engine stops being able to prove an answer | 200,000 payments in one payout and 2,000,000 records in one file proved exactly; 0 wrong clears |
-| Accuracy benchmarks | Identification rate with and without each component | Linkage 0% to 84%; references stripped 24.32% to 56.76%; 0 wrong clears |
-| Engine tuning | Identification with damaged references, checked on seeds not used for tuning | 63-65% to 82-85% on two held-out seeds; 0 wrong clears |
+| Accuracy benchmarks | Identification rate with and without each component | Linkage 0% to 95% identified, 89% cleared; references stripped 24.32% to 56.76%; 0 wrong clears |
+| Engine tuning | Identification and clearing with damaged references, checked on seeds not used for tuning | Identified 63-65% to 93-95%, cleared 62-64% to 89-90% on two held-out seeds; 0 wrong clears |
 | Real public data | Two government checkbooks with a recorded answer | 50 of 50 and 50 of 50 exact |
 | Live model evaluation | The investigator agent against a live model | 0 wrong proposals passed the verifier |
 | Live website verification | Every page and control on the deployed site | All controls work; six defects found and fixed |
@@ -45,7 +45,7 @@ fixed and recorded in `FAILURE_LOG.md`, entry 46.
 
 ### 1.1 Backend
 
-The backend suite has 815 tests. It covers file parsing and header mapping,
+The backend suite has 820 tests. It covers file parsing and header mapping,
 normalisation to integer paise and UTC, linkage, the subset-sum solver, the
 refusal gates, fee and tax audit, compliance screening, the investigator and
 its verifier, the paid-out ledger, the audit chain, every API route, and a
@@ -71,7 +71,7 @@ engine. `python engine/scripts/fetch_sanctions_list.py` refreshes it.
 npx vitest run --config vitest.config.ts
 ```
 
-Result: 151 passed, 0 failed. Two of these suites protect the documentation
+Result: 152 passed, 0 failed. Two of these suites protect the documentation
 itself: `src/lib/measured.test.ts` fails if any figure on the judges' brief
 differs from the benchmark file it cites, and
 `src/lib/documented-figures.test.ts` fails if the README's test counts differ
@@ -303,7 +303,7 @@ by `src/lib/measured.test.ts`.
 
 | Benchmark | Script | File | Result |
 |---|---|---|---|
-| Linkage against arithmetic alone, 120 scenarios | `baseline_comparison.py` | `baseline_comparison.json` | True sets identified 0% to 84%; auto-cleared 0% to 62%; 0 wrong clears in both arms |
+| Linkage against arithmetic alone, 120 scenarios | `baseline_comparison.py` | `baseline_comparison.json` | True sets identified 0% to 95%; auto-cleared 0% to 89%; 0 wrong clears in both arms |
 | Third-party data with references stripped (ReconRiver, 37 settlements) | `learned_linkage_benchmark.py` | `learned_linkage.json` | Exact sets 24.32% to 56.76% with a learned payout cycle; 0 wrong clears |
 | Bank narrations in formats the rules never saw | `narration_eval.py` | `narration_eval.json` | Accuracy 82.71% (rules) to 97.50% (model first, grounded) |
 | Investigator on withheld settlements (58, of which 38 have a right answer) | `investigation_eval.py` | `investigation_eval.json` | Right, verified proposals 16 (rules) to 20 (as deployed); 0 wrong proposals past the verifier |
@@ -316,7 +316,8 @@ by `src/lib/measured.test.ts`.
 
 The ReconRiver and linkage benchmarks were re-run after the final changes on
 24 September 2026 and did not move. After the tuning of 30 September
-(section 9), linkage rose from 65% to 84% and ReconRiver did not move. With references intact, the ReconRiver
+(section 9), linkage rose from 65% to 95% identified and from 62% to 89%
+cleared without review, and ReconRiver did not move. With references intact, the ReconRiver
 corpus clears 94.59% with 0 wrong clears (`FAILURE_LOG.md`, entry 3).
 
 ### 5.1 The 120-scenario accuracy benchmark by family
@@ -502,14 +503,14 @@ carried in descriptions and from nothing else. Missing and truncated references
 went from 0% to 90-100%; colliding references are unchanged (30-50%); partial
 references reach 100% only when the member feed is declared.
 
-The auto-clear rate did not move (62-64%). A set identified only by description
-numbers is proposed for one-click approval, not cleared: clearing still needs
-a record that names the settlement, or a pool of 20 or fewer candidates.
+The auto-clear rate did not move in this first step (62-64%): a set identified
+only by description numbers was proposed, not cleared. The second step, below,
+is what cleared it.
 
 **Nothing else moved.** Blind test, three seeds including a new one (20260930):
 133 correct, 0 wrong, 104 refused on each. ReconRiver: 94.59% with references,
 56.76% without, 0 wrong clears. The 1,000-case edge suite: 0 wrong clears.
-Backend 815 and frontend 151 tests pass.
+Backend 815 and frontend 151 tests passed at that point.
 
 **Speed.** Every reconciliation looked up earlier runs of its own batch by
 opening and decoding every run record ever written: 3,305 files and 3.4
@@ -518,6 +519,50 @@ It now filters on the file name first and takes 0.025 seconds. A blind-test
 seed fell from about eleven minutes to about one, and the backend suite runs in
 99 seconds. The history page, which sorted by file name, now lists runs newest
 first (`FAILURE_LOG.md`, entry 53).
+
+**Clearing what it identifies.** After the first step the engine found the
+right set in 84-85% of scenarios and cleared 62%: 22 right answers per 100
+went to a person. Three rules held them, each for a reason that did not apply.
+The payments' ledger copies made them "substitutable", though only the payment
+carried the settlement's number; the pool-size limit treated the set as found
+by searching, though the number had fixed it first; and the band for a
+clustered set, 0.54, had never been measured. In partial-reference scenarios a
+fourth rule, judging references within a six-record tier, read the settlement's
+number on four records as boilerplate.
+
+The change is one band, `named_complete`: the matched set is exactly the
+records carrying the settlement's number, all of them and nothing else, so the
+arithmetic confirmed one set chosen in advance instead of searching 2ⁿ. An
+unrelated set lands within tolerance of a seven-digit target about once in
+100,000. Such a set is not substitutable when its copies do not carry the
+number, is not limited by pool size, and scores 0.88: right in 80 of 80 cases
+across four seeds, whose 95% lower bound is 0.95. A record carrying the number
+is never an unreferenced member.
+
+| 120 scenarios | Cleared and right, before | After | Identified, after | Wrong clears |
+|---|---|---|---|---|
+| Seed 7 (tuning) | 62% | 89% | 95% | 0 |
+| Seed 101 (tuning) | 62% | 89% | 95% | 0 |
+| Seed 202 (held out) | 62% | 89% | 93% | 0 |
+| Seed 303 (held out) | 64% | 90% | 95% | 0 |
+| Seed 7, member feed declared | 62% | 89% | 95% | 0 |
+| Seed 7, every description erased (control) | 62% | 62% | 65% | 0 |
+
+Unchanged: blind test, three seeds, 133 correct, 0 wrong, 104 refused on each,
+including the 12 unreferenced small pools it will not clear on arithmetic
+alone; ReconRiver 94.59% with references and 56.76% without, 0 wrong clears;
+the 1,000-case suite, 1,050 batches, 0 wrong clears; the public checkbooks,
+100 of 100 with the payee and 0 wrong clears in 200 runs. Calibration over 180
+scenarios: 133 of 133 right at or above the gate (103 of 103 before), no bucket
+overconfident, Brier 0.0439 to 0.0223, ECE 0.0538 to 0.0783 because the new
+band errs low. `tests/test_named_complete.py` pins the band, including the two
+cases that must not clear: an unrelated record carrying the number, and copies
+carrying it too.
+
+What remains held is held on purpose: colliding references, where two
+different sets that both name the settlement sum to the payout, and three
+partial-reference sets in pools of 935 records scored 0.80 by the large-pool
+penalty (`FAILURE_LOG.md`, entry 57).
 
 **The page during a run.** Measured in a browser with the CPU slowed four
 times, as on a laptop on battery, from pressing Run on the sample to the

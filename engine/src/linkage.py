@@ -136,6 +136,10 @@ class LinkageResult:
     anchor_keys: set[str] = field(default_factory=set)
     # Records the learned model rates more likely members than not.
     learned_keys: set[str] = field(default_factory=set)
+    # Every record, in any feed and kept or not, that carries the settlement's
+    # own number. A match equal to this whole set is a set chosen before the
+    # arithmetic was run and then confirmed by it (confidence_band).
+    named_keys: set[str] = field(default_factory=set)
     # What the model learned, for the report and the audit trail.
     em: dict | None = None
 
@@ -553,6 +557,7 @@ def build_candidate_links(
         anchor_cluster_ids=surviving_anchors,
         anchor_keys=surviving_keys,
         learned_keys=learned_keys & kept_keys,
+        named_keys={txn_key(c.txn) for c in scored if c.signals.ref_prefix_cluster},
         em=em_summary,
     )
 
@@ -613,7 +618,8 @@ def _learned_posteriors(batch: SettlementBatch, pool: list[NormalizedTxn],
 
 
 def confidence_band(anchored: set[str], matched_keys: set[str],
-                    mean_link: float, learned: set[str] | None = None) -> str:
+                    mean_link: float, learned: set[str] | None = None,
+                    named: set[str] | None = None) -> str:
     """
     WHICH claim the engine is making about a matched set — named, so it can
     be measured.
@@ -636,6 +642,15 @@ def confidence_band(anchored: set[str], matched_keys: set[str],
         return "anchors_all_used"
     if anchored & matched_keys:
         return "anchors_ignored"
+    if named and len(matched_keys) >= 2 and matched_keys == named:
+        # Nothing names the settlement in full, but the records carrying its
+        # number are exactly the matched set: all of them, and nothing else.
+        # That set was fixed before the solver ran, so the arithmetic checked
+        # one hypothesis instead of searching 2^n subsets for one that fits,
+        # and an unrelated set lands within tolerance of a seven-digit target
+        # about once in 100,000. A record carrying the number left out, or
+        # a record without it let in, and this band does not apply.
+        return "named_complete"
     if learned and matched_keys <= learned:
         # Nothing names the settlement, but every member is in the cohort
         # the learned settlement cycle points at.
@@ -657,6 +672,13 @@ def confidence_band(anchored: set[str], matched_keys: set[str],
 # published prediction at or above the 0.85 gate was right (103/103
 # in-sample, 42/42 out). anchors_ignored and clustered never fired; their
 # values are reasoned and labelled unmeasured.
+# Measured 30 September 2026 on the 120-scenario benchmark, seeds 7, 101, 202
+# and 303 (the last two never looked at while tuning): n=80, obs 1.000, Wilson
+# 95% lower bound 0.95. Set lower, at 0.88, because all 80 come from one
+# generator, which always writes the number into a member's description; how
+# often a real narration carries it is not measured (FAILURE_LOG 57).
+NAMED_COMPLETE_BAND = 0.88
+
 CONFIDENCE_BANDS = {
     "fully_anchored": 0.95,
     "anchors_all_used": 0.88,
@@ -672,6 +694,7 @@ CONFIDENCE_BANDS = {
     # band sits below the 0.85 gate even with the small-pool bonus: it
     # proposes, a person confirms. Raise it only on more measured cases.
     "learned_cycle": 0.80,
+    "named_complete": NAMED_COMPLETE_BAND,
 }
 
 
@@ -698,11 +721,16 @@ def link_confidence(result: LinkageResult, matched_keys: set[str]) -> float:
     # Calibrated, not chosen: the first measurement found the middle bands badly
     # overstated (0.80 was right 43%, 0.65 right 55%), and partial anchoring was
     # worse than clustering. Values sit at or below observed accuracy.
-    base = CONFIDENCE_BANDS[confidence_band(anchored, matched_keys, mean_link,
-                                            result.learned_keys)]
+    band = confidence_band(anchored, matched_keys, mean_link,
+                           result.learned_keys, result.named_keys)
+    base = CONFIDENCE_BANDS[band]
 
     # A narrowed pool makes an exact sum far less likely to be coincidence.
-    if result.pool_after <= 25:
+    # Not for named_complete: its set was not searched for, so the size of
+    # the pool it came from does not change the odds.
+    if band == "named_complete":
+        pass
+    elif result.pool_after <= 25:
         base += 0.03
     elif result.pool_after > 200:
         base -= 0.08

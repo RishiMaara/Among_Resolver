@@ -16,7 +16,7 @@ The tests that found these failures, and the results after each fix, are in
 
 ## Index
 
-56 entries: 45 fixed, 6 mitigated, 1 partly resolved, 1 by design, and 3
+57 entries: 46 fixed, 6 mitigated, 1 partly resolved, 1 by design, and 3
 known limits that remain.
 
 | # | Failure | Severity | Failed safe | How it was resolved | Status |
@@ -77,6 +77,7 @@ known limits that remain.
 | 54 | Settlement ids that survived only in the description were ignored | Medium | Yes | Description identifiers read (numbers only); a solver tier for records carrying the settlement's number; 82-85% on held-out seeds. | Fixed |
 | 55 | The page re-rendered ten times a second during a run | Medium, usability | Yes | The clock ticks in its own component; an unchanged audit trail is not replaced: 4.3 s to 1.2 s blocked on a slow CPU. | Fixed |
 | 56 | Six hand-copied headers had drifted, and every screen scrolled sideways on a phone | Low, usability | Yes | One header component; the judges' link becomes an icon on phones; tested for order and measured at 360 px. | Fixed |
+| 57 | Settlements the engine identified by their number were never cleared | Medium, review load | Yes | One band for a set that is exactly the records carrying the settlement's number; 62% to 89% cleared, 0 wrong clears on every suite. | Fixed |
 
 ---
 
@@ -1168,3 +1169,36 @@ the links. On a phone the "Judges' brief" pill becomes an icon link and the
 spacing tightens. Measured on all six screens: the header is 53 px high with
 the logo in the same place, and nothing scrolls sideways at 360, 375 or
 1,280 px. src/routes/navigation.test.tsx pins the link order on every screen.
+
+## 57. Settlements the engine identified by their number were never cleared
+
+Severity: Medium (22 right answers in 100 went to a person)
+Fails safe: Yes (proposed, never cleared wrongly)
+
+After entry 54 the 120-scenario benchmark found the right set in 84-85% of
+scenarios and cleared 62%. The rest were right and proposed, held by rules
+whose reasons did not apply. Every payment had a copy in the ERP ledger, so the
+set was called substitutable, though only the payment carried the settlement's
+number. The pool-size limit (20) treated the set as the product of a search,
+though the number had fixed it before the solver ran. The band for a clustered
+set said 0.54 and was labelled unmeasured. And where one payment named the
+settlement and the rest carried only its number, the unreferenced-member rule,
+judging within a six-record tier, read the number on four records as
+boilerplate.
+
+Mitigation: a band, named_complete, for a matched set that is exactly the
+records carrying the settlement's number, all of them and nothing else. The
+arithmetic then confirmed one set chosen in advance, and an unrelated set
+lands within tolerance of a seven-digit target about once in 100,000. Such a
+set is not substitutable when its copies do not carry the number, is not
+limited by pool size, and scores 0.88 (80 of 80 right across four seeds;
+Wilson 95% lower bound 0.95). A record carrying the number is never an
+unreferenced member. Cleared and right: 62% to 89% on the tuning seeds, and
+62-64% to 89-90% on the held-out seeds; with descriptions erased it stays at
+62%. Blind test, ReconRiver, the 1,000-case suite and the public checkbooks
+did not move, all with 0 wrong clears. tests/test_named_complete.py pins it.
+
+What it does not establish: all 80 sets come from one generator, which always
+writes the number into a member's description. How often a real narration or
+memo carries the settlement's number, and how often a coincidental record
+does, is not measured.

@@ -106,7 +106,8 @@ class _SolveOutcome:
 
 
 def _withhold_if_substitutable(batch, result, pool_txns, windowed_candidates, anchor_keys,
-                               label: str, outside: str = "this tier") -> None:
+                               label: str, outside: str = "this tier",
+                               named_keys: set | frozenset = frozenset()) -> None:
     """
     Substitutability guard. A narrowed pool (a tier, or one settlement's pool
     in a joint solve) can hide one copy of a payment that exists in another
@@ -115,8 +116,10 @@ def _withhold_if_substitutable(batch, result, pool_txns, windowed_candidates, an
     matched member with an equal-amount twin in another feed, outside the
     pool it was solved over, withholds the clear.
 
-    Exempt: anchored members (they name the settlement) and members of the
-    declared member feed (the other copy was never a candidate). Scoring the
+    Exempt: anchored members (they name the settlement), members of the
+    declared member feed (the other copy was never a candidate), and members
+    carrying the settlement's number when no twin carries it: the evidence,
+    not the arithmetic, then says which copy is the member. Scoring the
     two copies against each other was tried and endorsed the wrong one (30
     false clears). Keys, not bare ids, throughout: ids repeat across feeds.
     """
@@ -124,12 +127,19 @@ def _withhold_if_substitutable(batch, result, pool_txns, windowed_candidates, an
         return
     pool_ids = {txn_key(t) for t in pool_txns}
     matched_txns = members_of(result, pool_txns)
+
+    def twins(t):
+        return [o for o in windowed_candidates
+                if o.amount_cents == t.amount_cents and o.source is not t.source
+                and txn_key(o) not in pool_ids]
+
     substitutable = [
         t for t in matched_txns
         if txn_key(t) not in anchor_keys
         and not (batch.member_source is not None and t.source is batch.member_source)
-        and any(o.amount_cents == t.amount_cents and o.source is not t.source
-                and txn_key(o) not in pool_ids for o in windowed_candidates)
+        and (tw := twins(t))
+        and not (txn_key(t) in named_keys
+                 and not any(txn_key(o) in named_keys for o in tw))
     ]
     if not substitutable:
         return
@@ -218,7 +228,8 @@ def _solve_in_tiers(
         tier_result = match_batch(batch.batch_id, tier_txns, gross_target, cfg)
 
         _withhold_if_substitutable(batch, tier_result, tier_txns, windowed_candidates,
-                                   anchor_keys, tier_name)
+                                   anchor_keys, tier_name,
+                                   named_keys=getattr(link_result, "named_keys", set()))
 
         if tier_result.cleared:
             audit.log_decision(

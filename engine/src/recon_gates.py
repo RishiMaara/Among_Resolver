@@ -67,13 +67,18 @@ def _reference_tokens(t: NormalizedTxn) -> set[str]:
 
 
 def _unreferenced_members(result: MatchResult, pool: list[NormalizedTxn],
-                          anchor_keys: set) -> list[NormalizedTxn]:
+                          anchor_keys: set, named_keys: set | frozenset = frozenset()
+                          ) -> list[NormalizedTxn]:
     """
     Matched records that do not name the settlement and share no informative
     reference token with a matched record that does. A token carried by more
     than an eighth of the records that do NOT name the settlement is
     boilerplate ("ORDER"), not a reference; counted outside the named records
     so a batch token they all carry still counts.
+
+    A record carrying the settlement's own number (named_keys) is referenced.
+    Linkage judged that number informative over the whole pool; judged again
+    over a six-record tier, four records sharing it looked like boilerplate.
     """
     matched = members_of(result, pool)
     anchored = [t for t in matched if txn_key(t) in anchor_keys]
@@ -82,7 +87,8 @@ def _unreferenced_members(result: MatchResult, pool: list[NormalizedTxn],
     limit = max(2, min(60, len(pool) // 8))
     shared = {tok for t in anchored for tok in _reference_tokens(t) if outside[tok] <= limit}
     return [t for t in matched
-            if txn_key(t) not in anchor_keys and not (_reference_tokens(t) & shared)]
+            if txn_key(t) not in anchor_keys and txn_key(t) not in named_keys
+            and not (_reference_tokens(t) & shared)]
 
 
 def _withhold_if_unevidenced(
@@ -119,6 +125,12 @@ def _withhold_if_unevidenced(
     # statement 69 of 189 credits had some coincidental subset of UPI debits.
     no_evidence_at_all = link_result.method == "no_linkage_signal"
 
+    # The matched set is exactly the records carrying the settlement's number:
+    # a set fixed before the arithmetic and confirmed by it, which a large
+    # pool does not weaken (linkage.confidence_band, "named_complete").
+    named_keys: set[str] = getattr(link_result, "named_keys", set())
+    named_complete = len(matched_keys) >= 2 and matched_keys == named_keys
+
     # Partial anchoring blocks only when the match LEFT ANCHORS UNUSED: blocking
     # every partly anchored match cost ten right answers to stop two wrong ones,
     # and the wrong ones were those that ignored anchors.
@@ -138,7 +150,7 @@ def _withhold_if_unevidenced(
     # record is named so one question settles it.
     if (result.cleared and matched_anchored and not partially_anchored
             and not matched_keys <= anchor_keys):
-        stray = _unreferenced_members(result, solver_candidates, anchor_keys)
+        stray = _unreferenced_members(result, solver_candidates, anchor_keys, named_keys)
         if stray:
             result.cleared = False
             result.ambiguous = True
@@ -165,7 +177,8 @@ def _withhold_if_unevidenced(
     if result.cleared and (
         partially_anchored
         or (not matched_anchored
-            and (evidence_ignored or pool_too_large or no_evidence_at_all))
+            and (evidence_ignored
+                 or (not named_complete and (pool_too_large or no_evidence_at_all))))
     ):
         result.cleared = False
         result.ambiguous = True

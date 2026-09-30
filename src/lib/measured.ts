@@ -31,12 +31,24 @@ export const MEASURED: Measured[] = [
   {
     label: "Linkage vs arithmetic alone (own benchmark, 120 scenarios)",
     before: "0%",
-    after: "84%",
+    after: "95%",
     note: "true sets identified; 0 wrong approvals in both arms. Deterministic, not AI.",
     source: {
       file: "baseline_comparison.json",
       beforePath: "baseline_no_linkage.truth_identified_pct",
       path: "with_linkage.truth_identified_pct",
+      digits: 0,
+    },
+  },
+  {
+    label: "Cleared without review, and right (own benchmark, 120 scenarios)",
+    before: "0%",
+    after: "89%",
+    note: "the rest are proposed for one-click approval or withheld with a reason; 0 wrong clears. 89-90% on seeds not used for tuning.",
+    source: {
+      file: "baseline_comparison.json",
+      beforePath: "baseline_no_linkage.auto_clear_correct_pct",
+      path: "with_linkage.auto_clear_correct_pct",
       digits: 0,
     },
   },

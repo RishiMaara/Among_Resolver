@@ -108,19 +108,31 @@ exact bug produced a confident 67-record wrong answer on the 50K dataset.
 Tiers are solved strongest-evidence-first, and the first that clears wins:
 
 1. **anchor** — records naming the settlement, solved alone
-2. **strong_link** — score ≥ 0.25
-3. **all_linked** — everything with any signal
+2. **names_settlement_number** — records carrying the settlement's own number,
+   in the reference or the description, with the anchors
+3. **learned** — the cohort the learned payout cycle points at, with the anchors
+4. **strong_link** — score ≥ 0.25
+5. **all_linked** — everything with any signal
 
 A weak signal admitted alongside strong ones does not add information, it adds
 degeneracy. Cross-source amount peering scores 0.10 — real but feeble, since
 unrelated payments share amounts constantly.
 
-### 5. Two guards before auto-clear
+### 5. Guards before auto-clear
 
 **Substitutability.** Narrowing to a tier can hand the solver only one side of
 a mirror pair, so the solve *looks* unique when it isn't. An anchored member is
-safe; an unanchored member with an equal-amount twin in another feed outside
-the tier is not, and the batch is withheld.
+safe, and so is a member carrying the settlement's number whose twin does not
+carry it: the evidence then says which copy is the member. Any other member
+with an equal-amount twin in another feed outside the tier withholds the batch.
+
+**The whole named set.** When the matched set is exactly the records carrying
+the settlement's number, all of them and nothing else, the set was fixed
+before the solver ran, and the arithmetic checked one hypothesis instead of
+searching 2ⁿ subsets; an unrelated set lands within tolerance of a
+seven-digit target about once in 100,000. That set may clear at any pool size
+(band `named_complete`, 0.88). One record carrying the number left out, or one
+without it let in, and the band does not apply.
 
 **Unanchored auto-clear limit.** With no anchor evidence and more than 20
 candidates, an exact sum is a coincidence rather than an identification, and
@@ -135,35 +147,34 @@ around 0.22 with nothing withholding it.
 
 ## Measured results
 
-**Benchmark** — 180 scenarios, 12 families × 3 pool densities, 30 unsolvable
-by construction, ground truth compared by transaction **ID**:
+**Benchmark** — 120 scenarios (the default), 12 families × 3 pool densities,
+20 unsolvable by construction, ground truth compared by transaction **ID**,
+seed 7:
 
-| | false clears | auto-clear correct | truth identified | correct abstentions |
+| | false clears | cleared and right | truth identified | correct abstentions |
 |---|---|---|---|---|
 | Subset-sum only *(baseline)* | 0 | **0.0%** | 0.0% | 100% |
-| Linkage, member feed undeclared | **0** | **62.0%** | 65.3% | 100% |
-| Linkage, member feed declared | **0** | **68.7%** | 78.7% | 100% |
+| Linkage, member feed undeclared | **0** | **89%** | 95% | 100% |
+| Linkage, member feed declared | **0** | **89%** | 95% | 100% |
 
-Per family, with the member feed declared:
+On seeds 202 and 303, never looked at while tuning: 89% and 90% cleared, 93%
+and 95% identified, 0 false clears. With every description erased: 62% and
+65%, the figures before identifiers were read from descriptions.
+
+Per family, true set identified:
 
 ```
 clean, near_collision, exact_collision,
 duplicate_amounts, wide_spread, large_subset   100%
-ref_partial                                    100%
-ref_collision                                46.67%
-ref_missing                                  26.67%
-ref_truncated                                13.33%
+ref_missing, ref_truncated, ref_partial        100%
+ref_collision                                   50%
 missing_leg, out_of_window          100% correct abstention
 ```
 
-The six clean-reference families are unaffected by declaring the member feed
-— they were already at 100%. Declaring the feed instead moves the four
-reference-degraded families and the overall average; it does not paper over
-the gap between them and the clean families, which stays large. `ref_partial`
-recovering to 100% once the member feed is declared, while `ref_missing` and
-`ref_truncated` stay low, is itself informative: partial reference coverage
-plus source scoping is enough signal, missing or truncated references are
-not.
+`ref_collision` is the ceiling, and it is the data's: unrelated records carry
+the settlement's own identifier, and in half the scenarios two different sets
+of them sum to the payout. Nothing but the generator's label words separates
+them, and reading those would be reading the answer key (FAILURE_LOG 26).
 
 **50K reference dataset** — 50,000 records across bank/gateway/ERP, target
 contested by 49,999 of them:
@@ -221,16 +232,18 @@ strategy's failure modes.
 
 ## Cons
 
-**It depends on reference quality, and degrades sharply without it.**
-`ref_truncated` sits at 13.3% and `ref_missing` at 40%. Where the true
-record's reference is gone, nothing distinguishes it from its copy in another
-feed, and the engine declines. That is the correct behaviour, but declining
-does not clear settlements.
+**It depends on evidence surviving somewhere.** With the reference column
+gone, the engine now reads the settlement's number from descriptions, and
+missing and truncated references went from 13-40% to 100%. Where neither the
+reference nor the description carries it, nothing distinguishes a payment from
+its copy in another feed, and the engine declines. The benchmark's generator
+always writes the number into a member's description; how often a real bank
+narration or ERP memo carries it is not measured here.
 
-**Part of the gain is configuration, not intelligence.** Declaring the member
-feed buys +6.7pp (62.0% → 68.7%). It is fair to configure — you always know
-which ledger you are reconciling — but it is not inference, and should not be
-quoted as if it were.
+**Declaring the member feed is configuration, not intelligence.** It once
+bought 6.7 points; since descriptions are read it buys nothing on the
+benchmark (89% either way), but it remains the stronger claim where
+descriptions are bare.
 
 **Blocking is unrecoverable.** A true member dropped at the linkage stage can
 never be put back by the solver. Block keys are therefore deliberately
@@ -307,7 +320,7 @@ down by 0.10 on its own and re-runs the benchmark:
 
 | | |
 |---|---|
-| baseline | 62.0% auto-clear, 0 false clears |
+| baseline (before the tuning of 30 September) | 62.0% auto-clear, 0 false clears |
 | every single perturbation, all 10 | 62.00%, 0 false clears |
 | **control: every weight zeroed** | **0.0%** auto-clear |
 
@@ -327,47 +340,22 @@ here to have missed. **Measured on corpora where anchors are
 plentiful**, though — it does not follow that the weighting is irrelevant where
 they are absent, and that case is not measured here.
 
-**Confidence has been checked out-of-sample now, and the gate does not fully
-hold up.** ECE 0.1567 in-sample is measured on 180 scenarios we wrote, using
-the buckets the 0.85 gate was picked from — real, and in-sample, and those
-are not the same claim. `scripts/calibration_out_of_sample.py` measures it on
-a corpus the gate was never tuned against:
+**Confidence is trustworthy where it is used to clear.**
 
-| corpus | predictions | ECE | at/above 0.85 | wrong above the gate |
-|---|---:|---:|---:|---:|
-| own benchmark *(in-sample)* | 180 | 0.0538 | 103 | **0** |
-| ReconRiver *(out-of-sample)* | 74 | 0.0901 | 42 | **0** |
+| corpus | predictions | ECE | Brier | at/above 0.85 | wrong above the gate |
+|---|---:|---:|---:|---:|---:|
+| own benchmark *(in-sample)* | 180 | 0.0783 | 0.0223 | 133 | **0** |
+| ReconRiver *(out-of-sample)* | 74 | 0.0901 | 0.029 | 42 | **0** |
 
-"Wrong above the gate" is the number that matters, and it is zero in both.
-It was not when this table was first written — 30 of 133 in-sample and 4 of
-46 out-of-sample, none of them auto-cleared because other guards withheld
-them — and the next paragraph says what changed. Out-of-sample ECE is higher
-than in-sample now because the remaining error sits in the lowest band,
-which is overconfident (says 0.14, right 6.3%) and never clears; calibrated
-(`calibration_map.py`, fitted on the benchmark and judged on ReconRiver) it
-falls to 0.026.
-
-Two corpora is validation, not proof, and both carry usable references — what
-the gate does where references are absent entirely is not measured by either.
-
-**Confidence is trustworthy where it is used to clear, and not everywhere
-below that.** `scripts/calibration.py` buckets 180 predictions against
-outcomes: ECE 0.0538, MCE 0.20, Brier 0.0439. Every prediction at or above
-the 0.85 auto-clear gate was the exact true set — 41 of 41 in [0.85, 0.93),
-62 of 62 in [0.93, 1.01) — and no in-sample bucket is overconfident.
-Out-of-sample on ReconRiver: ECE 0.0901, 42 of 42 correct above the gate, and
-one overconfident band, the lowest — says 0.14, right 6.3% (2 of 32) — which
-never clears anything.
-
-It got there in two measured steps, both worth knowing because each was a
-number that told a reviewer to trust something wrong. ECE was 0.1567, with
-the [0.85, 0.93) band saying 88.6% and being right 57.8% (41 of 71). The
-cause was fuzzy recovery bundles reporting their own selection threshold,
-0.90, as a confidence; that constant is now a measured 0.05.
-And the ambiguous-match constant said 0.54 against 36.4% observed; it is now
-its measured 0.36. Even so, what keeps the false-clear rate at 0 is that
-clearing needs this number **and** the other three independent guards in
-"Governance" to agree — the number is one of four, not the decision.
+Every prediction at or above the gate was the exact true set, on our corpus and
+on one the gate was never tuned against. Above it the number errs low, which
+costs review time: the band for a complete named set says 0.88 and was right
+80 of 80 times, kept low because all 80 came from one generator. Below the gate
+it is a ranking: out-of-sample the lowest band says 0.14 and is right 6.3% (2 of
+32), and never clears. It got here by fixing two numbers that told a reviewer
+to trust something wrong, a fuzzy bundle reporting 0.90 and an ambiguous-match
+constant reporting 0.54; both are in FAILURE_LOG. Even so, clearing needs this
+number **and** the other guards to agree.
 
 **The 20-candidate unanchored limit is a judgement call.** It follows from the
 density argument but the exact number is chosen, not derived. It was 25 until

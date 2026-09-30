@@ -50,7 +50,7 @@ correspondence, temporal clustering — and the sum then *verifies* a set that
 evidence already selected. On the 50,000-record corpus that is 50,000
 candidates narrowed to 55 before the solver runs.
 
-Same benchmark, linkage on: **62.0% auto-cleared and correct, 0 false clears.**
+Same benchmark, linkage on: **89% auto-cleared and correct, 0 false clears.**
 From 0.0%.
 
 An LLM would sit in the same place the solver does — at the end, picking from
