@@ -243,6 +243,14 @@ def _anchored_negatives(batch_id: str, candidates: list[NormalizedTxn]) -> set[s
     return forced
 
 
+# What an ambiguous set is worth: nothing. When a second subset also sums, the
+# arithmetic cannot say which is the settlement, and the one proposed was right
+# 4 of 12 times on the benchmark, 2 of 28 on ReconRiver and 0 of 70 on the
+# 1,000-case suite (30 September 2026). Any single figure above zero claims
+# more than one of those corpora bears out, so it claims nothing and a person
+# decides. It was 0.65, then 0.54, then 0.36, each re-measured lower.
+AMBIGUOUS_CONFIDENCE = 0.0
+
 # What the arithmetic is worth when the check for a second subset ran out of
 # time before it could prove there is none. 1.0 means "the probe found no
 # alternate"; a probe that never finished has not shown that, and reporting
@@ -329,11 +337,9 @@ def match_batch(
             f"via ref_id/memo evidence before auto-clearing."
         )
 
-    # 0.36 for an ambiguous set: that band was re-measured twice and came back
-    # lower each time (0.65 was right 54.5%, then 0.54 right 36.4%), so it sits
-    # at the observed rate. It is below the gate either way. 1.0 means no
-    # alternative was found; linkage confidence is applied on top downstream.
-    confidence = 0.36 if ambiguous else 1.0
+    # AMBIGUOUS_CONFIDENCE for an ambiguous set (above); 1.0 means no alternative
+    # was found. Linkage confidence is applied on top downstream.
+    confidence = AMBIGUOUS_CONFIDENCE if ambiguous else 1.0
     if not ambiguous and probe.get("timed_out"):
         confidence = UNPROVEN_UNIQUE_CONFIDENCE
         ambiguity_note = UNPROVEN_UNIQUE_NOTE

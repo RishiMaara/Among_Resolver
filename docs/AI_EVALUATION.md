@@ -14,7 +14,7 @@ differences below are noise.
 | Investigating withheld settlements | rules: 16 of 58 right and verified | 20 of 58, 0 wrong matches through | a verifier: arithmetic, ledger, calendar, evidence, grounding |
 | Answering questions about a result | — | 44 of 44 | every figure and id must trace to the recorded result |
 | Linkage where references are gone | 24.3% of sets found | 56.8% | the solver: exact sums only, 0 false clears |
-| Confidence calibration | ECE 0.090 out-of-sample | 0.026 | isotonic, and the auto-clear gate never reads it |
+| Confidence calibration | ECE 0.082 out-of-sample | 0.042 | isotonic; never above the raw figure below the gate, and the auto-clear gate never reads it |
 
 The last two are statistical models, not language models, and are in the
 table because they are the other place the engine learns from data.
@@ -196,15 +196,17 @@ money on. See LINKAGE.md.
 
 This is isotonic regression (pool-adjacent-violators, Laplace-smoothed),
 reported beside the raw confidence and never read by the auto-clear gate.
-`scripts/fit_calibration.py`:
+Below the gate it is never shown above the raw figure: the raw figure there is
+the lowest accuracy measured on any corpus, and a map pooled across corpora
+can only raise it (FAILURE_LOG 58). `scripts/fit_calibration.py`, figures as
+shown:
 
 | fitted on → judged on | ECE raw | ECE calibrated | low band said / right |
 |---|---:|---:|---|
-| benchmark → ReconRiver | 0.090 | **0.026** | 0.14 → 0.09 / 0.06 |
-| ReconRiver → benchmark | 0.054 | 0.069 | 0.15 → 0.25 / 0.14 |
+| benchmark → ReconRiver | 0.082 | **0.042** | 0.00 → 0.00 / 0.06 |
+| ReconRiver → benchmark | 0.090 | 0.051 | 0.00 → 0.00 / 0.10 |
 
-Fitted on the larger corpus, it transfers. Fitted on the 74-prediction one,
-it does not. So the shipped map uses both, and reviewers keep it honest:
+It lowers the error in both directions. The shipped map is fitted on both, and reviewers keep it honest:
 every confirmed or rejected batch is recorded as an outcome, and
 `GET /calibration` reports any band where 20 or more decisions disagree
 with the map by 15 points or more.

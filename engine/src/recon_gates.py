@@ -51,11 +51,12 @@ MIN_AUTOCLEAR_CONFIDENCE = float(
     os.environ.get("AUTOCLEAR_MIN_CONFIDENCE", "0.85")
 )
 
-# What a fuzzy recovery bundle is worth. It once reported the pair threshold
-# (0.90); over 167 bundles the exact set was never right and 4% of a bundle
-# was the answer. A bundle is a place to look; the assertion keeps it below
-# the gate by construction.
-FUZZY_RECOVERY_CONFIDENCE = 0.05
+# What a fuzzy recovery bundle is worth as an answer: nothing. It once reported
+# the pair threshold (0.90); the exact set was then right in 0 of 167 bundles,
+# and on 30 September 2026 in 0 of 34 on the benchmark and ReconRiver and 0 of
+# 178 on the 1,000-case suite. It was 0.05, which claimed more than that. A
+# bundle is a place to look; the assertion keeps it below the gate.
+FUZZY_RECOVERY_CONFIDENCE = 0.0
 assert FUZZY_RECOVERY_CONFIDENCE < MIN_AUTOCLEAR_CONFIDENCE, (
     "A fuzzy recovery bundle must never be reportable as clearable; "
     "similarity is evidence of association, not of arithmetic."

@@ -100,13 +100,13 @@ the members either, for the same reason:
 | 50,000-record stress run | exact 55/55 set by ID, precision **1.0**, recall **1.0**, **3.1–3.2s** to reconcile |
 | ReconRiver corpus (references intact) | **94.59%** exact set identified, 91.89% auto-cleared and correct |
 | ReconRiver corpus (references stripped) | 24.32% exact, **56.76%** once the payout cycle is learned from earlier payouts; 21.62% auto-cleared, the rest withheld, none wrong |
-| Own benchmark, 120 scenarios (`benchmark.py` default) | **89%** cleared and right without review, 95% true set identified, 0 false clears; 89–90% and 93–95% on seeds not used for tuning |
+| Own benchmark, 120 scenarios (`benchmark.py` default) | **92%** cleared and right without review, 95% true set identified, 0 false clears; 92–93% and 93–95% on seeds not used for tuning |
 | **False clears, everywhere above** | **0** |
-| Confidence calibration, 180 scenarios, in-sample (`calibration.py` default) | ECE 0.0783 · Brier 0.0223 — **133 of 133** correct at or above the 0.85 gate; no bucket overconfident |
-| Confidence calibration, ReconRiver, out-of-sample (`calibration_out_of_sample.py`) | ECE 0.0901 raw, **0.026** with the fitted map (`fit_calibration.py`) · 42 of 42 correct at or above the gate, 74 predictions |
+| Confidence calibration, 180 scenarios, in-sample (`calibration.py` default) | ECE 0.0902, all of it underconfidence · **138 of 138** correct at or above the 0.85 gate; no bucket overconfident |
+| Confidence calibration, ReconRiver, out-of-sample (`calibration_out_of_sample.py`) | ECE 0.0824 raw, **0.0419** as shown with the fitted map (`fit_calibration.py`) · 42 of 42 correct at or above the gate; no bucket overconfident, raw or as shown |
 | **Real payments** — Baton Rouge and Fulton County public checkbooks, 100 payments, each against its whole day's payment run (`public_ledger_benchmark.py`) | payee known: **100 of 100** exact, 99 auto-cleared · amounts only: 2 of 100, the rest withheld · **0** wrong clears in 200 runs |
 | Scanned bank statements, 24 noisy scans (`ocr_eval.py`) | 11 read exactly right by OCR in the browser, **23** with Gemini on the rest, **0** wrong readings accepted |
-| Tests | **820** backend · **152** frontend |
+| Tests | **824** backend · **152** frontend |
 
 A **false clear** — confidently clearing the wrong set — is the failure that
 costs money; declining costs a reviewer minutes. Clearing needs the 0.85
@@ -159,7 +159,7 @@ engine/
   src/api/                   the HTTP surface: routes, request models, presentation, uploads
   src/orchestrator.py        the money path's entry points; layers enforced by tests/test_architecture.py
   scripts/                   benchmarks, calibration, stress runs, data fetch
-  tests/                     820 tests
+  tests/                     824 tests
   docs/benchmarks/           the measured figures, one file per campaign
 docs/                      the documents listed above
 sample-data/               a settlement you can drop into the form
@@ -182,10 +182,10 @@ reviewer reads afterwards.
 - **Accuracy depends on reference quality, and the dependence is measured.**
   ReconRiver drops from 94.59% to 24.32% with references stripped (56.76% with
   the payout cycle learned), with 0 false clears in every condition.
-- **Below the gate, confidence is a ranking, not a probability.**
-  Out-of-sample the low band says 0.14 and is right 6.3% of the time (2 of 32);
-  it never clears anything, so the cost is a hopeful number on a proposal a
-  person already reviews.
+- **Below the gate, confidence claims nothing it has not measured.** An
+  ambiguous set, a fuzzy bundle or a sum with no other evidence reports 0.00:
+  such answers were right 6–10% of the time on two corpora and never on the
+  third, and a person decides them (FAILURE_LOG 58).
 - **Sanctions screening is exact-match against a point-in-time list**, with a
   near spelling flagged for a person; no transliteration or date-of-birth
   matching. Thresholds that are this system's policy rather than law are

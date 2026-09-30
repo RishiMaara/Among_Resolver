@@ -81,8 +81,8 @@ here from the README unchanged, except where a figure has since changed.
   absorb is never dropped from the queue.
 - **What linkage buys, measured** (`scripts/baseline_comparison.py`). The same
   engine with linkage disabled identifies the true set in 0% of 120 benchmark
-  scenarios; with it, 95%, and 89% cleared without review (65% and 62%
-  before the tuning of 30 September; 93-95% and 89-90% on benchmark seeds not
+  scenarios; with it, 95%, and 92% cleared without review (65% and 62%
+  before the tuning of 30 September; 93-95% and 92-93% on benchmark seeds not
   used for that tuning), with zero wrong approvals in both arms. This is
   deterministic entity resolution, not AI — the script says so, because it
   was first written claiming otherwise.
@@ -186,7 +186,8 @@ here from the README unchanged, except where a figure has since changed.
   the one payment whose answer decides it. Questions about a result: 44 of 44 on a
   small set, facts from the record and refusals where the record cannot
   answer. Confidence is shown calibrated as well as raw (out-of-sample ECE
-  0.090 → 0.026), and reviewer decisions flag drift. The first investigator
+  0.082 → 0.042), never above the raw figure below the gate, and reviewer
+  decisions flag drift. The first investigator
   measurement read the benchmark's labels and was thrown away; the write-up
   says how.
 - **A tamper-evident audit trail.** Every entry carries the SHA-256 of the

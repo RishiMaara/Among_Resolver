@@ -20,6 +20,7 @@ import threading
 from dataclasses import dataclass
 
 import audit
+from recon_gates import MIN_AUTOCLEAR_CONFIDENCE
 
 import stores
 logger = logging.getLogger(__name__)
@@ -114,9 +115,24 @@ def shipped() -> IsotonicMap | None:
     return _SHIPPED
 
 
+def apply(m: IsotonicMap, confidence: float) -> float:
+    """The mapped figure, never above the raw one below the gate.
+
+    Below the gate each raw figure is the lowest accuracy measured for that
+    kind of answer on any corpus (0.0 for an ambiguous set, a fuzzy bundle
+    or arithmetic alone). A map pooled across corpora can only raise it by
+    averaging in the easier ones: fitted on the benchmark, the low band said
+    11.4% on ReconRiver and was right 6.25%, and the 1,000-case suite was
+    right 0 of 248. Above the gate the raw figures sit below what every
+    corpus observed, and the map moves them toward it.
+    """
+    value = m(confidence)
+    return min(value, confidence) if confidence < MIN_AUTOCLEAR_CONFIDENCE else value
+
+
 def calibrated(confidence: float) -> float | None:
     m = shipped()
-    return m(confidence) if m else None
+    return apply(m, confidence) if m else None
 
 
 # ── reviewer outcomes ─────────────────────────────────────────────────────

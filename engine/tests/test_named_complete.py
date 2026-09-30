@@ -56,6 +56,15 @@ def test_the_band_needs_the_whole_named_set_and_nothing_else():
     assert confidence_band(set(), {a, b, c}, 0.5, None, {a, b}) != "named_complete"
 
 
+def test_one_anchor_on_a_complete_named_set_is_still_the_complete_named_set():
+    # More evidence must not score lower: as "anchors_all_used" this set lost
+    # 0.08 in a pool over 200 and was held at 0.80.
+    a, b, c = "gateway:a", "gateway:b", "gateway:c"
+    assert confidence_band({a}, {a, b, c}, 0.5, None, {a, b, c}) == "named_complete"
+    # An anchor left out of the set is evidence ignored, whatever else matches.
+    assert confidence_band({"gateway:z"}, {a, b}, 0.5, None, {a, b}) != "named_complete"
+
+
 def test_payments_carrying_the_settlements_number_clear_past_their_ledger_copies():
     members, pool = _pool()
     result = reconcile_batch(_batch(sum(AMOUNTS)), pool, subset_config=CFG).match_result

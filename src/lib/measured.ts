@@ -43,8 +43,8 @@ export const MEASURED: Measured[] = [
   {
     label: "Cleared without review, and right (own benchmark, 120 scenarios)",
     before: "0%",
-    after: "89%",
-    note: "the rest are proposed for one-click approval or withheld with a reason; 0 wrong clears. 89-90% on seeds not used for tuning.",
+    after: "92%",
+    note: "the rest are proposed for one-click approval or withheld with a reason; 0 wrong clears. 92-93% on seeds not used for tuning.",
     source: {
       file: "baseline_comparison.json",
       beforePath: "baseline_no_linkage.auto_clear_correct_pct",
@@ -109,9 +109,9 @@ export const MEASURED: Measured[] = [
   },
   {
     label: "Confidence calibration error, out-of-sample",
-    before: "0.0901",
-    after: "0.0262",
-    note: "ECE raw vs calibrated; the auto-clear gate still reads the raw figure.",
+    before: "0.0824",
+    after: "0.0419",
+    note: "ECE raw vs as shown; no bucket overconfident either way, and the auto-clear gate reads the raw figure.",
     source: {
       file: "calibration_fit.json",
       beforePath: "cross.0.ece_raw",

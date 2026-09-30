@@ -55,10 +55,13 @@ class TestTheFit:
 
 
 class TestTheShippedMap:
-    def test_it_is_there_and_says_the_low_band_is_low(self):
+    def test_it_is_there_and_never_raises_a_figure_below_the_gate(self):
         m = cm.shipped()
         assert m is not None and m.fitted_on >= 200
-        assert m(0.14) < 0.1, "out-of-sample the low band was right 3.1% of the time"
+        # Pooled, the map lifts the low band; what a report shows does not.
+        for raw in (0.0, 0.14, 0.5, 0.8):
+            assert cm.calibrated(raw) <= raw
+        assert cm.calibrated(0.0) == 0.0
 
     def test_the_published_cross_check_improves_out_of_sample(self):
         d = json.loads(FIT.read_text(encoding="utf-8"))

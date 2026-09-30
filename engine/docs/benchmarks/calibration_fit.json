@@ -6,16 +6,16 @@
    "fit": "benchmark -> ReconRiver",
    "train_pairs": 180,
    "test_pairs": 74,
-   "ece_raw": 0.0901,
-   "ece_calibrated": 0.0262,
+   "ece_raw": 0.0824,
+   "ece_calibrated": 0.0419,
    "low_band_raw": {
     "n": 32,
-    "said": 0.1428,
+    "said": 0.0,
     "right": 0.0625
    },
    "low_band_calibrated": {
     "n": 32,
-    "said": 0.0885,
+    "said": 0.0,
     "right": 0.0625
    }
   },
@@ -23,40 +23,30 @@
    "fit": "ReconRiver -> benchmark",
    "train_pairs": 74,
    "test_pairs": 180,
-   "ece_raw": 0.0538,
-   "ece_calibrated": 0.0691,
+   "ece_raw": 0.0902,
+   "ece_calibrated": 0.0506,
    "low_band_raw": {
-    "n": 72,
-    "said": 0.15,
-    "right": 0.1389
+    "n": 42,
+    "said": 0.0,
+    "right": 0.0952
    },
    "low_band_calibrated": {
-    "n": 72,
-    "said": 0.2533,
-    "right": 0.1389
+    "n": 42,
+    "said": 0.0,
+    "right": 0.0952
    }
   }
  ],
  "shipped_map": {
   "xs": [
-   0.05,
-   0.11,
-   0.19,
-   0.36,
-   0.8,
+   0.0,
    0.87,
    0.88,
-   0.91,
    0.95,
    0.97
   ],
   "ys": [
-   0.0278,
-   0.0385,
-   0.08,
-   0.48,
-   0.8571,
-   0.9828,
+   0.0921,
    0.9828,
    0.9828,
    0.9848,

@@ -263,22 +263,20 @@ by:
 | ReconRiver (third-party), references intact | 94.59% exact, 91.89% cleared and right, 0 false clears |
 | ReconRiver, settlement references stripped | 24.32% exact; 56.76% with the payout cycle learned; 0 false clears |
 | Batch close, 738 records, 60 settlements | 95.0% match rate, 0 false clears, 0 false alarms |
-| Own benchmark, 120 scenarios | 89% cleared and right, 95% true set identified, 0 false clears |
+| Own benchmark, 120 scenarios | 92% cleared and right, 95% true set identified, 0 false clears |
 | 50,000 records, one settlement | exact 55/55, precision and recall 1.0, 3.1–3.2 s to reconcile |
-| Calibration, own benchmark, 180 (in-sample) | ECE 0.0783, Brier 0.0223; 133 of 133 right at or above the 0.85 gate |
-| Calibration, ReconRiver, 74 (out-of-sample) | ECE 0.0901 raw, 0.026 with the fitted map; 42 of 42 right at or above the gate |
+| Calibration, own benchmark, 180 (in-sample) | ECE 0.0902, all underconfidence; 138 of 138 right at or above the 0.85 gate |
+| Calibration, ReconRiver, 74 (out-of-sample) | ECE 0.0824 raw, 0.0419 as shown; 42 of 42 right at or above the gate |
 
-**Where the confidence number can be trusted.** At and above the 0.85 gate,
-every prediction on both corpora was the exact true set, so the number errs
-low there, which costs review time rather than money. Below the gate it is a
-ranking: out-of-sample, the low band says 0.14 and is right 6.3% of the time
-(2 of 32). That band never clears. A fuzzy recovery bundle, which once
-reported its own similarity threshold (0.90) as a confidence and was the exact
-set 0% of the time, is fixed at 0.05, below the gate by assertion. In-sample
-ECE rose from 0.0538 to 0.0783 on 30 September, and Brier fell from 0.0439 to
-0.0223: the band for a complete named set says 0.88 and was right in 80 of 80
-cases. That is underconfidence, kept on purpose, since all 80 came from one
-generator.
+**Where the confidence number can be trusted.** No figure is higher than the
+lowest accuracy measured for that kind of answer on any corpus, and no bucket
+is overconfident on either calibration corpus, raw or as shown. At and above
+the 0.85 gate every prediction was the exact true set, so the number errs low
+there, which costs review time rather than money. Below it, an ambiguous set,
+a fuzzy recovery bundle and a sum with no other evidence report 0.00: they were
+right 4 of 12, 2 of 28 and 0 of 70 times, 0 of 212 and 1 of 27, across the
+benchmark, ReconRiver and the 1,000-case suite. The calibrated figure shown
+beside the raw one is never above it below the gate (FAILURE_LOG 58).
 
 **Why the numbers are reproducible.** CP-SAT's parallel search is not
 deterministic: where more than one subset satisfies the sum, whichever worker
@@ -432,7 +430,7 @@ python scripts/run_reconriver.py          # accuracy, third-party data
 python scripts/pull_razorpay.py --month YYYY-MM   # live Razorpay settlements
 python scripts/close_batch.py --generate  # batch close: match rate + exceptions
 python scripts/calibration.py             # is the confidence real
-python -m pytest tests/ -q                # 820 tests
+python -m pytest tests/ -q                # 824 tests
 ```
 
 Frontend: `npm run dev` (port 8080).

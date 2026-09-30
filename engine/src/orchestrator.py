@@ -17,6 +17,7 @@ from typing import Optional
 from schema import NormalizedTxn, SettlementBatch, MatchResult, MatchMethod, ExceptionRecord
 from fee_decomposition import compute_fee_breakdown, FeeRateCard, DEFAULT_RATE_CARD
 from subset_sum import (
+    AMBIGUOUS_CONFIDENCE,
     SubsetSumConfig,
     find_exact_subset,
     match_batch,
@@ -191,7 +192,7 @@ def reconcile_many(
                 matched_txn_ids=[t.source_txn_id for t in matched_txns],
                 matched_keys=[txn_key(t) for t in matched_txns],
                 method=MatchMethod.EXACT_SUBSET_SUM,
-                # Same 0.36/1.0 split as subset_sum.match_batch's arithmetic
+                # Same AMBIGUOUS_CONFIDENCE/1.0 split as subset_sum.match_batch's arithmetic
                 # confidence, and the same meaning: 1.0 is not a guess, the
                 # probe found no alternate joint assignment where THIS
                 # target's set differed, within the probed budget. It is
@@ -199,7 +200,7 @@ def reconcile_many(
                 # benchmark exists yet to measure it against, unlike the
                 # 1:N bands above, so this borrows the 1:N number honestly
                 # rather than inventing an untested one of its own.
-                confidence=(0.36 if ambiguous else
+                confidence=(AMBIGUOUS_CONFIDENCE if ambiguous else
                             UNPROVEN_UNIQUE_CONFIDENCE if probe_timed_out else 1.0),
                 matched_sum_cents=achieved_sum,
                 target_cents=p.gross_target,

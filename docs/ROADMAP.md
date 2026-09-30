@@ -55,7 +55,7 @@ authoritative than it is.
 `calibration_out_of_sample.py` runs the same confidence/outcome scoring
 against ReconRiver — a corpus the gate was never tuned against. Every
 prediction at or above 0.85 was the exact true set there (42 of 42), as it
-was in-sample (133 of 133). It previously was not: 4 of 46 above the gate
+was in-sample (138 of 138). It previously was not: 4 of 46 above the gate
 were wrong out-of-sample, and the in-sample 0.85–0.93 band was right 57.8%
 of the time.
 
@@ -64,20 +64,14 @@ pass reported `fuzz_cfg.confidence_threshold` — the score above which a
 fuzzy *pair* is worth acting on — as the confidence of the recovered *set*.
 That constant is 0.90, above the gate, and it was being attached to bundles
 of ~63 transactions that were the exact right set 0% of the time over 167
-observations. Those are now reported at 0.05.
+observations. Those were reported at 0.05, and since 30 September at 0.00:
+0 of 212 were exact (FAILURE_LOG 58).
 
-One number moved the wrong way and is reported rather than dropped:
-out-of-sample ECE rose from 0.0766 to 0.1037 while in-sample fell from
-0.1567 to 0.0544, and out-of-sample MCE — the worst single bucket — improved
-from 0.46 to 0.13. Removing a block of confident-and-wrong
-predictions concentrates the residual error in the low band, which is
-OVERconfident — it says 0.14 and is right 6.3% of the time (2 of 32; it was
-1 of 32 before FAILURE_LOG 31, which also brought out-of-sample ECE to
-0.0901). An earlier
-version of this paragraph called that underconfidence; it is the opposite.
-It costs nothing only because that band never clears anything: every
-proposal in it goes to a person. The calibrated figure shown beside it
-(`calibration_map.py`) says 0.09, which is closer to the truth.
+Below the gate, no figure now claims more than was measured: an ambiguous
+set, a fuzzy bundle and a sum with no other evidence report 0.00, and the
+calibrated figure shown beside the raw one is never above it there. No bucket
+is overconfident on either corpus; the out-of-sample low band says 0.00 and is
+right 6.25% (2 of 32), which costs a person a look, not money (FAILURE_LOG 58).
 
 **Fees assume one rate card per batch.** Real Indian settlements mix payment
 methods at different rates — UPI near zero, cards around 2%, netbanking often

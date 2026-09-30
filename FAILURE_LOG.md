@@ -16,7 +16,7 @@ The tests that found these failures, and the results after each fix, are in
 
 ## Index
 
-57 entries: 46 fixed, 6 mitigated, 1 partly resolved, 1 by design, and 3
+58 entries: 47 fixed, 6 mitigated, 1 partly resolved, 1 by design, and 3
 known limits that remain.
 
 | # | Failure | Severity | Failed safe | How it was resolved | Status |
@@ -24,7 +24,7 @@ known limits that remain.
 | 1 | Subset-sum alone cannot identify a settlement | Fatal, by design | Yes | Linkage narrows the pool to payments with evidence before the solver runs. | Design constraint, mitigated |
 | 2 | Linkage weights are hand-set, not learned | Moderate | Yes | Weights swept and shown within 3 points of the best; a learned Fellegi-Sunter model added alongside. | Mitigated |
 | 3 | Accuracy depends on reference quality | High | Yes | Measured and stated: 94.59% with references, 21.62% without; a learned payout cycle later raised the stripped case to 56.76%. | Known limit |
-| 4 | Calibration is in-sample | Moderate | Partly | Validated out of sample; calibrated confidence (error 0.0262) shown beside the raw score, which alone gates clearing. | Mitigated |
+| 4 | Calibration is in-sample | Moderate | Partly | Validated out of sample; calibrated confidence (error 0.0419, never above the raw figure below the gate) shown beside the raw score, which alone gates clearing. | Mitigated |
 | 5 | Fees assume one rate card per batch | High on mixed-method days | Yes | Declared deductions preferred; every fee audited after the match against a method-aware card. | Mitigated |
 | 6 | Sanctions screening is exact-match only | Moderate | Yes | Near spellings and low-quality aliases now flagged for a person (entry 49); transliteration and date of birth remain gaps. | Partly resolved |
 | 7 | Q&A grounding check traces by value, not meaning | Low | Yes | Ungrounded answers are withheld; the limitation is stated. | Known limit |
@@ -77,7 +77,8 @@ known limits that remain.
 | 54 | Settlement ids that survived only in the description were ignored | Medium | Yes | Description identifiers read (numbers only); a solver tier for records carrying the settlement's number; 82-85% on held-out seeds. | Fixed |
 | 55 | The page re-rendered ten times a second during a run | Medium, usability | Yes | The clock ticks in its own component; an unchanged audit trail is not replaced: 4.3 s to 1.2 s blocked on a slow CPU. | Fixed |
 | 56 | Six hand-copied headers had drifted, and every screen scrolled sideways on a phone | Low, usability | Yes | One header component; the judges' link becomes an icon on phones; tested for order and measured at 360 px. | Fixed |
-| 57 | Settlements the engine identified by their number were never cleared | Medium, review load | Yes | One band for a set that is exactly the records carrying the settlement's number; 62% to 89% cleared, 0 wrong clears on every suite. | Fixed |
+| 57 | Settlements the engine identified by their number were never cleared | Medium, review load | Yes | One band for a set that is exactly the records carrying the settlement's number; 62% to 92% cleared, 0 wrong clears on every suite. | Fixed |
+| 58 | Confidence figures below the gate claimed more than was measured | Low | Yes | No figure above the lowest accuracy measured for its kind of answer on any corpus; no bucket overconfident, raw or as shown. | Fixed |
 
 ---
 
@@ -1198,7 +1199,43 @@ unreferenced member. Cleared and right: 62% to 89% on the tuning seeds, and
 62%. Blind test, ReconRiver, the 1,000-case suite and the public checkbooks
 did not move, all with 0 wrong clears. tests/test_named_complete.py pins it.
 
+A second step: where one payment also named the settlement in full, the set was
+scored "anchors all used", lost 0.08 in pools over 200 and was held at 0.80,
+though it carried more evidence than the same set without the anchor. The
+complete named set is now checked first; partial references went from 7 to 10
+of 10 cleared per seed, and the benchmark from 89% to 92% (92-93% held out).
+
 What it does not establish: all 80 sets come from one generator, which always
 writes the number into a member's description. How often a real narration or
 memo carries the settlement's number, and how often a coincidental record
 does, is not measured.
+
+## 58. Confidence figures below the gate claimed more than was measured
+
+Severity: Low (a figure a reviewer reads; nothing was cleared on it)
+Fails safe: Yes
+
+Found when the user asked for a model that is never overconfident. Every
+calibration prediction was tagged with the band that set its figure, on the
+benchmark, ReconRiver and the 1,000-case suite. An ambiguous set, where a
+second subset also sums, said 0.36 and was right 4 of 12, 2 of 28 and 0 of 70
+times. A fuzzy recovery bundle said 0.05 and was right 0 of 212. A sum with no
+other evidence said 0.19, or 0.11 in a large pool, and was right 0 of 100 with
+linkage off and 1 of 27 on ReconRiver. Two bands, clustered (0.54) and
+anchors_ignored (0.42), had never fired on any corpus: reasoned, not measured.
+The small-pool bonus could add 0.03 to any of them. And the calibrated figure
+shown beside the raw one, pooled and Laplace-smoothed, said 11.4% on
+ReconRiver's low band when 6.25% was right.
+
+Mitigation: no figure without a measurement, and none above the lowest
+accuracy measured for that kind of answer on any corpus. All five say 0.00 and
+a person decides; the small-pool bonus no longer applies to a band that claims
+nothing; the calibrated figure is never above the raw one below the gate
+(calibration_map.apply). No bucket is overconfident on either calibration
+corpus, raw or as shown: in-sample the low band says 0.00 and is right 9.5%,
+out-of-sample 0.00 and 6.25%. ECE is 0.0902 in-sample and 0.0824 out-of-sample
+raw, 0.0419 as shown, all of it underconfidence; the old 0.0262 as shown scored
+better while overstating the low band. Nothing clears differently, since every
+band that clears was already below its measured accuracy. The demo's
+"withholds" preset now promises 0.00. tests/test_confidence_claims_nothing_unmeasured.py
+and tests/test_calibration_map.py pin it.

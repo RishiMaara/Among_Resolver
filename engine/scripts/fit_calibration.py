@@ -50,9 +50,14 @@ def low_band(pairs, mapping=None):
 
 def judge(name, train, test):
     m = cm.fit(train, source=name)
+
+    def shown(c):
+        # What a report shows (calibration_map.apply), not the bare map.
+        return cm.apply(m, c)
+
     return {"fit": name, "train_pairs": len(train), "test_pairs": len(test),
-            "ece_raw": cm.ece(test), "ece_calibrated": cm.ece(test, m),
-            "low_band_raw": low_band(test), "low_band_calibrated": low_band(test, m)}
+            "ece_raw": cm.ece(test), "ece_calibrated": cm.ece(test, shown),
+            "low_band_raw": low_band(test), "low_band_calibrated": low_band(test, shown)}
 
 
 def main():

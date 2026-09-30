@@ -632,6 +632,19 @@ def confidence_band(anchored: set[str], matched_keys: set[str],
     """
     if anchored and matched_keys <= anchored:
         return "fully_anchored"
+    if (named and len(matched_keys) >= 2 and matched_keys == named
+            and anchored <= matched_keys):
+        # Nothing names the settlement in full, or what does is in the set, and
+        # the records carrying its number are exactly the matched set: all of
+        # them, and nothing else. That set was fixed before the solver ran, so
+        # the arithmetic checked one hypothesis instead of searching 2^n subsets
+        # for one that fits, and an unrelated set lands within tolerance of a
+        # seven-digit target about once in 100,000. A record carrying the
+        # number left out, or a record without it let in, and this band does
+        # not apply. Checked before "anchors_all_used": one anchor on top of a
+        # complete named set is more evidence, and scored 0.80 there in pools
+        # over 200 while the same set without it scored 0.88.
+        return "named_complete"
     if anchored and anchored <= matched_keys:
         # Partially anchored, but the match USED EVERY ANCHOR AVAILABLE.
         #
@@ -642,15 +655,6 @@ def confidence_band(anchored: set[str], matched_keys: set[str],
         return "anchors_all_used"
     if anchored & matched_keys:
         return "anchors_ignored"
-    if named and len(matched_keys) >= 2 and matched_keys == named:
-        # Nothing names the settlement in full, but the records carrying its
-        # number are exactly the matched set: all of them, and nothing else.
-        # That set was fixed before the solver ran, so the arithmetic checked
-        # one hypothesis instead of searching 2^n subsets for one that fits,
-        # and an unrelated set lands within tolerance of a seven-digit target
-        # about once in 100,000. A record carrying the number left out, or
-        # a record without it let in, and this band does not apply.
-        return "named_complete"
     if learned and matched_keys <= learned:
         # Nothing names the settlement, but every member is in the cohort
         # the learned settlement cycle points at.
@@ -663,15 +667,13 @@ def confidence_band(anchored: set[str], matched_keys: set[str],
 # Set at or below measured accuracy: overconfidence costs money,
 # underconfidence costs review time. Measured per band (exact set = truth):
 #
-#   band               benchmark (180)      edge sweep (962)
-#   fully_anchored     n=135  obs 0.719     n=829  obs 0.837
-#   anchors_all_used   n=15   obs 1.000     n=0    no data
-#   arithmetic_only    n=30   obs 0.200     n=100  obs 0.000
-#
-# These are inputs: the reported figure is min(arithmetic, band), and every
-# published prediction at or above the 0.85 gate was right (103/103
-# in-sample, 42/42 out). anchors_ignored and clustered never fired; their
-# values are reasoned and labelled unmeasured.
+# These are inputs: the reported figure is min(arithmetic, band). No band is
+# set above the lowest accuracy measured for it on any corpus, and a band never
+# measured claims nothing (FAILURE_LOG 58). Measured 30 September 2026, where
+# the band set the reported figure (benchmark 180 / ReconRiver 74 / 1,000-case
+# suite): fully_anchored exact 93/93, 42/42, 694/694; anchors_all_used 10/10;
+# named_complete below. Every prediction at or above the 0.85 gate was right
+# (138/138 in-sample, 42/42 out).
 # Measured 30 September 2026 on the 120-scenario benchmark, seeds 7, 101, 202
 # and 303 (the last two never looked at while tuning): n=80, obs 1.000, Wilson
 # 95% lower bound 0.95. Set lower, at 0.88, because all 80 come from one
@@ -682,10 +684,15 @@ NAMED_COMPLETE_BAND = 0.88
 CONFIDENCE_BANDS = {
     "fully_anchored": 0.95,
     "anchors_all_used": 0.88,
-    "anchors_ignored": 0.42,      # UNMEASURED — never fired in either corpus
-    "clustered": 0.54,            # UNMEASURED — never fired in either corpus
-    "arithmetic_only": 0.19,      # benchmark 0.200; the edge corpus, which is
-                                  # 26% deliberately unrecoverable, says 0.000
+    # No figure without a measurement. arithmetic_only: subset-sum alone
+    # identified 0 of 100 benchmark settlements (baseline_comparison.json) and
+    # 1 of 27 on ReconRiver. anchors_ignored and clustered have never fired on
+    # the benchmark, ReconRiver or the 1,000-case suite, so they claim no more
+    # than arithmetic alone until they are measured (30 September 2026; they
+    # were 0.42 and 0.54, reasoned, not measured).
+    "anchors_ignored": 0.0,
+    "clustered": 0.0,
+    "arithmetic_only": 0.0,
     # Measured on ReconRiver with references stripped and the cycle learned
     # from the OTHER scenarios' clears (scripts/learned_linkage_benchmark.py):
     # where this band set the reported confidence, 7 of 7 proposals were the
@@ -727,12 +734,13 @@ def link_confidence(result: LinkageResult, matched_keys: set[str]) -> float:
 
     # A narrowed pool makes an exact sum far less likely to be coincidence.
     # Not for named_complete: its set was not searched for, so the size of
-    # the pool it came from does not change the odds.
-    if band == "named_complete":
+    # the pool it came from does not change the odds. Not for a band that
+    # claims nothing: a small pool does not turn no evidence into some.
+    if band == "named_complete" or base <= 0.0:
         pass
     elif result.pool_after <= 25:
         base += 0.03
     elif result.pool_after > 200:
         base -= 0.08
 
-    return round(max(0.05, min(0.97, base)), 3)
+    return round(max(0.0, min(0.97, base)), 3)

@@ -154,10 +154,10 @@ seed 7:
 | | false clears | cleared and right | truth identified | correct abstentions |
 |---|---|---|---|---|
 | Subset-sum only *(baseline)* | 0 | **0.0%** | 0.0% | 100% |
-| Linkage, member feed undeclared | **0** | **89%** | 95% | 100% |
-| Linkage, member feed declared | **0** | **89%** | 95% | 100% |
+| Linkage, member feed undeclared | **0** | **92%** | 95% | 100% |
+| Linkage, member feed declared | **0** | **92%** | 95% | 100% |
 
-On seeds 202 and 303, never looked at while tuning: 89% and 90% cleared, 93%
+On seeds 202 and 303, never looked at while tuning: 92% and 93% cleared, 93%
 and 95% identified, 0 false clears. With every description erased: 62% and
 65%, the figures before identifiers were read from descriptions.
 
@@ -242,7 +242,7 @@ narration or ERP memo carries it is not measured here.
 
 **Declaring the member feed is configuration, not intelligence.** It once
 bought 6.7 points; since descriptions are read it buys nothing on the
-benchmark (89% either way), but it remains the stronger claim where
+benchmark (92% either way), but it remains the stronger claim where
 descriptions are bare.
 
 **Blocking is unrecoverable.** A true member dropped at the linkage stage can
@@ -344,17 +344,17 @@ they are absent, and that case is not measured here.
 
 | corpus | predictions | ECE | Brier | at/above 0.85 | wrong above the gate |
 |---|---:|---:|---:|---:|---:|
-| own benchmark *(in-sample)* | 180 | 0.0783 | 0.0223 | 133 | **0** |
-| ReconRiver *(out-of-sample)* | 74 | 0.0901 | 0.029 | 42 | **0** |
+| own benchmark *(in-sample)* | 180 | 0.0902 | 0.0295 | 138 | **0** |
+| ReconRiver *(out-of-sample)* | 74 | 0.0824 | 0.0333 | 42 | **0** |
 
 Every prediction at or above the gate was the exact true set, on our corpus and
 on one the gate was never tuned against. Above it the number errs low, which
 costs review time: the band for a complete named set says 0.88 and was right
 80 of 80 times, kept low because all 80 came from one generator. Below the gate
-it is a ranking: out-of-sample the lowest band says 0.14 and is right 6.3% (2 of
-32), and never clears. It got here by fixing two numbers that told a reviewer
-to trust something wrong, a fuzzy bundle reporting 0.90 and an ambiguous-match
-constant reporting 0.54; both are in FAILURE_LOG. Even so, clearing needs this
+nothing claims more than was measured: an ambiguous set, a fuzzy bundle and a
+sum with no other evidence say 0.00, and no bucket on either corpus is
+overconfident (FAILURE_LOG 58). A fuzzy bundle once reported 0.90 and an
+ambiguous set 0.54; both are in FAILURE_LOG. Even so, clearing needs this
 number **and** the other guards to agree.
 
 **The 20-candidate unanchored limit is a judgement call.** It follows from the
