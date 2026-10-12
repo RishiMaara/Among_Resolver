@@ -13,8 +13,8 @@ differences below are noise.
 | Reading scanned statements | browser OCR: 11 of 24 right | 23 of 24 | every line's running balance, and the total |
 | Investigating withheld settlements | rules: 16 of 58 right and verified | 20 of 58, 0 wrong matches through | a verifier: arithmetic, ledger, calendar, evidence, grounding |
 | Answering questions about a result | — | 44 of 44 | every figure and id must trace to the recorded result |
-| Linkage where references are gone | 24.3% of sets found | 56.8% | the solver: exact sums only, 0 false clears |
-| Confidence calibration | ECE 0.082 out-of-sample | 0.042 | isotonic; never above the raw figure below the gate, and the auto-clear gate never reads it |
+| Linkage where references are gone | <!--fig:rr_stripped_exact:pct1-->24.3%<!--/fig--> of sets found | <!--fig:rr_learned_exact:pct1-->56.8%<!--/fig--> | the solver: exact sums only, 0 false clears |
+| Confidence calibration | ECE <!--fig:cal_oos_raw:dec3-->0.082<!--/fig--> out-of-sample | <!--fig:cal_oos_shown:dec3-->0.043<!--/fig--> | isotonic; never above the raw figure below the gate, and the auto-clear gate never reads it |
 
 The last two are statistical models, not language models, and are in the
 table because they are the other place the engine learns from data.
@@ -186,7 +186,7 @@ it is not proof the model is always right. That is why the check exists.
 A Fellegi-Sunter model (the method behind Splink). Its m-probabilities come
 from EM over anchored records, or from the processor's settlement cycle
 learned from verified clears. On ReconRiver with every settlement id
-stripped, exact sets rose from 24.3% to 56.8%, with the cycle learned only
+stripped, exact sets rose from <!--fig:rr_stripped_exact:pct1-->24.3%<!--/fig--> to <!--fig:rr_learned_exact:pct1-->56.8%<!--/fig-->, with the cycle learned only
 from other scenarios. False clears stayed at 0, and nothing changed on this
 project's own benchmark or on the 1,050-case edge suite. These new matches
 arrive as proposals, below the gate: 7 of 7 measured is too few to release
@@ -203,7 +203,7 @@ shown:
 
 | fitted on → judged on | ECE raw | ECE calibrated | low band said / right |
 |---|---:|---:|---|
-| benchmark → ReconRiver | 0.082 | **0.042** | 0.00 → 0.00 / 0.06 |
+| benchmark → ReconRiver | <!--fig:cal_oos_raw:dec3-->0.082<!--/fig--> | **<!--fig:cal_oos_shown:dec3-->0.043<!--/fig-->** | 0.00 → 0.00 / 0.06 |
 | ReconRiver → benchmark | 0.090 | 0.051 | 0.00 → 0.00 / 0.10 |
 
 It lowers the error in both directions. The shipped map is fitted on both, and reviewers keep it honest:

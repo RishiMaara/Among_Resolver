@@ -41,7 +41,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 26,
     "truth": 26,
     "extra": [],
@@ -49,7 +49,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 26 payments that make up this settlement, and they add up to the expected Rs 70,760.78 exactly, with nothing left over. Confidence 95%. No action needed.",
-    "secs": 1.83
+    "secs": 2.215
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -70,7 +70,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 6,
     "truth": 6,
     "extra": [],
@@ -78,7 +78,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 6 payments that make up this settlement, and they add up to the expected Rs 32,264.51 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.045
+    "secs": 0.071
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -99,7 +99,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 22,
     "truth": 22,
     "extra": [],
@@ -107,7 +107,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 22 payments that make up this settlement, and they add up to the expected Rs 76,910.90 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.044
+    "secs": 0.056
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -128,7 +128,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 30,
     "truth": 30,
     "extra": [],
@@ -136,7 +136,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 30 payments that make up this settlement, and they add up to the expected Rs 78,087.59 exactly, with nothing left over. Confidence 95%. No action needed.",
-    "secs": 0.047
+    "secs": 0.068
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -157,7 +157,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 39,
     "truth": 39,
     "extra": [],
@@ -165,7 +165,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 39 payments that make up this settlement, and they add up to the expected Rs 1,43,828.80 exactly, with nothing left over. Confidence 95%. No action needed.",
-    "secs": 0.048
+    "secs": 0.06
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -186,7 +186,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 39,
     "truth": 39,
     "extra": [],
@@ -194,7 +194,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 39 payments that make up this settlement, and they add up to the expected Rs 1,12,660.96 exactly, with nothing left over. Confidence 95%. No action needed.",
-    "secs": 0.048
+    "secs": 0.06
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -215,7 +215,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 26,
     "truth": 26,
     "extra": [],
@@ -223,7 +223,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 26 payments that make up this settlement, and they add up to the expected Rs 71,179.58 exactly, with nothing left over. Confidence 95%. No action needed.",
-    "secs": 0.046
+    "secs": 0.078
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -244,7 +244,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 26,
     "truth": 26,
     "extra": [],
@@ -252,7 +252,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 26 payments that make up this settlement, and they add up to the expected Rs 56,569.98 exactly, with nothing left over. Confidence 95%. No action needed.",
-    "secs": 0.054
+    "secs": 0.065
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -273,7 +273,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 33,
     "truth": 33,
     "extra": [],
@@ -281,7 +281,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 33 payments that make up this settlement, and they add up to the expected Rs 98,897.98 exactly, with nothing left over. Confidence 95%. No action needed.",
-    "secs": 0.044
+    "secs": 0.081
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -302,7 +302,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 34,
     "truth": 34,
     "extra": [],
@@ -310,7 +310,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 34 payments that make up this settlement, and they add up to the expected Rs 93,931.66 exactly, with nothing left over. Confidence 95%. No action needed.",
-    "secs": 0.064
+    "secs": 0.083
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -331,7 +331,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 4,
     "truth": 4,
     "extra": [],
@@ -339,7 +339,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 4 payments that make up this settlement, and they add up to the expected Rs 8,790.79 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.054
+    "secs": 0.068
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -360,7 +360,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 38,
     "truth": 38,
     "extra": [],
@@ -368,7 +368,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 38 payments that make up this settlement, and they add up to the expected Rs 1,16,975.07 exactly, with nothing left over. Confidence 95%. No action needed.",
-    "secs": 0.069
+    "secs": 0.091
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -389,7 +389,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 25,
     "truth": 25,
     "extra": [],
@@ -397,7 +397,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 25 payments that make up this settlement, and they add up to the expected Rs 49,139.97 exactly, with nothing left over. Confidence 95%. No action needed.",
-    "secs": 0.062
+    "secs": 0.071
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -418,7 +418,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 9,
     "truth": 9,
     "extra": [],
@@ -426,7 +426,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 9 payments that make up this settlement, and they add up to the expected Rs 13,143.61 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.047
+    "secs": 0.056
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -447,7 +447,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 30,
     "truth": 30,
     "extra": [],
@@ -455,7 +455,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 30 payments that make up this settlement, and they add up to the expected Rs 59,352.26 exactly, with nothing left over. Confidence 95%. No action needed.",
-    "secs": 0.057
+    "secs": 0.075
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -476,7 +476,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 8,
     "truth": 8,
     "extra": [],
@@ -484,7 +484,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 8 payments that make up this settlement, and they add up to the expected Rs 11,364.05 exactly, with nothing left over. Confidence 95%. No action needed.",
-    "secs": 0.066
+    "secs": 0.082
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -505,7 +505,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 28,
     "truth": 28,
     "extra": [],
@@ -513,7 +513,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 28 payments that make up this settlement, and they add up to the expected Rs 73,769.07 exactly, with nothing left over. Confidence 95%. No action needed.",
-    "secs": 0.079
+    "secs": 0.082
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -534,7 +534,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 24,
     "truth": 24,
     "extra": [],
@@ -542,7 +542,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 24 payments that make up this settlement, and they add up to the expected Rs 68,425.95 exactly, with nothing left over. Confidence 95%. No action needed.",
-    "secs": 0.076
+    "secs": 0.07
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -563,7 +563,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 12,
     "truth": 12,
     "extra": [],
@@ -571,7 +571,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 12 payments that make up this settlement, and they add up to the expected Rs 15,598.98 exactly, with nothing left over. Confidence 95%. No action needed.",
-    "secs": 0.055
+    "secs": 0.103
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -592,7 +592,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 12,
     "truth": 12,
     "extra": [],
@@ -600,7 +600,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 12 payments that make up this settlement, and they add up to the expected Rs 27,522.20 exactly, with nothing left over. Confidence 95%. No action needed.",
-    "secs": 0.059
+    "secs": 0.113
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -621,7 +621,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 20,
     "truth": 20,
     "extra": [],
@@ -629,7 +629,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 20 payments that make up this settlement, and they add up to the expected Rs 35,391.54 exactly, with nothing left over. Confidence 95%. No action needed.",
-    "secs": 0.064
+    "secs": 0.091
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -650,7 +650,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 10,
     "truth": 10,
     "extra": [],
@@ -658,7 +658,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 10 payments that make up this settlement, and they add up to the expected Rs 11,232.30 exactly, with nothing left over. Confidence 95%. No action needed.",
-    "secs": 0.072
+    "secs": 0.073
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -679,7 +679,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 24,
     "truth": 24,
     "extra": [],
@@ -687,7 +687,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 24 payments that make up this settlement, and they add up to the expected Rs 59,789.44 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.068
+    "secs": 0.081
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -708,7 +708,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 6,
     "truth": 6,
     "extra": [],
@@ -716,7 +716,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 6 payments that make up this settlement, and they add up to the expected Rs 6,482.89 exactly, with nothing left over. Confidence 95%. No action needed.",
-    "secs": 0.074
+    "secs": 0.072
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -737,7 +737,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 5,
     "truth": 5,
     "extra": [],
@@ -745,7 +745,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 5 payments that make up this settlement, and they add up to the expected Rs 8,907.15 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.061
+    "secs": 0.059
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -766,7 +766,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 11,
     "truth": 11,
     "extra": [],
@@ -774,7 +774,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 11 payments that make up this settlement, and they add up to the expected Rs 57,671.60 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.06
+    "secs": 0.09
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -795,7 +795,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 8,
     "truth": 8,
     "extra": [],
@@ -803,7 +803,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 8 payments that make up this settlement, and they add up to the expected Rs 20,436.55 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.058
+    "secs": 0.089
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -824,7 +824,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 10,
     "truth": 10,
     "extra": [],
@@ -832,7 +832,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 10 payments that make up this settlement, and they add up to the expected Rs 48,382.83 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.066
+    "secs": 0.088
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -853,7 +853,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 10,
     "truth": 10,
     "extra": [],
@@ -861,7 +861,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 10 payments that make up this settlement, and they add up to the expected Rs 29,352.09 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.066
+    "secs": 0.096
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -882,7 +882,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 19,
     "truth": 19,
     "extra": [],
@@ -890,7 +890,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 19 payments that make up this settlement, and they add up to the expected Rs 48,297.62 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.076
+    "secs": 0.12
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -911,7 +911,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 10,
     "truth": 10,
     "extra": [],
@@ -919,7 +919,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 10 payments that make up this settlement, and they add up to the expected Rs 24,647.82 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.059
+    "secs": 0.071
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -940,7 +940,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 10,
     "truth": 10,
     "extra": [],
@@ -948,7 +948,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 10 payments that make up this settlement, and they add up to the expected Rs 25,100.71 exactly, with nothing left over. Confidence 95%. No action needed.",
-    "secs": 0.092
+    "secs": 0.083
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -969,7 +969,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 5,
     "truth": 5,
     "extra": [],
@@ -977,7 +977,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 5 payments that make up this settlement, and they add up to the expected Rs 23,300.62 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.058
+    "secs": 0.076
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -998,7 +998,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 14,
     "truth": 14,
     "extra": [],
@@ -1006,7 +1006,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 14 payments that make up this settlement, and they add up to the expected Rs 23,048.29 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.061
+    "secs": 0.058
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1027,7 +1027,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 13,
     "truth": 13,
     "extra": [],
@@ -1035,7 +1035,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 13 payments that make up this settlement, and they add up to the expected Rs 31,171.62 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.067
+    "secs": 0.066
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1056,7 +1056,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 17,
     "truth": 17,
     "extra": [],
@@ -1064,7 +1064,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 17 payments that make up this settlement, and they add up to the expected Rs 64,698.65 exactly, with nothing left over. Confidence 95%. No action needed.",
-    "secs": 0.081
+    "secs": 0.08
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1093,7 +1093,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Needs review. We found 3 payments that add up to Rs 3,963.63 exactly \u2014 but nothing in your files ties them to this settlement: no matching reference number, and no second source agreeing. Amounts can line up by coinciden",
-    "secs": 0.083
+    "secs": 0.101
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1122,7 +1122,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Needs review. We found 5 payments that add up to Rs 17,678.26 exactly \u2014 but nothing in your files ties them to this settlement: no matching reference number, and no second source agreeing. Amounts can line up by coincide",
-    "secs": 0.094
+    "secs": 0.158
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1151,7 +1151,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Needs review. We found 6 payments that add up to Rs 21,522.38 exactly \u2014 but nothing in your files ties them to this settlement: no matching reference number, and no second source agreeing. Amounts can line up by coincide",
-    "secs": 0.373
+    "secs": 0.446
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1180,7 +1180,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Needs review. We found 3 payments that add up to Rs 15,868.47 exactly \u2014 but nothing in your files ties them to this settlement: no matching reference number, and no second source agreeing. Amounts can line up by coincide",
-    "secs": 0.106
+    "secs": 0.118
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1209,7 +1209,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Needs review. We found 2 payments that add up to Rs 3,122.73 exactly \u2014 but nothing in your files ties them to this settlement: no matching reference number, and no second source agreeing. Amounts can line up by coinciden",
-    "secs": 0.062
+    "secs": 0.06
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1238,7 +1238,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Needs review. We found 5 payments that add up to Rs 10,145.75 exactly \u2014 but nothing in your files ties them to this settlement: no matching reference number, and no second source agreeing. Amounts can line up by coincide",
-    "secs": 0.391
+    "secs": 0.577
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1267,7 +1267,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Needs review. We found 6 payments that add up to Rs 21,851.35 exactly \u2014 but nothing in your files ties them to this settlement: no matching reference number, and no second source agreeing. Amounts can line up by coincide",
-    "secs": 0.107
+    "secs": 0.131
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1296,7 +1296,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Needs review. We found 2 payments that add up to Rs 5,547.78 exactly \u2014 but nothing in your files ties them to this settlement: no matching reference number, and no second source agreeing. Amounts can line up by coinciden",
-    "secs": 0.129
+    "secs": 0.11
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1325,7 +1325,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Needs review. We found 5 payments that add up to Rs 8,449.15 exactly \u2014 but nothing in your files ties them to this settlement: no matching reference number, and no second source agreeing. Amounts can line up by coinciden",
-    "secs": 0.152
+    "secs": 0.149
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1354,7 +1354,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Needs review. We found 4 payments that add up to Rs 17,193.51 exactly \u2014 but nothing in your files ties them to this settlement: no matching reference number, and no second source agreeing. Amounts can line up by coincide",
-    "secs": 0.087
+    "secs": 0.156
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1383,7 +1383,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Needs review. We found 5 payments that add up to Rs 6,787.87 exactly \u2014 but nothing in your files ties them to this settlement: no matching reference number, and no second source agreeing. Amounts can line up by coinciden",
-    "secs": 0.422
+    "secs": 0.552
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1412,7 +1412,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Needs review. We found 2 payments that add up to Rs 6,464.25 exactly \u2014 but nothing in your files ties them to this settlement: no matching reference number, and no second source agreeing. Amounts can line up by coinciden",
-    "secs": 0.056
+    "secs": 0.079
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1441,7 +1441,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "Needs your decision. More than one different set of payments adds up to exactly Rs 15,590.00, so the arithmetic alone cannot say which set is the real one. We have not guessed. Someone needs to look at the candidates and",
-    "secs": 17.008
+    "secs": 48.465
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1470,7 +1470,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "Needs your decision. More than one different set of payments adds up to exactly Rs 6,096.00, so the arithmetic alone cannot say which set is the real one. We have not guessed. Someone needs to look at the candidates and ",
-    "secs": 0.13
+    "secs": 0.521
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1499,7 +1499,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "Needs your decision. More than one different set of payments adds up to exactly Rs 5,593.00, so the arithmetic alone cannot say which set is the real one. We have not guessed. Someone needs to look at the candidates and ",
-    "secs": 0.149
+    "secs": 0.294
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1528,7 +1528,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 19 payments we looked at adds up to Rs 6,094.00. The closest we can offer is 3 payments that look related, but they come to Rs 497.00 short of the figure. Usually that means a payment is missing ",
-    "secs": 0.149
+    "secs": 0.222
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1557,7 +1557,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 24 payments we looked at adds up to Rs 2,996.00. The closest we can offer is 2 payments that look related, but they come to Rs 998.00 short of the figure. Usually that means a payment is missing ",
-    "secs": 0.211
+    "secs": 0.285
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1586,7 +1586,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "Needs your decision. More than one different set of payments adds up to exactly Rs 10,391.00, so the arithmetic alone cannot say which set is the real one. We have not guessed. Someone needs to look at the candidates and",
-    "secs": 0.196
+    "secs": 0.307
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1615,7 +1615,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "Needs your decision. More than one different set of payments adds up to exactly Rs 7,592.00, so the arithmetic alone cannot say which set is the real one. We have not guessed. Someone needs to look at the candidates and ",
-    "secs": 0.196
+    "secs": 0.491
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1644,7 +1644,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "Needs your decision. More than one different set of payments adds up to exactly Rs 7,191.00, so the arithmetic alone cannot say which set is the real one. We have not guessed. Someone needs to look at the candidates and ",
-    "secs": 0.171
+    "secs": 0.345
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1673,7 +1673,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 19 payments we looked at adds up to Rs 4,595.00. The closest we can offer is 4 payments that look related, but they come to Rs 499.00 short of the figure. Usually that means a payment is missing ",
-    "secs": 0.16
+    "secs": 0.377
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1702,7 +1702,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "Needs your decision. More than one different set of payments adds up to exactly Rs 9,190.00, so the arithmetic alone cannot say which set is the real one. We have not guessed. Someone needs to look at the candidates and ",
-    "secs": 0.169
+    "secs": 0.488
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1731,7 +1731,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 29 payments we looked at adds up to Rs 13,090.00. The closest we can offer is 3 payments that look related, but they come to Rs 9,593.00 short of the figure. Usually that means a payment is missi",
-    "secs": 0.226
+    "secs": 0.456
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1760,7 +1760,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "Needs your decision. More than one different set of payments adds up to exactly Rs 6,596.00, so the arithmetic alone cannot say which set is the real one. We have not guessed. Someone needs to look at the candidates and ",
-    "secs": 0.195
+    "secs": 0.303
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1789,7 +1789,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 27 payments we looked at adds up to Rs 16,695.70. The closest we can offer is 25 payments that look related, but they come to Rs 42,941.64 over the figure. Usually that means a payment is missing",
-    "secs": 0.934
+    "secs": 1.148
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1818,7 +1818,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "Needs review. We found 7 payments that add up to Rs 26,506.97 exactly \u2014 but nothing in your files ties them to this settlement: no matching reference number, and no second source agreeing. Amounts can line up by coincide",
-    "secs": 0.58
+    "secs": 0.934
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1847,7 +1847,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 30 payments we looked at adds up to Rs 24,972.46. The closest we can offer is 28 payments that look related, but they come to Rs 33,577.03 over the figure. Usually that means a payment is missing",
-    "secs": 0.828
+    "secs": 1.052
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1876,7 +1876,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 32 payments we looked at adds up to Rs 33,361.40. The closest we can offer is 30 payments that look related, but they come to Rs 90,523.09 over the figure. Usually that means a payment is missing",
-    "secs": 0.891
+    "secs": 1.645
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1905,7 +1905,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 31 payments we looked at adds up to Rs 23,322.30. The closest we can offer is 29 payments that look related, but they come to Rs 57,513.68 over the figure. Usually that means a payment is missing",
-    "secs": 0.844
+    "secs": 1.831
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1934,7 +1934,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 37 payments we looked at adds up to Rs 40,757.11. The closest we can offer is 35 payments that look related, but they come to Rs 49,182.95 over the figure. Usually that means a payment is missing",
-    "secs": 0.662
+    "secs": 0.982
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1963,7 +1963,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 26 payments we looked at adds up to Rs 17,832.08. The closest we can offer is 24 payments that look related, but they come to Rs 64,840.11 over the figure. Usually that means a payment is missing",
-    "secs": 0.795
+    "secs": 1.506
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -1992,7 +1992,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 29 payments we looked at adds up to Rs 10,046.50. The closest we can offer is 27 payments that look related, but they come to Rs 42,877.39 over the figure. Usually that means a payment is missing",
-    "secs": 0.832
+    "secs": 1.499
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2021,7 +2021,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 33 payments we looked at adds up to Rs 21,224.98. The closest we can offer is 31 payments that look related, but they come to Rs 41,820.88 over the figure. Usually that means a payment is missing",
-    "secs": 0.861
+    "secs": 1.468
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2050,7 +2050,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 36 payments we looked at adds up to Rs 32,620.37. The closest we can offer is 34 payments that look related, but they come to Rs 53,687.30 over the figure. Usually that means a payment is missing",
-    "secs": 0.989
+    "secs": 1.684
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2079,7 +2079,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 32 payments we looked at adds up to Rs 35,973.08. The closest we can offer is 30 payments that look related, but they come to Rs 30,855.31 over the figure. Usually that means a payment is missing",
-    "secs": 0.849
+    "secs": 1.679
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2108,7 +2108,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 36 payments we looked at adds up to Rs 54,012.09. The closest we can offer is 34 payments that look related, but they come to Rs 48,819.77 over the figure. Usually that means a payment is missing",
-    "secs": 0.833
+    "secs": 1.498
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2137,7 +2137,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 40 payments we looked at adds up to Rs 12,309.56. The closest we can offer is 40 payments that look related, but they come to Rs 80,806.39 over the figure. Usually that means a payment is missing",
-    "secs": 0.797
+    "secs": 1.406
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2166,7 +2166,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 43 payments we looked at adds up to Rs 30,823.79. The closest we can offer is 43 payments that look related, but they come to Rs 53,659.17 over the figure. Usually that means a payment is missing",
-    "secs": 0.859
+    "secs": 1.592
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2195,7 +2195,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 41 payments we looked at adds up to Rs 35,120.23. The closest we can offer is 41 payments that look related, but they come to Rs 68,742.61 over the figure. Usually that means a payment is missing",
-    "secs": 0.641
+    "secs": 1.236
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2224,7 +2224,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 44 payments we looked at adds up to Rs 36,693.41. The closest we can offer is 44 payments that look related, but they come to Rs 91,835.06 over the figure. Usually that means a payment is missing",
-    "secs": 0.619
+    "secs": 1.395
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2253,7 +2253,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "Needs review. We found 22 payments that add up to Rs 52,107.17 exactly \u2014 but nothing in your files ties them to this settlement: no matching reference number, and no second source agreeing. Amounts can line up by coincid",
-    "secs": 0.633
+    "secs": 1.424
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2282,7 +2282,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 51 payments we looked at adds up to Rs 66,537.10. The closest we can offer is 51 payments that look related, but they come to Rs 72,881.93 over the figure. Usually that means a payment is missing",
-    "secs": 1.038
+    "secs": 1.771
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2311,7 +2311,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 53 payments we looked at adds up to Rs 51,389.47. The closest we can offer is 53 payments that look related, but they come to Rs 64,012.86 over the figure. Usually that means a payment is missing",
-    "secs": 1.588
+    "secs": 2.996
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2340,7 +2340,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 44 payments we looked at adds up to Rs 45,370.33. The closest we can offer is 44 payments that look related, but they come to Rs 73,986.41 over the figure. Usually that means a payment is missing",
-    "secs": 0.694
+    "secs": 1.302
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2369,7 +2369,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 47 payments we looked at adds up to Rs 42,092.08. The closest we can offer is 47 payments that look related, but they come to Rs 83,595.24 over the figure. Usually that means a payment is missing",
-    "secs": 0.694
+    "secs": 1.507
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2398,7 +2398,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 37 payments we looked at adds up to Rs 16,035.04. The closest we can offer is 37 payments that look related, but they come to Rs 94,727.01 over the figure. Usually that means a payment is missing",
-    "secs": 0.848
+    "secs": 1.263
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2427,7 +2427,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 37 payments we looked at adds up to Rs 17,947.92. The closest we can offer is 37 payments that look related, but they come to Rs 1,02,014.86 over the figure. Usually that means a payment is missi",
-    "secs": 0.842
+    "secs": 1.633
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2456,7 +2456,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 49 payments we looked at adds up to Rs 33,528.26. The closest we can offer is 49 payments that look related, but they come to Rs 1,05,615.13 over the figure. Usually that means a payment is missi",
-    "secs": 0.744
+    "secs": 1.515
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2485,7 +2485,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 45 payments we looked at adds up to Rs 26,876.31. The closest we can offer is 45 payments that look related, but they come to Rs 97,714.18 over the figure. Usually that means a payment is missing",
-    "secs": 0.77
+    "secs": 1.523
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2514,7 +2514,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 53 payments we looked at adds up to Rs 51,224.93. The closest we can offer is 53 payments that look related, but they come to Rs 62,611.71 over the figure. Usually that means a payment is missing",
-    "secs": 0.858
+    "secs": 1.674
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2543,7 +2543,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 54 payments we looked at adds up to Rs 65,151.18. The closest we can offer is 54 payments that look related, but they come to Rs 75,120.29 over the figure. Usually that means a payment is missing",
-    "secs": 0.822
+    "secs": 1.786
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2572,7 +2572,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 49 payments we looked at adds up to Rs 42,631.23. The closest we can offer is 49 payments that look related, but they come to Rs 67,297.05 over the figure. Usually that means a payment is missing",
-    "secs": 1.005
+    "secs": 1.532
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2601,7 +2601,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 42 payments we looked at adds up to Rs 34,018.56. The closest we can offer is 42 payments that look related, but they come to Rs 60,593.55 over the figure. Usually that means a payment is missing",
-    "secs": 0.618
+    "secs": 1.417
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2630,7 +2630,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 38 payments we looked at adds up to Rs 14,010.16. The closest we can offer is 38 payments that look related, but they come to Rs 87,505.36 over the figure. Usually that means a payment is missing",
-    "secs": 0.801
+    "secs": 1.542
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2659,7 +2659,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "Needs review. We found 22 payments that add up to Rs 65,523.58 exactly \u2014 but nothing in your files ties them to this settlement: no matching reference number, and no second source agreeing. Amounts can line up by coincid",
-    "secs": 0.772
+    "secs": 1.654
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2688,7 +2688,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 40 payments we looked at adds up to Rs 22,090.28. The closest we can offer is 40 payments that look related, but they come to Rs 1,07,327.34 over the figure. Usually that means a payment is missi",
-    "secs": 0.82
+    "secs": 1.589
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2717,7 +2717,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 38 payments we looked at adds up to Rs 22,635.49. The closest we can offer is 38 payments that look related, but they come to Rs 82,187.14 over the figure. Usually that means a payment is missing",
-    "secs": 0.848
+    "secs": 1.997
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2746,7 +2746,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 45 payments we looked at adds up to Rs 53,554.18. The closest we can offer is 45 payments that look related, but they come to Rs 83,589.39 over the figure. Usually that means a payment is missing",
-    "secs": 0.816
+    "secs": 1.906
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2775,7 +2775,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 38 payments we looked at adds up to Rs 37,657.28. The closest we can offer is 38 payments that look related, but they come to Rs 63,957.64 over the figure. Usually that means a payment is missing",
-    "secs": 0.921
+    "secs": 2.318
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2804,7 +2804,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 52 payments we looked at adds up to Rs 61,916.63. The closest we can offer is 52 payments that look related, but they come to Rs 78,709.32 over the figure. Usually that means a payment is missing",
-    "secs": 0.838
+    "secs": 2.212
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2833,7 +2833,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 33 payments we looked at adds up to Rs 24,849.28. The closest we can offer is 33 payments that look related, but they come to Rs 55,010.00 over the figure. Usually that means a payment is missing",
-    "secs": 0.912
+    "secs": 2.113
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2862,7 +2862,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 42 payments we looked at adds up to Rs 28,060.30. The closest we can offer is 42 payments that look related, but they come to Rs 75,233.12 over the figure. Usually that means a payment is missing",
-    "secs": 1.029
+    "secs": 1.36
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2891,7 +2891,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 32 payments we looked at adds up to Rs 29,441.18. The closest we can offer is 32 payments that look related, but they come to Rs 55,687.48 over the figure. Usually that means a payment is missing",
-    "secs": 0.872
+    "secs": 1.597
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2920,7 +2920,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 33 payments we looked at adds up to Rs 21,858.36. The closest we can offer is 33 payments that look related, but they come to Rs 62,951.96 over the figure. Usually that means a payment is missing",
-    "secs": 0.87
+    "secs": 2.258
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2949,7 +2949,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 41 payments we looked at adds up to Rs 47,617.37. The closest we can offer is 41 payments that look related, but they come to Rs 48,859.37 over the figure. Usually that means a payment is missing",
-    "secs": 0.833
+    "secs": 1.963
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -2978,7 +2978,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 43 payments we looked at adds up to Rs 46,420.07. The closest we can offer is 43 payments that look related, but they come to Rs 88,974.99 over the figure. Usually that means a payment is missing",
-    "secs": 1.215
+    "secs": 2.257
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -3007,7 +3007,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 43 payments we looked at adds up to Rs 37,210.43. The closest we can offer is 43 payments that look related, but they come to Rs 65,809.24 over the figure. Usually that means a payment is missing",
-    "secs": 0.835
+    "secs": 1.3
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -3036,7 +3036,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 33 payments we looked at adds up to Rs 12,909.38. The closest we can offer is 33 payments that look related, but they come to Rs 79,353.75 over the figure. Usually that means a payment is missing",
-    "secs": 0.909
+    "secs": 2.215
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -3065,7 +3065,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 29 payments we looked at adds up to Rs 10,260.47. The closest we can offer is 29 payments that look related, but they come to Rs 56,533.40 over the figure. Usually that means a payment is missing",
-    "secs": 0.902
+    "secs": 1.715
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -3094,7 +3094,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 44 payments we looked at adds up to Rs 58,435.38. The closest we can offer is 44 payments that look related, but they come to Rs 55,214.34 over the figure. Usually that means a payment is missing",
-    "secs": 0.771
+    "secs": 2.818
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -3123,7 +3123,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 43 payments we looked at adds up to Rs 43,377.33. The closest we can offer is 43 payments that look related, but they come to Rs 51,514.57 over the figure. Usually that means a payment is missing",
-    "secs": 1.318
+    "secs": 2.279
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -3152,7 +3152,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 41 payments we looked at adds up to Rs 52,708.55. The closest we can offer is 41 payments that look related, but they come to Rs 66,855.59 over the figure. Usually that means a payment is missing",
-    "secs": 1.55
+    "secs": 2.435
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -3181,7 +3181,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 45 payments we looked at adds up to Rs 46,330.87. The closest we can offer is 44 payments that look related, but they come to Rs 62,329.16 over the figure. Usually that means a payment is missing",
-    "secs": 0.915
+    "secs": 2.064
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -3210,7 +3210,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 30 payments we looked at adds up to Rs 16,445.24. The closest we can offer is 29 payments that look related, but they come to Rs 50,462.77 over the figure. Usually that means a payment is missing",
-    "secs": 0.944
+    "secs": 1.673
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -3239,7 +3239,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 37 payments we looked at adds up to Rs 20,958.38. The closest we can offer is 36 payments that look related, but they come to Rs 64,071.23 over the figure. Usually that means a payment is missing",
-    "secs": 1.005
+    "secs": 1.186
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -3268,7 +3268,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 39 payments we looked at adds up to Rs 23,203.02. The closest we can offer is 38 payments that look related, but they come to Rs 60,022.60 over the figure. Usually that means a payment is missing",
-    "secs": 0.884
+    "secs": 2.717
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -3297,7 +3297,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 36 payments we looked at adds up to Rs 41,512.10. The closest we can offer is 35 payments that look related, but they come to Rs 73,502.44 over the figure. Usually that means a payment is missing",
-    "secs": 0.803
+    "secs": 1.574
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -3326,7 +3326,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 33 payments we looked at adds up to Rs 32,737.75. The closest we can offer is 32 payments that look related, but they come to Rs 99,753.95 over the figure. Usually that means a payment is missing",
-    "secs": 0.964
+    "secs": 2.564
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -3355,7 +3355,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 44 payments we looked at adds up to Rs 31,665.88. The closest we can offer is 43 payments that look related, but they come to Rs 56,836.32 over the figure. Usually that means a payment is missing",
-    "secs": 0.781
+    "secs": 2.215
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -3384,7 +3384,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 43 payments we looked at adds up to Rs 53,397.32. The closest we can offer is 42 payments that look related, but they come to Rs 46,617.41 over the figure. Usually that means a payment is missing",
-    "secs": 0.801
+    "secs": 2.257
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -3413,7 +3413,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 30 payments we looked at adds up to Rs 13,255.97. The closest we can offer is 29 payments that look related, but they come to Rs 83,295.29 over the figure. Usually that means a payment is missing",
-    "secs": 0.835
+    "secs": 1.47
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -3442,7 +3442,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 34 payments we looked at adds up to Rs 31,412.91. The closest we can offer is 33 payments that look related, but they come to Rs 75,212.23 over the figure. Usually that means a payment is missing",
-    "secs": 0.943
+    "secs": 1.856
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -3471,7 +3471,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 38 payments we looked at adds up to Rs 39,294.94. The closest we can offer is 37 payments that look related, but they come to Rs 60,385.59 over the figure. Usually that means a payment is missing",
-    "secs": 0.83
+    "secs": 1.507
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -3500,7 +3500,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 34 payments we looked at adds up to Rs 89,551.01. The closest we can offer is 33 payments that look related, but they come to Rs 73,504.04 over the figure. Usually that means a payment is missing",
-    "secs": 0.859
+    "secs": 2.494
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -3521,7 +3521,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 17,
     "truth": 17,
     "extra": [],
@@ -3529,7 +3529,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 17 payments that make up this settlement, and they add up to the expected Rs 32,419.54 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.089
+    "secs": 0.146
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -3550,7 +3550,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 19,
     "truth": 19,
     "extra": [],
@@ -3558,7 +3558,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 19 payments that make up this settlement, and they add up to the expected Rs 51,651.59 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.082
+    "secs": 0.149
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -3579,7 +3579,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 18,
     "truth": 18,
     "extra": [],
@@ -3587,7 +3587,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 18 payments that make up this settlement, and they add up to the expected Rs 42,856.90 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.093
+    "secs": 0.135
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -3608,7 +3608,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 17,
     "truth": 17,
     "extra": [],
@@ -3616,7 +3616,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 17 payments that make up this settlement, and they add up to the expected Rs 20,132.28 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.09
+    "secs": 0.125
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -3637,7 +3637,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 7,
     "truth": 7,
     "extra": [],
@@ -3645,7 +3645,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 7 payments that make up this settlement, and they add up to the expected Rs 20,980.83 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.113
+    "secs": 0.337
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -3666,7 +3666,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 13,
     "truth": 13,
     "extra": [],
@@ -3674,7 +3674,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 13 payments that make up this settlement, and they add up to the expected Rs 43,442.36 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.097
+    "secs": 0.18
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -3695,7 +3695,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 19,
     "truth": 19,
     "extra": [],
@@ -3703,7 +3703,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 19 payments that make up this settlement, and they add up to the expected Rs 40,316.86 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.092
+    "secs": 0.342
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -3724,7 +3724,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 8,
     "truth": 8,
     "extra": [],
@@ -3732,7 +3732,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 8 payments that make up this settlement, and they add up to the expected Rs 6,699.22 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.112
+    "secs": 0.219
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -3753,7 +3753,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 18,
     "truth": 18,
     "extra": [],
@@ -3761,7 +3761,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 18 payments that make up this settlement, and they add up to the expected Rs 45,638.33 exactly, with nothing left over. Confidence 95%. No action needed.",
-    "secs": 0.084
+    "secs": 0.144
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -3782,7 +3782,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 15,
     "truth": 15,
     "extra": [],
@@ -3790,7 +3790,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 15 payments that make up this settlement, and they add up to the expected Rs 26,876.75 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.078
+    "secs": 0.521
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -3811,7 +3811,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 10,
     "truth": 10,
     "extra": [],
@@ -3819,7 +3819,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 10 payments that make up this settlement, and they add up to the expected Rs 11,131.84 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.118
+    "secs": 0.39
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -3840,7 +3840,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 7,
     "truth": 7,
     "extra": [],
@@ -3848,7 +3848,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 7 payments that make up this settlement, and they add up to the expected Rs 20,849.28 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.11
+    "secs": 0.395
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -3869,7 +3869,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 9,
     "truth": 9,
     "extra": [],
@@ -3877,7 +3877,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 9 payments that make up this settlement, and they add up to the expected Rs 20,037.01 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.088
+    "secs": 0.164
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -3898,7 +3898,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 15,
     "truth": 15,
     "extra": [],
@@ -3906,7 +3906,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 15 payments that make up this settlement, and they add up to the expected Rs 28,165.56 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.089
+    "secs": 0.165
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -3927,7 +3927,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 6,
     "truth": 6,
     "extra": [],
@@ -3935,7 +3935,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 6 payments that make up this settlement, and they add up to the expected Rs 18,640.50 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.076
+    "secs": 0.343
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -3956,7 +3956,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 9,
     "truth": 9,
     "extra": [],
@@ -3964,7 +3964,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 9 payments that make up this settlement, and they add up to the expected Rs 25,997.50 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.098
+    "secs": 0.502
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -3985,7 +3985,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 9,
     "truth": 9,
     "extra": [],
@@ -3993,7 +3993,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 9 payments that make up this settlement, and they add up to the expected Rs 11,191.54 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.103
+    "secs": 0.179
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -4014,7 +4014,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 18,
     "truth": 18,
     "extra": [],
@@ -4022,7 +4022,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 18 payments that make up this settlement, and they add up to the expected Rs 43,721.12 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.102
+    "secs": 0.282
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -4043,7 +4043,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 17,
     "truth": 17,
     "extra": [],
@@ -4051,7 +4051,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 17 payments that make up this settlement, and they add up to the expected Rs 61,185.63 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.112
+    "secs": 0.397
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -4072,7 +4072,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 15,
     "truth": 15,
     "extra": [],
@@ -4080,7 +4080,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 15 payments that make up this settlement, and they add up to the expected Rs 50,494.28 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.079
+    "secs": 0.39
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -4101,7 +4101,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 15,
     "truth": 15,
     "extra": [],
@@ -4109,7 +4109,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 15 payments that make up this settlement, and they add up to the expected Rs 37,001.78 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.086
+    "secs": 0.354
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -4130,7 +4130,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 16,
     "truth": 16,
     "extra": [],
@@ -4138,7 +4138,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 16 payments that make up this settlement, and they add up to the expected Rs 17,800.35 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.106
+    "secs": 0.367
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -4159,7 +4159,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 7,
     "truth": 7,
     "extra": [],
@@ -4167,7 +4167,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 7 payments that make up this settlement, and they add up to the expected Rs 30,460.90 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.248
+    "secs": 0.24
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -4188,7 +4188,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 5,
     "truth": 5,
     "extra": [],
@@ -4196,7 +4196,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 5 payments that make up this settlement, and they add up to the expected Rs 6,650.65 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.139
+    "secs": 0.377
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -4217,7 +4217,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 18,
     "truth": 18,
     "extra": [],
@@ -4225,7 +4225,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 18 payments that make up this settlement, and they add up to the expected Rs 50,408.06 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.122
+    "secs": 0.142
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -4246,7 +4246,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 17,
     "truth": 17,
     "extra": [],
@@ -4254,7 +4254,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 17 payments that make up this settlement, and they add up to the expected Rs 31,288.36 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.088
+    "secs": 0.238
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -4275,7 +4275,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 14,
     "truth": 14,
     "extra": [],
@@ -4283,7 +4283,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 14 payments that make up this settlement, and they add up to the expected Rs 34,354.70 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.091
+    "secs": 0.148
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -4304,7 +4304,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 12,
     "truth": 12,
     "extra": [],
@@ -4312,7 +4312,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 12 payments that make up this settlement, and they add up to the expected Rs 24,303.41 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.123
+    "secs": 0.374
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -4333,7 +4333,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 8,
     "truth": 8,
     "extra": [],
@@ -4341,7 +4341,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 8 payments that make up this settlement, and they add up to the expected Rs 15,405.35 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.119
+    "secs": 0.159
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -4362,7 +4362,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 13,
     "truth": 13,
     "extra": [],
@@ -4370,7 +4370,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 13 payments that make up this settlement, and they add up to the expected Rs 37,069.99 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.129
+    "secs": 0.173
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -4391,7 +4391,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 9,
     "truth": 9,
     "extra": [],
@@ -4399,7 +4399,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 9 payments that make up this settlement, and they add up to the expected Rs 34,689.17 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.09
+    "secs": 0.367
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -4420,7 +4420,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 19,
     "truth": 19,
     "extra": [],
@@ -4428,7 +4428,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 19 payments that make up this settlement, and they add up to the expected Rs 58,910.40 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.098
+    "secs": 0.2
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -4449,7 +4449,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 11,
     "truth": 11,
     "extra": [],
@@ -4457,7 +4457,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 11 payments that make up this settlement, and they add up to the expected Rs 22,533.77 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.118
+    "secs": 0.267
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -4478,7 +4478,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 7,
     "truth": 7,
     "extra": [],
@@ -4486,7 +4486,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 7 payments that make up this settlement, and they add up to the expected Rs 19,247.33 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.099
+    "secs": 0.81
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -4507,7 +4507,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 9,
     "truth": 9,
     "extra": [],
@@ -4515,7 +4515,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 9 payments that make up this settlement, and they add up to the expected Rs 16,855.75 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.105
+    "secs": 0.339
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -4536,7 +4536,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 18,
     "truth": 18,
     "extra": [],
@@ -4544,7 +4544,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 18 payments that make up this settlement, and they add up to the expected Rs 62,990.84 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.112
+    "secs": 0.427
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -4565,7 +4565,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 8,
     "truth": 8,
     "extra": [],
@@ -4573,7 +4573,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 8 payments that make up this settlement, and they add up to the expected Rs 30,674.23 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.13
+    "secs": 0.376
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -4594,7 +4594,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 8,
     "truth": 0,
     "extra": [],
@@ -4602,7 +4602,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Needs review \u2014 these payments look already paid out. The arithmetic works: 8 payments add up to Rs 45,571.48. But an earlier settlement already cleared on most of them, and a payment can only be paid out once. Either thi",
-    "secs": 0.11
+    "secs": 0.338
    },
    "T1": "REFUSED",
    "T2": "FALSE_CLEAR"
@@ -4623,7 +4623,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 11,
     "truth": 11,
     "extra": [],
@@ -4631,7 +4631,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 11 payments that make up this settlement, and they add up to the expected Rs 21,521.00 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.194
+    "secs": 0.24
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -4652,7 +4652,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 8,
     "truth": 0,
     "extra": [],
@@ -4660,7 +4660,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Needs review \u2014 these payments look already paid out. The arithmetic works: 8 payments add up to Rs 18,746.12. But an earlier settlement already cleared on most of them, and a payment can only be paid out once. Either thi",
-    "secs": 0.137
+    "secs": 0.362
    },
    "T1": "REFUSED",
    "T2": "FALSE_CLEAR"
@@ -4681,7 +4681,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 11,
     "truth": 11,
     "extra": [],
@@ -4689,7 +4689,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 11 payments that make up this settlement, and they add up to the expected Rs 22,458.68 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.109
+    "secs": 0.22
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -4710,7 +4710,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 6,
     "truth": 0,
     "extra": [],
@@ -4718,7 +4718,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Needs review \u2014 these payments look already paid out. The arithmetic works: 6 payments add up to Rs 26,114.78. But an earlier settlement already cleared on most of them, and a payment can only be paid out once. Either thi",
-    "secs": 0.114
+    "secs": 0.211
    },
    "T1": "REFUSED",
    "T2": "FALSE_CLEAR"
@@ -4739,7 +4739,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 12,
     "truth": 12,
     "extra": [],
@@ -4747,7 +4747,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 12 payments that make up this settlement, and they add up to the expected Rs 51,055.36 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.096
+    "secs": 0.359
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -4768,7 +4768,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 8,
     "truth": 0,
     "extra": [],
@@ -4776,7 +4776,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Needs review \u2014 these payments look already paid out. The arithmetic works: 8 payments add up to Rs 30,012.90. But an earlier settlement already cleared on most of them, and a payment can only be paid out once. Either thi",
-    "secs": 0.15
+    "secs": 0.335
    },
    "T1": "REFUSED",
    "T2": "FALSE_CLEAR"
@@ -4797,7 +4797,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 7,
     "truth": 7,
     "extra": [],
@@ -4805,7 +4805,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 7 payments that make up this settlement, and they add up to the expected Rs 16,039.69 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.11
+    "secs": 0.167
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -4826,7 +4826,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 8,
     "truth": 0,
     "extra": [],
@@ -4834,7 +4834,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Needs review \u2014 these payments look already paid out. The arithmetic works: 8 payments add up to Rs 25,377.34. But an earlier settlement already cleared on most of them, and a payment can only be paid out once. Either thi",
-    "secs": 0.099
+    "secs": 0.157
    },
    "T1": "REFUSED",
    "T2": "FALSE_CLEAR"
@@ -4855,7 +4855,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 10,
     "truth": 10,
     "extra": [],
@@ -4863,7 +4863,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 10 payments that make up this settlement, and they add up to the expected Rs 18,997.86 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.084
+    "secs": 0.229
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -4884,7 +4884,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 9,
     "truth": 0,
     "extra": [],
@@ -4892,7 +4892,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Needs review \u2014 these payments look already paid out. The arithmetic works: 9 payments add up to Rs 29,491.39. But an earlier settlement already cleared on most of them, and a payment can only be paid out once. Either thi",
-    "secs": 0.102
+    "secs": 0.328
    },
    "T1": "REFUSED",
    "T2": "FALSE_CLEAR"
@@ -4913,7 +4913,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 6,
     "truth": 6,
     "extra": [],
@@ -4921,7 +4921,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 6 payments that make up this settlement, and they add up to the expected Rs 25,335.97 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.111
+    "secs": 0.153
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -4942,7 +4942,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 8,
     "truth": 0,
     "extra": [],
@@ -4950,7 +4950,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Needs review \u2014 these payments look already paid out. The arithmetic works: 8 payments add up to Rs 18,644.62. But an earlier settlement already cleared on most of them, and a payment can only be paid out once. Either thi",
-    "secs": 0.105
+    "secs": 0.229
    },
    "T1": "REFUSED",
    "T2": "FALSE_CLEAR"
@@ -4971,7 +4971,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 12,
     "truth": 12,
     "extra": [],
@@ -4979,7 +4979,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 12 payments that make up this settlement, and they add up to the expected Rs 25,091.26 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.096
+    "secs": 0.248
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -5000,7 +5000,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 5,
     "truth": 0,
     "extra": [],
@@ -5008,7 +5008,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Needs review \u2014 these payments look already paid out. The arithmetic works: 5 payments add up to Rs 20,833.48. But an earlier settlement already cleared on most of them, and a payment can only be paid out once. Either thi",
-    "secs": 0.098
+    "secs": 0.148
    },
    "T1": "REFUSED",
    "T2": "FALSE_CLEAR"
@@ -5029,7 +5029,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 12,
     "truth": 12,
     "extra": [],
@@ -5037,7 +5037,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 12 payments that make up this settlement, and they add up to the expected Rs 23,513.19 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.106
+    "secs": 0.504
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -5058,7 +5058,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 7,
     "truth": 0,
     "extra": [],
@@ -5066,7 +5066,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Needs review \u2014 these payments look already paid out. The arithmetic works: 7 payments add up to Rs 13,276.07. But an earlier settlement already cleared on most of them, and a payment can only be paid out once. Either thi",
-    "secs": 0.106
+    "secs": 0.217
    },
    "T1": "REFUSED",
    "T2": "FALSE_CLEAR"
@@ -5087,7 +5087,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 12,
     "truth": 12,
     "extra": [],
@@ -5095,7 +5095,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 12 payments that make up this settlement, and they add up to the expected Rs 51,534.12 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.119
+    "secs": 0.413
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -5116,7 +5116,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 11,
     "truth": 0,
     "extra": [],
@@ -5124,7 +5124,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Needs review \u2014 these payments look already paid out. The arithmetic works: 11 payments add up to Rs 23,155.63. But an earlier settlement already cleared on most of them, and a payment can only be paid out once. Either th",
-    "secs": 0.092
+    "secs": 0.387
    },
    "T1": "REFUSED",
    "T2": "FALSE_CLEAR"
@@ -5145,7 +5145,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 11,
     "truth": 11,
     "extra": [],
@@ -5153,7 +5153,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 11 payments that make up this settlement, and they add up to the expected Rs 20,063.16 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.09
+    "secs": 0.313
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -5174,7 +5174,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 7,
     "truth": 0,
     "extra": [],
@@ -5182,7 +5182,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Needs review \u2014 these payments look already paid out. The arithmetic works: 7 payments add up to Rs 12,629.83. But an earlier settlement already cleared on most of them, and a payment can only be paid out once. Either thi",
-    "secs": 0.114
+    "secs": 0.439
    },
    "T1": "REFUSED",
    "T2": "FALSE_CLEAR"
@@ -5203,7 +5203,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 9,
     "truth": 9,
     "extra": [],
@@ -5211,7 +5211,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 9 payments that make up this settlement, and they add up to the expected Rs 16,588.07 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.097
+    "secs": 0.442
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -5232,7 +5232,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 10,
     "truth": 0,
     "extra": [],
@@ -5240,7 +5240,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Needs review \u2014 these payments look already paid out. The arithmetic works: 10 payments add up to Rs 26,610.57. But an earlier settlement already cleared on most of them, and a payment can only be paid out once. Either th",
-    "secs": 0.089
+    "secs": 0.322
    },
    "T1": "REFUSED",
    "T2": "FALSE_CLEAR"
@@ -5261,7 +5261,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 8,
     "truth": 8,
     "extra": [],
@@ -5269,7 +5269,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 8 payments that make up this settlement, and they add up to the expected Rs 23,454.60 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.092
+    "secs": 0.199
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -5298,7 +5298,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 20 payments we looked at adds up to Rs 8,862.57. The closest we can offer is 20 payments that look related, but they come to Rs 43,103.49 over the figure. Usually that means a payment is missing ",
-    "secs": 0.348
+    "secs": 0.735
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -5327,7 +5327,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 21 payments we looked at adds up to Rs 11,771.18. The closest we can offer is 21 payments that look related, but they come to Rs 53,686.05 over the figure. Usually that means a payment is missing",
-    "secs": 0.728
+    "secs": 2.333
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -5348,7 +5348,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 7,
     "truth": 7,
     "extra": [],
@@ -5356,7 +5356,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 7 payments that make up this settlement, and they add up to the expected Rs 19,748.77 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.141
+    "secs": 0.512
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -5385,7 +5385,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 20 payments we looked at adds up to Rs 33,297.45. The closest we can offer is 20 payments that look related, but they come to Rs 40,183.89 over the figure. Usually that means a payment is missing",
-    "secs": 0.982
+    "secs": 1.852
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -5414,7 +5414,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 27 payments we looked at adds up to Rs 86,829.78. The closest we can offer is 27 payments that look related, but they come to Rs 37,829.21 over the figure. Usually that means a payment is missing",
-    "secs": 0.497
+    "secs": 1.468
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -5435,7 +5435,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 10,
     "truth": 10,
     "extra": [],
@@ -5443,7 +5443,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 10 payments that make up this settlement, and they add up to the expected Rs 1,05,162.68 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.111
+    "secs": 0.242
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -5472,7 +5472,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 24 payments we looked at adds up to Rs 45,976.11. The closest we can offer is 24 payments that look related, but they come to Rs 13,861.65 over the figure. Usually that means a payment is missing",
-    "secs": 1.122
+    "secs": 1.408
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -5501,7 +5501,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 22 payments we looked at adds up to Rs 61,932.39. The closest we can offer is 22 payments that look related, but they come to Rs 30,625.39 over the figure. Usually that means a payment is missing",
-    "secs": 0.676
+    "secs": 1.75
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -5522,7 +5522,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 5,
     "truth": 5,
     "extra": [],
@@ -5530,7 +5530,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 5 payments that make up this settlement, and they add up to the expected Rs 62,330.76 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.095
+    "secs": 0.403
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -5559,7 +5559,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "No match. Nothing in the 21 payments we looked at adds up to Rs 69,010.87. The closest we can offer is 21 payments that look related, but they come to Rs 26,402.31 short of the figure. Usually that means a payment is mis",
-    "secs": 0.094
+    "secs": 0.861
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -5588,7 +5588,7 @@
     "decision": null,
     "deciding_question": true,
     "plain": "Needs review. We found 8 payments that add up to Rs 48,353.80 exactly \u2014 but nothing in your files ties them to this settlement: no matching reference number, and no second source agreeing. Amounts can line up by coincide",
-    "secs": 0.708
+    "secs": 1.394
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -5609,7 +5609,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 10,
     "truth": 10,
     "extra": [],
@@ -5617,7 +5617,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 10 payments that make up this settlement, and they add up to the expected Rs 51,108.25 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.107
+    "secs": 0.233
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -5638,7 +5638,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 11,
     "truth": 11,
     "extra": [],
@@ -5646,7 +5646,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 11 payments that make up this settlement, and they add up to the expected Rs 26,114.32 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.121
+    "secs": 0.159
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -5667,7 +5667,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 5,
     "truth": 5,
     "extra": [],
@@ -5675,7 +5675,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 5 payments that make up this settlement, and they add up to the expected Rs 10,481.50 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.094
+    "secs": 0.178
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -5696,7 +5696,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 10,
     "truth": 10,
     "extra": [],
@@ -5704,7 +5704,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 10 payments that make up this settlement, and they add up to the expected Rs 28,592.38 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.098
+    "secs": 0.32
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -5725,7 +5725,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 8,
     "truth": 8,
     "extra": [],
@@ -5733,7 +5733,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 8 payments that make up this settlement, and they add up to the expected Rs 27,182.95 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.087
+    "secs": 0.406
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -5754,7 +5754,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 7,
     "truth": 7,
     "extra": [],
@@ -5762,7 +5762,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 7 payments that make up this settlement, and they add up to the expected Rs 13,399.90 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.099
+    "secs": 0.454
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -5783,7 +5783,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 4,
     "truth": 4,
     "extra": [],
@@ -5791,7 +5791,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 4 payments that make up this settlement, and they add up to the expected Rs 6,847.39 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.125
+    "secs": 0.477
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -5812,7 +5812,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 6,
     "truth": 6,
     "extra": [],
@@ -5820,7 +5820,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 6 payments that make up this settlement, and they add up to the expected Rs 11,596.63 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.127
+    "secs": 0.53
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -5841,7 +5841,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 7,
     "truth": 7,
     "extra": [],
@@ -5849,7 +5849,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 7 payments that make up this settlement, and they add up to the expected Rs 10,228.54 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.114
+    "secs": 0.394
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -5870,7 +5870,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 4,
     "truth": 4,
     "extra": [],
@@ -5878,7 +5878,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 4 payments that make up this settlement, and they add up to the expected Rs 11,657.28 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.096
+    "secs": 0.315
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -5899,7 +5899,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 4,
     "truth": 4,
     "extra": [],
@@ -5907,7 +5907,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 4 payments that make up this settlement, and they add up to the expected Rs 11,680.83 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.099
+    "secs": 0.117
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -5928,7 +5928,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 4,
     "truth": 4,
     "extra": [],
@@ -5936,7 +5936,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 4 payments that make up this settlement, and they add up to the expected Rs 13,716.86 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.116
+    "secs": 0.203
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -5957,7 +5957,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 6,
     "truth": 6,
     "extra": [],
@@ -5965,7 +5965,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 6 payments that make up this settlement, and they add up to the expected Rs 41,876.95 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.089
+    "secs": 0.312
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -5986,7 +5986,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 12,
     "truth": 12,
     "extra": [],
@@ -5994,7 +5994,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 12 payments that make up this settlement, and they add up to the expected Rs 35,327.43 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.084
+    "secs": 0.166
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -6015,7 +6015,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 4,
     "truth": 4,
     "extra": [],
@@ -6023,7 +6023,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 4 payments that make up this settlement, and they add up to the expected Rs 11,056.11 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.103
+    "secs": 0.177
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -6044,7 +6044,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 5,
     "truth": 5,
     "extra": [],
@@ -6052,7 +6052,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 5 payments that make up this settlement, and they add up to the expected Rs 33,020.59 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.13
+    "secs": 0.416
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -6073,7 +6073,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 13,
     "truth": 13,
     "extra": [],
@@ -6081,7 +6081,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 13 payments that make up this settlement, and they add up to the expected Rs 44,401.24 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.091
+    "secs": 0.292
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -6102,7 +6102,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 7,
     "truth": 7,
     "extra": [],
@@ -6110,7 +6110,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 7 payments that make up this settlement, and they add up to the expected Rs 18,905.86 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.087
+    "secs": 0.296
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -6131,7 +6131,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 15,
     "truth": 15,
     "extra": [],
@@ -6139,7 +6139,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 15 payments that make up this settlement, and they add up to the expected Rs 31,024.85 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.091
+    "secs": 0.424
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -6160,7 +6160,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 9,
     "truth": 9,
     "extra": [],
@@ -6168,7 +6168,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 9 payments that make up this settlement, and they add up to the expected Rs 21,248.67 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.108
+    "secs": 0.181
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -6189,7 +6189,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 5,
     "truth": 5,
     "extra": [],
@@ -6197,7 +6197,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 5 payments that make up this settlement, and they add up to the expected Rs 21,378.17 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.104
+    "secs": 0.162
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -6218,7 +6218,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 7,
     "truth": 7,
     "extra": [],
@@ -6226,7 +6226,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 7 payments that make up this settlement, and they add up to the expected Rs 12,651.13 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.102
+    "secs": 0.639
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -6247,7 +6247,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 9,
     "truth": 9,
     "extra": [],
@@ -6255,7 +6255,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 9 payments that make up this settlement, and they add up to the expected Rs 27,580.42 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.098
+    "secs": 0.164
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -6276,7 +6276,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 12,
     "truth": 12,
     "extra": [],
@@ -6284,7 +6284,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 12 payments that make up this settlement, and they add up to the expected Rs 31,703.69 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.114
+    "secs": 0.277
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -6305,7 +6305,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 4,
     "truth": 4,
     "extra": [],
@@ -6313,7 +6313,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 4 payments that make up this settlement, and they add up to the expected Rs 22,352.92 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.117
+    "secs": 0.396
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -6334,7 +6334,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 6,
     "truth": 6,
     "extra": [],
@@ -6342,7 +6342,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 6 payments that make up this settlement, and they add up to the expected Rs 16,411.93 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.092
+    "secs": 0.394
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -6363,7 +6363,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 4,
     "truth": 4,
     "extra": [],
@@ -6371,7 +6371,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 4 payments that make up this settlement, and they add up to the expected Rs 26,071.19 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.093
+    "secs": 0.174
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -6392,7 +6392,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 4,
     "truth": 4,
     "extra": [],
@@ -6400,7 +6400,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 4 payments that make up this settlement, and they add up to the expected Rs 4,769.63 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.251
+    "secs": 0.403
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -6421,7 +6421,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 9,
     "truth": 9,
     "extra": [],
@@ -6429,7 +6429,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 9 payments that make up this settlement, and they add up to the expected Rs 14,299.25 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.098
+    "secs": 0.493
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -6450,7 +6450,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 12,
     "truth": 12,
     "extra": [],
@@ -6458,7 +6458,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 12 payments that make up this settlement, and they add up to the expected Rs 31,600.36 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.104
+    "secs": 0.901
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -6479,7 +6479,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 5,
     "truth": 5,
     "extra": [],
@@ -6487,7 +6487,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 5 payments that make up this settlement, and they add up to the expected Rs 27,875.36 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.113
+    "secs": 0.437
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -6508,7 +6508,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 8,
     "truth": 8,
     "extra": [],
@@ -6516,7 +6516,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 8 payments that make up this settlement, and they add up to the expected Rs 30,847.28 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.126
+    "secs": 0.437
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -6537,7 +6537,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 5,
     "truth": 5,
     "extra": [],
@@ -6545,7 +6545,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 5 payments that make up this settlement, and they add up to the expected Rs 19,710.26 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.14
+    "secs": 0.401
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -6566,7 +6566,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 6,
     "truth": 6,
     "extra": [],
@@ -6574,7 +6574,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 6 payments that make up this settlement, and they add up to the expected Rs 19,786.46 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.114
+    "secs": 0.439
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -6595,7 +6595,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 7,
     "truth": 7,
     "extra": [],
@@ -6603,7 +6603,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 7 payments that make up this settlement, and they add up to the expected Rs 27,723.19 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.113
+    "secs": 0.327
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -6624,7 +6624,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 4,
     "truth": 4,
     "extra": [],
@@ -6632,7 +6632,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 4 payments that make up this settlement, and they add up to the expected Rs 10,605.09 exactly, with nothing left over. Confidence 97%. No action needed.",
-    "secs": 0.141
+    "secs": 0.148
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -6653,7 +6653,7 @@
     "ties_out": false,
     "residual": 1,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 4,
     "truth": 4,
     "extra": [],
@@ -6661,7 +6661,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 4 payments that make up this settlement, and they add up to the expected Rs 5,678.89 exactly, with nothing left over. Confidence 97%. No action needed. Note the fees were estimated rather than ",
-    "secs": 0.206
+    "secs": 0.164
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -6682,7 +6682,7 @@
     "ties_out": false,
     "residual": 4,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 21,
     "truth": 21,
     "extra": [],
@@ -6690,7 +6690,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 21 payments that make up this settlement, and they add up to the expected Rs 40,249.97 exactly, with nothing left over. Confidence 97%. No action needed. Note the fees were estimated rather tha",
-    "secs": 0.139
+    "secs": 0.537
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -6711,7 +6711,7 @@
     "ties_out": false,
     "residual": 1,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 14,
     "truth": 14,
     "extra": [],
@@ -6719,7 +6719,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 14 payments that make up this settlement, and they add up to the expected Rs 36,998.04 exactly, with nothing left over. Confidence 97%. No action needed. Note the fees were estimated rather tha",
-    "secs": 0.106
+    "secs": 0.199
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -6740,7 +6740,7 @@
     "ties_out": false,
     "residual": 2,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 15,
     "truth": 15,
     "extra": [],
@@ -6748,7 +6748,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 15 payments that make up this settlement, and they add up to the expected Rs 49,069.39 exactly, with nothing left over. Confidence 97%. No action needed. Note the fees were estimated rather tha",
-    "secs": 0.104
+    "secs": 0.305
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -6769,7 +6769,7 @@
     "ties_out": false,
     "residual": -1,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 4,
     "truth": 4,
     "extra": [],
@@ -6777,7 +6777,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 4 payments that make up this settlement, and they add up to the expected Rs 6,612.67 exactly, with nothing left over. Confidence 97%. No action needed. Note the fees were estimated rather than ",
-    "secs": 0.113
+    "secs": 0.167
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -6798,7 +6798,7 @@
     "ties_out": false,
     "residual": -2,
     "method": "exact_subset_sum",
-    "confidence": 0.9848,
+    "confidence": 0.9844,
     "matched": 20,
     "truth": 20,
     "extra": [],
@@ -6806,7 +6806,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 20 payments that make up this settlement, and they add up to the expected Rs 38,332.98 exactly, with nothing left over. Confidence 97%. No action needed. Note the fees were estimated rather tha",
-    "secs": 0.119
+    "secs": 0.293
    },
    "T1": "REFUSED",
    "T2": "REFUSED"
@@ -6827,7 +6827,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9828,
+    "confidence": 0.9825,
     "matched": 150,
     "truth": 150,
     "extra": [],
@@ -6835,7 +6835,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 150 payments that make up this settlement, and they add up to the expected Rs 3,88,184.84 exactly, with nothing left over. Confidence 87%. No action needed.",
-    "secs": 0.258
+    "secs": 0.691
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -6856,7 +6856,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9828,
+    "confidence": 0.9825,
     "matched": 400,
     "truth": 400,
     "extra": [],
@@ -6864,7 +6864,7 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 400 payments that make up this settlement, and they add up to the expected Rs 12,27,602.29 exactly, with nothing left over. Confidence 87%. No action needed.",
-    "secs": 0.497
+    "secs": 1.401
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
@@ -6885,7 +6885,7 @@
     "ties_out": true,
     "residual": 0,
     "method": "exact_subset_sum",
-    "confidence": 0.9828,
+    "confidence": 0.9825,
     "matched": 800,
     "truth": 800,
     "extra": [],
@@ -6893,11 +6893,11 @@
     "decision": null,
     "deciding_question": false,
     "plain": "Matched. We identified the 800 payments that make up this settlement, and they add up to the expected Rs 21,78,561.64 exactly, with nothing left over. Confidence 87%. No action needed.",
-    "secs": 1.039
+    "secs": 2.657
    },
    "T1": "REFUSED",
    "T2": "CLEAR_OK"
   }
  ],
- "total_secs": 96.1
+ "total_secs": 214.9
 }

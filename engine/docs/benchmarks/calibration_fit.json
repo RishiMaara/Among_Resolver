@@ -7,7 +7,7 @@
    "train_pairs": 180,
    "test_pairs": 74,
    "ece_raw": 0.0824,
-   "ece_calibrated": 0.0419,
+   "ece_calibrated": 0.0425,
    "low_band_raw": {
     "n": 32,
     "said": 0.0,
@@ -23,17 +23,17 @@
    "fit": "ReconRiver -> benchmark",
    "train_pairs": 74,
    "test_pairs": 180,
-   "ece_raw": 0.0902,
-   "ece_calibrated": 0.0506,
+   "ece_raw": 0.1056,
+   "ece_calibrated": 0.0666,
    "low_band_raw": {
-    "n": 42,
+    "n": 45,
     "said": 0.0,
-    "right": 0.0952
+    "right": 0.1556
    },
    "low_band_calibrated": {
-    "n": 42,
+    "n": 45,
     "said": 0.0,
-    "right": 0.0952
+    "right": 0.1556
    }
   }
  ],
@@ -46,11 +46,11 @@
    0.97
   ],
   "ys": [
-   0.0921,
-   0.9828,
-   0.9828,
-   0.9848,
-   0.9848
+   0.1266,
+   0.9825,
+   0.9825,
+   0.9844,
+   0.9844
   ],
   "fitted_on": 254,
   "source": "benchmark + ReconRiver"

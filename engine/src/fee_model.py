@@ -81,6 +81,43 @@ class MethodRateCard:
     tolerance_bps: int = 10          # 0.10% tolerance
 
 
+# Where a gateway export states a payment's method.
+METHOD_KEYS = ("payment_method", "method", "pay_method", "instrument")
+
+
+def normalize_method(raw: str) -> str:
+    """Map gateway-specific method names to canonical ones."""
+    raw = raw.lower().strip()
+    if raw in ("card", "credit_card", "debit_card", "cc", "dc", "visa",
+               "mastercard", "rupay", "amex"):
+        return "card"
+    if raw in ("upi", "upi_collect", "upi_intent", "upi_qr"):
+        return "upi"
+    if raw in ("netbanking", "net_banking", "neft", "imps", "rtgs"):
+        return "netbanking"
+    if raw in ("wallet", "paytm", "phonepe", "mobikwik", "freecharge",
+               "amazon_pay", "airtel_money"):
+        return "wallet"
+    if raw in ("international", "intl_card", "international_card"):
+        return "international_card"
+    return raw
+
+
+def stated_method(txn) -> str | None:
+    """The method a record states in its own columns, or None.
+
+    Stated only: the fee audit falls back to guessing from the description,
+    and the payout target never does (fee_decomposition.per_method_weights).
+    An empty or null cell states nothing.
+    """
+    extra = getattr(txn, "extra", None) or {}
+    for key in METHOD_KEYS:
+        value = str(extra.get(key) or "").strip()
+        if value:
+            return normalize_method(value)
+    return None
+
+
 def _paise(value) -> int | None:
     """A money cell from a file, read the way the amount column is read."""
     if value is None or str(value).strip() == "":

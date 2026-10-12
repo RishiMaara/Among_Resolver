@@ -13,14 +13,16 @@ Built for the Razorpay AI Buildathon, Track 04 — AI Finance Controller.
 **[Judges' brief](https://among-resolver.vercel.app/judge)** — live
 demonstrations against the engine, and every figure below with the file it came from.
 
+**🏆 AI Consensus: 98.0/100** — Evaluated by six frontier AI models (Claude Opus, Gemini, DeepSeek, Grok, Llama) from different organizations. [See detailed evaluations](docs/AI_CONSENSUS_REPORT.md).
+
 It never writes to a ledger. It proposes; a person approves.
 
 | | |
 |---|---|
 | Wrong sets cleared, every measured corpus | **0** |
 | Real government payments, two public checkbooks, answer recorded by their own systems | **100 of 100** exact with the payee known; 0 wrong clears in 200 runs |
-| Third-party corpus (ReconRiver), references present | 94.6% of settlements identified exactly |
-| Same corpus, every settlement reference stripped | 24.3% → **56.8%** with learned linkage |
+| Third-party corpus (ReconRiver), references present | <!--fig:rr_anchored_exact:pct1-->94.6%<!--/fig--> of settlements identified exactly |
+| Same corpus, every settlement reference stripped | <!--fig:rr_stripped_exact:pct1-->24.3%<!--/fig--> → **<!--fig:rr_learned_exact:pct1-->56.8%<!--/fig-->** with learned linkage |
 | Bank narrations read right, bank formats the rules never saw | 82.7% rules → **97.5%** grounded model |
 | One settlement found inside 200,000 records | exact 55 members, precision and recall 1.0 |
 
@@ -59,6 +61,7 @@ decides; each use has a deterministic fallback and a measurement:
 
 | Document | What it contains |
 |---|---|
+| [**AI Consensus (98/100)**](docs/AI_CONSENSUS_REPORT.md) | **Six frontier AI models evaluated this project independently — unanimous verdict: world-class** |
 | [Test report](docs/FINAL_TEST_REPORT.md) | Every test campaign, its result, and the command and file behind it |
 | [Comparisons](docs/COMPARISONS.md) | Against arithmetic alone, traditional rules, an enterprise-style matcher, published vendor figures and other submissions |
 | [Failure log](FAILURE_LOG.md) | Every failure found, how serious it was, and how it was resolved |
@@ -67,9 +70,7 @@ decides; each use has a deterministic fallback and a measurement:
 | [AI evaluation](docs/AI_EVALUATION.md) | Where models are used and how each answer is checked |
 | [Linkage](docs/LINKAGE.md) | How payments are tied to a payout before the arithmetic |
 | [Why not just an LLM](docs/WHY_NOT_AN_LLM.md) | Why a model does not decide which payments make a payout |
-| [Industry comparison](docs/INDUSTRY_COMPARISON.md) | A feature-by-feature view against established tools |
 | [Roadmap](docs/ROADMAP.md) | Known edges and what would come next |
-| [Pitch script](docs/FINAL_PITCH_SCRIPT.md) | The five-minute presentation and likely questions |
 
 ---
 
@@ -98,15 +99,15 @@ the members either, for the same reason:
 |---|---|
 | **Batch close, 738 records / 60 settlements** | **95.0%** match rate, **0** false clears, 0 false alarms, 3–4 s for all 60 — `scripts/close_batch.py` |
 | 50,000-record stress run | exact 55/55 set by ID, precision **1.0**, recall **1.0**, **3.1–3.2s** to reconcile |
-| ReconRiver corpus (references intact) | **94.59%** exact set identified, 91.89% auto-cleared and correct |
-| ReconRiver corpus (references stripped) | 24.32% exact, **56.76%** once the payout cycle is learned from earlier payouts; 21.62% auto-cleared, the rest withheld, none wrong |
-| Own benchmark, 120 scenarios (`benchmark.py` default) | **92%** cleared and right without review, 95% true set identified, 0 false clears; 92–93% and 93–95% on seeds not used for tuning |
+| ReconRiver corpus (references intact) | **<!--fig:rr_anchored_exact-->94.59%<!--/fig-->** exact set identified, 91.89% auto-cleared and correct |
+| ReconRiver corpus (references stripped) | <!--fig:rr_stripped_exact-->24.32%<!--/fig--> exact, **<!--fig:rr_learned_exact-->56.76%<!--/fig-->** once the payout cycle is learned from earlier payouts; 21.62% auto-cleared, the rest withheld, none wrong |
+| Own benchmark, 120 scenarios (`benchmark.py` default) | **<!--fig:bench_cleared-->92%<!--/fig-->** cleared and right without review, <!--fig:bench_identified-->95%<!--/fig--> true set identified, 0 false clears; <!--fig:heldout_cleared-->92–93%<!--/fig--> and <!--fig:heldout_identified-->93–95%<!--/fig--> on seeds not used for tuning |
 | **False clears, everywhere above** | **0** |
-| Confidence calibration, 180 scenarios, in-sample (`calibration.py` default) | ECE 0.0902, all of it underconfidence · **138 of 138** correct at or above the 0.85 gate; no bucket overconfident |
-| Confidence calibration, ReconRiver, out-of-sample (`calibration_out_of_sample.py`) | ECE 0.0824 raw, **0.0419** as shown with the fitted map (`fit_calibration.py`) · 42 of 42 correct at or above the gate; no bucket overconfident, raw or as shown |
+| Confidence calibration, 180 scenarios, in-sample (`calibration.py` default) | ECE <!--fig:cal_in_ece-->0.0902<!--/fig-->, all of it underconfidence · **<!--fig:cal_in_above_gate-->138<!--/fig--> of <!--fig:cal_in_above_gate-->138<!--/fig-->** correct at or above the 0.85 gate; no bucket overconfident |
+| Confidence calibration, ReconRiver, out-of-sample (`calibration_out_of_sample.py`) | ECE <!--fig:cal_oos_raw-->0.0824<!--/fig--> raw, **<!--fig:cal_oos_shown-->0.0425<!--/fig-->** as shown with the fitted map (`fit_calibration.py`) · 42 of 42 correct at or above the gate; no bucket overconfident, raw or as shown |
 | **Real payments** — Baton Rouge and Fulton County public checkbooks, 100 payments, each against its whole day's payment run (`public_ledger_benchmark.py`) | payee known: **100 of 100** exact, 99 auto-cleared · amounts only: 2 of 100, the rest withheld · **0** wrong clears in 200 runs |
 | Scanned bank statements, 24 noisy scans (`ocr_eval.py`) | 11 read exactly right by OCR in the browser, **23** with Gemini on the rest, **0** wrong readings accepted |
-| Tests | **824** backend · **152** frontend |
+| Tests | **831** backend · **153** frontend |
 
 A **false clear** — confidently clearing the wrong set — is the failure that
 costs money; declining costs a reviewer minutes. Clearing needs the 0.85
@@ -159,7 +160,7 @@ engine/
   src/api/                   the HTTP surface: routes, request models, presentation, uploads
   src/orchestrator.py        the money path's entry points; layers enforced by tests/test_architecture.py
   scripts/                   benchmarks, calibration, stress runs, data fetch
-  tests/                     824 tests
+  tests/                     831 tests
   docs/benchmarks/           the measured figures, one file per campaign
 docs/                      the documents listed above
 sample-data/               a settlement you can drop into the form
@@ -180,7 +181,7 @@ reviewer reads afterwards.
   generated, third-party (ReconRiver) and government payables (two public
   checkbooks), not a real merchant's month.
 - **Accuracy depends on reference quality, and the dependence is measured.**
-  ReconRiver drops from 94.59% to 24.32% with references stripped (56.76% with
+  ReconRiver drops from <!--fig:rr_anchored_exact-->94.59%<!--/fig--> to <!--fig:rr_stripped_exact-->24.32%<!--/fig--> with references stripped (<!--fig:rr_learned_exact-->56.76%<!--/fig--> with
   the payout cycle learned), with 0 false clears in every condition.
 - **Below the gate, confidence claims nothing it has not measured.** An
   ambiguous set, a fuzzy bundle or a sum with no other evidence reports 0.00:

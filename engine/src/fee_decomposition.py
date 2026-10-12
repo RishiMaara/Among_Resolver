@@ -15,6 +15,8 @@ import logging
 from dataclasses import dataclass
 
 from schema import FeeBreakdown, SettlementBatch, NormalizedTxn
+from fee_model import MethodRateCard, stated_method
+from linkage import txn_key
 
 logger = logging.getLogger(__name__)
 
@@ -28,13 +30,81 @@ class FeeRateCard:
     gateway_fee_bps: int          # basis points, e.g. 200 = 2.00%
     flat_fee_cents: int           # per-batch flat fee, if any
     tax_withholding_bps: int      # e.g. TDS-style withholding
+    method_rates: MethodRateCard | None = None
+    """Where a payment's method changes its fee: UPI, netbanking's flat
+    charge, international cards. Cards, wallets and anything else pay
+    gateway_fee_bps. None, or a card with no percentage fee (a feed already
+    net of fees), estimates one rate for every payment."""
 
 
 DEFAULT_RATE_CARD = FeeRateCard(
     gateway_fee_bps=200,     # 2%
     flat_fee_cents=0,
     tax_withholding_bps=100,  # 1%
+    method_rates=MethodRateCard(),
 )
+
+def _method_fee(card: FeeRateCard, method: str | None, amount_cents: int) -> tuple[tuple, int]:
+    """(the rule that applies, the fee in paise) for one payment."""
+    rates = card.method_rates
+    if rates is not None and method == "upi":
+        rule: tuple = ("bps", rates.upi_bps)
+    elif rates is not None and method == "netbanking":
+        return ("flat", rates.netbanking_flat_cents), rates.netbanking_flat_cents
+    elif rates is not None and method == "international_card":
+        rule = ("bps", rates.international_card_bps)
+    else:
+        rule = ("bps", card.gateway_fee_bps)
+    return rule, round(amount_cents * rule[1] / 10000)
+
+
+def per_method_weights(card: FeeRateCard, candidates: list[NormalizedTxn]) -> dict[str, int] | None:
+    """
+    Each record's net contribution, when the pool mixes payment methods whose
+    fees differ; None otherwise, and the single gross target stands.
+
+    One rate card turns a net payout into one gross target, which is right
+    only if every member paid the same rate. On a day of UPI at 0%, cards at
+    2% and netbanking at Rs 5 a payment, the members' gross does not sum to
+    it and the settlement was withheld. A payment's net, its amount less its
+    own method's fee and the withholding, sums to the payout whichever
+    payments are members, so the solver is given that and the net payout.
+    Refunds and reversals contribute their amount. Records that state no
+    method pay the card rate, as they did before.
+    """
+    if card.method_rates is None or card.gateway_fee_bps <= 0:
+        return None
+    weights: dict[str, int] = {}
+    rules: set = set()
+    for t in candidates:
+        if t.amount_cents <= 0:
+            weights[txn_key(t)] = t.amount_cents
+            continue
+        method = stated_method(t)
+        rule, fee = _method_fee(card, method, t.amount_cents)
+        tax = round(t.amount_cents * card.tax_withholding_bps / 10000)
+        weights[txn_key(t)] = t.amount_cents - fee - tax
+        if method is not None:
+            rules.add(rule)
+    return weights if len(rules) >= 2 else None
+
+
+def per_method_breakdown(batch: SettlementBatch, card: FeeRateCard,
+                         members: list[NormalizedTxn]) -> FeeBreakdown:
+    """The deductions for the matched members, each at its own method's fee."""
+    fees = taxes = 0
+    for t in members:
+        if t.amount_cents <= 0:
+            continue
+        fees += _method_fee(card, stated_method(t), t.amount_cents)[1]
+        taxes += round(t.amount_cents * card.tax_withholding_bps / 10000)
+    return FeeBreakdown(
+        batch_id=batch.batch_id,
+        gateway_fee_cents=fees,
+        flat_fee_cents=card.flat_fee_cents,
+        tax_withholding_cents=taxes,
+        basis="estimated per payment method",
+    )
 
 
 def compute_fee_breakdown(

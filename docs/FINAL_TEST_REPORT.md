@@ -22,15 +22,15 @@ Related documents:
 
 | Campaign | What it establishes | Result |
 |---|---|---|
-| Backend test suite | Behaviour of every module, including every past defect | 824 of 824 pass |
-| Frontend test suite | Page behaviour, and that published figures match their files | 152 of 152 pass |
+| Backend test suite | Behaviour of every module, including every past defect | 831 of 831 pass |
+| Frontend test suite | Page behaviour, and that published figures match their files | 153 of 153 pass |
 | Static analysis | Types, lint errors, security | mypy clean on 78 files; pylint and bandit report no issues |
-| Blind adversarial test | Behaviour on cases written after the engine, with an independent answer key | 133 correct clears, 0 wrong, on two seeds of 237 settlements |
+| Blind adversarial test | Behaviour on cases written after the engine, with an independent answer key | <!--fig:blind_clear_ok-->133<!--/fig--> correct clears, 0 wrong, on two seeds of 237 settlements |
 | 1,000-case edge suite | Behaviour across 29 hazard families and joint (N:M) runs | 1,050 batches scored, 0 wrong clears, 0 crashes |
 | 50-case live edge suite | The HTTP path end to end, including rejected files | 50 of 50 behave as specified, 0 wrong clears |
 | Limits test | Where the engine stops being able to prove an answer | 200,000 payments in one payout and 2,000,000 records in one file proved exactly; 0 wrong clears |
-| Accuracy benchmarks | Identification rate with and without each component | Linkage 0% to 95% identified, 92% cleared; references stripped 24.32% to 56.76%; 0 wrong clears |
-| Engine tuning | Identification and clearing with damaged references, checked on seeds not used for tuning | Identified 63-65% to 93-95%, cleared 62-64% to 92-93% on two held-out seeds; 0 wrong clears; no confidence band above what it measured |
+| Accuracy benchmarks | Identification rate with and without each component | Linkage 0% to <!--fig:bench_identified-->95%<!--/fig--> identified, <!--fig:bench_cleared-->92%<!--/fig--> cleared; references stripped <!--fig:rr_stripped_exact-->24.32%<!--/fig--> to <!--fig:rr_learned_exact-->56.76%<!--/fig-->; 0 wrong clears |
+| Engine tuning | Identification and clearing with damaged references, checked on seeds not used for tuning | Identified 63-65% to <!--fig:heldout_identified-->93–95%<!--/fig-->, cleared 62-64% to <!--fig:heldout_cleared-->92–93%<!--/fig--> on two held-out seeds; 0 wrong clears; no confidence band above what it measured |
 | Real public data | Two government checkbooks with a recorded answer | 50 of 50 and 50 of 50 exact |
 | Live model evaluation | The investigator agent against a live model | 0 wrong proposals passed the verifier |
 | Live website verification | Every page and control on the deployed site | All controls work; six defects found and fixed |
@@ -45,7 +45,7 @@ fixed and recorded in `FAILURE_LOG.md`, entry 46.
 
 ### 1.1 Backend
 
-The backend suite has 824 tests. It covers file parsing and header mapping,
+The backend suite has 831 tests. It covers file parsing and header mapping,
 normalisation to integer paise and UTC, linkage, the subset-sum solver, the
 refusal gates, fee and tax audit, compliance screening, the investigator and
 its verifier, the paid-out ledger, the audit chain, every API route, and a
@@ -303,11 +303,11 @@ by `src/lib/measured.test.ts`.
 
 | Benchmark | Script | File | Result |
 |---|---|---|---|
-| Linkage against arithmetic alone, 120 scenarios | `baseline_comparison.py` | `baseline_comparison.json` | True sets identified 0% to 95%; auto-cleared 0% to 92%; 0 wrong clears in both arms |
-| Third-party data with references stripped (ReconRiver, 37 settlements) | `learned_linkage_benchmark.py` | `learned_linkage.json` | Exact sets 24.32% to 56.76% with a learned payout cycle; 0 wrong clears |
+| Linkage against arithmetic alone, 120 scenarios | `baseline_comparison.py` | `baseline_comparison.json` | True sets identified 0% to <!--fig:bench_identified-->95%<!--/fig-->; auto-cleared 0% to <!--fig:bench_cleared-->92%<!--/fig-->; 0 wrong clears in both arms |
+| Third-party data with references stripped (ReconRiver, 37 settlements) | `learned_linkage_benchmark.py` | `learned_linkage.json` | Exact sets <!--fig:rr_stripped_exact-->24.32%<!--/fig--> to <!--fig:rr_learned_exact-->56.76%<!--/fig--> with a learned payout cycle; 0 wrong clears |
 | Bank narrations in formats the rules never saw | `narration_eval.py` | `narration_eval.json` | Accuracy 82.71% (rules) to 97.50% (model first, grounded) |
 | Investigator on withheld settlements (58, of which 38 have a right answer) | `investigation_eval.py` | `investigation_eval.json` | Right, verified proposals 16 (rules) to 20 (as deployed); 0 wrong proposals past the verifier |
-| Confidence calibration, out of sample | `fit_calibration.py` | `calibration_fit.json` | Expected calibration error 0.0824 raw to 0.0419 as shown; no bucket overconfident |
+| Confidence calibration, out of sample | `fit_calibration.py` | `calibration_fit.json` | Expected calibration error <!--fig:cal_oos_raw-->0.0824<!--/fig--> raw to <!--fig:cal_oos_shown-->0.0425<!--/fig--> as shown; no bucket overconfident |
 | Baton Rouge checkbook, 50 real payments | `public_ledger_benchmark.py` | `public_ledgers.json` | Exact invoice sets 2 (amounts only) to 50 (with payee); 0 wrong clears |
 | Fulton County checkbook, 50 real payments | same | same | 0 to 50; 0 wrong clears |
 | Noisy scanned statements, 24 | `ocr_eval.py` | `ocr_eval.json` | Read exactly 11 (browser OCR) to 23 (with the model); 0 wrong readings accepted |
@@ -316,9 +316,9 @@ by `src/lib/measured.test.ts`.
 
 The ReconRiver and linkage benchmarks were re-run after the final changes on
 24 September 2026 and did not move. After the tuning of 30 September
-(section 9), linkage rose from 65% to 95% identified and from 62% to 92%
+(section 9), linkage rose from 65% to <!--fig:bench_identified-->95%<!--/fig--> identified and from 62% to <!--fig:bench_cleared-->92%<!--/fig-->
 cleared without review, and ReconRiver did not move. With references intact, the ReconRiver
-corpus clears 94.59% with 0 wrong clears (`FAILURE_LOG.md`, entry 3).
+corpus identifies <!--fig:rr_anchored_exact-->94.59%<!--/fig--> with 0 wrong clears (`FAILURE_LOG.md`, entry 3).
 
 ### 5.1 The 120-scenario accuracy benchmark by family
 
@@ -580,9 +580,9 @@ raw one below the gate.
 
 | Corpus | ECE | Low band says / right | At or above the gate | Overconfident buckets |
 |---|---|---|---|---|
-| Benchmark, 180 (in-sample) | 0.0902 | 0.00 / 9.5% | 138 of 138 right | none |
-| ReconRiver, 74 (out-of-sample), raw | 0.0824 | 0.00 / 6.25% | 42 of 42 right | none |
-| ReconRiver, as shown with the map | 0.0419 | 0.00 / 6.25% | 42 of 42 right | none |
+| Benchmark, 180 (in-sample) | <!--fig:cal_in_ece-->0.0902<!--/fig--> | 0.00 / 9.5% | <!--fig:cal_in_above_gate-->138<!--/fig--> of <!--fig:cal_in_above_gate-->138<!--/fig--> right | none |
+| ReconRiver, 74 (out-of-sample), raw | <!--fig:cal_oos_raw-->0.0824<!--/fig--> | 0.00 / 6.25% | 42 of 42 right | none |
+| ReconRiver, as shown with the map | <!--fig:cal_oos_shown-->0.0425<!--/fig--> | 0.00 / 6.25% | 42 of 42 right | none |
 
 All of the remaining error is underconfidence, which costs a look, not money.
 Nothing clears differently: every band that clears was already below its

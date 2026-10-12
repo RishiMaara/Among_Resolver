@@ -26,6 +26,7 @@ def _tiebreak_ambiguous_match(
     forced_ids: set[str] | None = None,
     num_search_workers: int = 1,
     time_limit_s: float = 5.0,
+    weights: dict[str, int] | None = None,
 ) -> Optional[list[NormalizedTxn]]:
     """
     Break an ambiguous tie: find one alternate subset (forbidding the primary)
@@ -42,6 +43,7 @@ def _tiebreak_ambiguous_match(
         forbidden_solutions=forbidden,
         num_search_workers=num_search_workers,
         forced_ids=forced_ids,
+        weights=weights,
     )
     if alt_result is None:
         # no genuine alternate found (probe budget exhausted), keep primary
@@ -516,6 +518,7 @@ def _tiebreak_if_ambiguous(
             forced_ids=forced_ids,
             num_search_workers=cfg.num_search_workers,
             time_limit_s=cfg.probe_time_limit_s,
+            weights=cfg.weights,
         )
         if chosen is not None:
             chosen_keys = {txn_key(t) for t in chosen}

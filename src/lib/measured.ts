@@ -110,7 +110,7 @@ export const MEASURED: Measured[] = [
   {
     label: "Confidence calibration error, out-of-sample",
     before: "0.0824",
-    after: "0.0419",
+    after: "0.0425",
     note: "ECE raw vs as shown; no bucket overconfident either way, and the auto-clear gate reads the raw figure.",
     source: {
       file: "calibration_fit.json",

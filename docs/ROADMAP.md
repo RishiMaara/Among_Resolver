@@ -55,7 +55,7 @@ authoritative than it is.
 `calibration_out_of_sample.py` runs the same confidence/outcome scoring
 against ReconRiver — a corpus the gate was never tuned against. Every
 prediction at or above 0.85 was the exact true set there (42 of 42), as it
-was in-sample (138 of 138). It previously was not: 4 of 46 above the gate
+was in-sample (<!--fig:cal_in_above_gate-->138<!--/fig--> of <!--fig:cal_in_above_gate-->138<!--/fig-->). It previously was not: 4 of 46 above the gate
 were wrong out-of-sample, and the in-sample 0.85–0.93 band was right 57.8%
 of the time.
 

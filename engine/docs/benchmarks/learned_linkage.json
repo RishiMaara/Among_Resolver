@@ -8,7 +8,7 @@
    "exact_set_identified_pct": 24.32,
    "auto_cleared_correct": 8,
    "false_clears": 0,
-   "mean_latency_s": 1.088,
+   "mean_latency_s": 3.014,
    "by_band": {
     "arithmetic_only": {
      "n": 27,
@@ -30,7 +30,7 @@
    "exact_set_identified_pct": 24.32,
    "auto_cleared_correct": 8,
    "false_clears": 0,
-   "mean_latency_s": 1.082,
+   "mean_latency_s": 2.184,
    "by_band": {
     "arithmetic_only": {
      "n": 27,
@@ -52,7 +52,7 @@
    "exact_set_identified_pct": 56.76,
    "auto_cleared_correct": 8,
    "false_clears": 0,
-   "mean_latency_s": 1.05,
+   "mean_latency_s": 1.868,
    "by_band": {
     "learned_cycle": {
      "n": 25,
@@ -80,7 +80,7 @@
    "exact_set_identified_pct": 94.59,
    "auto_cleared_correct": 34,
    "false_clears": 0,
-   "mean_latency_s": 0.404,
+   "mean_latency_s": 0.789,
    "by_band": {
     "fully_anchored": {
      "n": 35,
@@ -102,7 +102,7 @@
    "exact_set_identified_pct": 94.59,
    "auto_cleared_correct": 34,
    "false_clears": 0,
-   "mean_latency_s": 0.877,
+   "mean_latency_s": 1.99,
    "by_band": {
     "fully_anchored": {
      "n": 35,
@@ -135,7 +135,7 @@
     "false_clear": false,
     "confidence": 0.8,
     "band": "learned_cycle",
-    "latency_s": 0.026
+    "latency_s": 0.027
    },
    {
     "scenario": "clean-settlement",
@@ -159,7 +159,7 @@
     "false_clear": false,
     "confidence": 0.8,
     "band": "learned_cycle",
-    "latency_s": 0.046
+    "latency_s": 0.065
    },
    {
     "scenario": "clean-settlement",
@@ -183,7 +183,7 @@
     "false_clear": false,
     "confidence": 0.8,
     "band": "learned_cycle",
-    "latency_s": 0.074
+    "latency_s": 0.086
    },
    {
     "scenario": "clean-settlement",
@@ -195,7 +195,7 @@
     "false_clear": false,
     "confidence": 0.0,
     "band": "learned_cycle",
-    "latency_s": 0.229
+    "latency_s": 0.266
    },
    {
     "scenario": "clean-settlement",
@@ -207,7 +207,7 @@
     "false_clear": false,
     "confidence": 0.8,
     "band": "learned_cycle",
-    "latency_s": 0.092
+    "latency_s": 0.094
    },
    {
     "scenario": "failure-recovery",
@@ -219,7 +219,7 @@
     "false_clear": false,
     "confidence": 0.87,
     "band": "fully_anchored",
-    "latency_s": 0.538
+    "latency_s": 0.759
    },
    {
     "scenario": "failure-recovery",
@@ -231,7 +231,7 @@
     "false_clear": false,
     "confidence": 0.0,
     "band": "learned_cycle",
-    "latency_s": 0.727
+    "latency_s": 2.986
    },
    {
     "scenario": "failure-recovery",
@@ -243,7 +243,7 @@
     "false_clear": false,
     "confidence": 0.0,
     "band": "learned_cycle",
-    "latency_s": 1.314
+    "latency_s": 2.933
    },
    {
     "scenario": "failure-recovery",
@@ -255,7 +255,7 @@
     "false_clear": false,
     "confidence": 0.0,
     "band": "arithmetic_only",
-    "latency_s": 0.856
+    "latency_s": 2.802
    },
    {
     "scenario": "failure-recovery",
@@ -267,7 +267,7 @@
     "false_clear": false,
     "confidence": 0.0,
     "band": "learned_cycle",
-    "latency_s": 0.651
+    "latency_s": 0.7
    },
    {
     "scenario": "failure-recovery",
@@ -279,7 +279,7 @@
     "false_clear": false,
     "confidence": 0.0,
     "band": "learned_cycle",
-    "latency_s": 1.551
+    "latency_s": 1.618
    },
    {
     "scenario": "failure-recovery",
@@ -291,7 +291,7 @@
     "false_clear": false,
     "confidence": 0.0,
     "band": "learned_cycle",
-    "latency_s": 1.484
+    "latency_s": 1.587
    },
    {
     "scenario": "failure-recovery",
@@ -303,7 +303,7 @@
     "false_clear": false,
     "confidence": 0.0,
     "band": "learned_cycle",
-    "latency_s": 1.712
+    "latency_s": 4.837
    },
    {
     "scenario": "failure-recovery",
@@ -315,7 +315,7 @@
     "false_clear": false,
     "confidence": 0.0,
     "band": "learned_cycle",
-    "latency_s": 5.526
+    "latency_s": 9.575
    },
    {
     "scenario": "failure-recovery",
@@ -327,7 +327,7 @@
     "false_clear": false,
     "confidence": 0.0,
     "band": "learned_cycle",
-    "latency_s": 5.451
+    "latency_s": 8.676
    },
    {
     "scenario": "mixed-exceptions",
@@ -339,7 +339,7 @@
     "false_clear": false,
     "confidence": 0.0,
     "band": "anchors_all_used",
-    "latency_s": 1.19
+    "latency_s": 2.912
    },
    {
     "scenario": "mixed-exceptions",
@@ -351,7 +351,7 @@
     "false_clear": false,
     "confidence": 0.87,
     "band": "fully_anchored",
-    "latency_s": 0.062
+    "latency_s": 0.083
    },
    {
     "scenario": "mixed-exceptions",
@@ -363,7 +363,7 @@
     "false_clear": false,
     "confidence": 0.87,
     "band": "fully_anchored",
-    "latency_s": 0.061
+    "latency_s": 0.062
    },
    {
     "scenario": "mixed-exceptions",
@@ -375,7 +375,7 @@
     "false_clear": false,
     "confidence": 0.8,
     "band": "learned_cycle",
-    "latency_s": 0.121
+    "latency_s": 0.459
    },
    {
     "scenario": "mixed-exceptions",
@@ -387,7 +387,7 @@
     "false_clear": false,
     "confidence": 0.0,
     "band": "learned_cycle",
-    "latency_s": 0.217
+    "latency_s": 0.303
    },
    {
     "scenario": "mixed-exceptions",
@@ -399,7 +399,7 @@
     "false_clear": false,
     "confidence": 0.95,
     "band": "fully_anchored",
-    "latency_s": 0.046
+    "latency_s": 0.078
    },
    {
     "scenario": "mixed-exceptions",
@@ -411,7 +411,7 @@
     "false_clear": false,
     "confidence": 0.95,
     "band": "fully_anchored",
-    "latency_s": 0.049
+    "latency_s": 0.216
    },
    {
     "scenario": "mixed-exceptions",
@@ -423,7 +423,7 @@
     "false_clear": false,
     "confidence": 0.87,
     "band": "fully_anchored",
-    "latency_s": 0.064
+    "latency_s": 0.098
    },
    {
     "scenario": "mixed-exceptions",
@@ -435,7 +435,7 @@
     "false_clear": false,
     "confidence": 0.0,
     "band": "learned_cycle",
-    "latency_s": 0.428
+    "latency_s": 0.625
    },
    {
     "scenario": "mixed-exceptions",
@@ -447,7 +447,7 @@
     "false_clear": false,
     "confidence": 0.0,
     "band": "learned_cycle",
-    "latency_s": 1.124
+    "latency_s": 2.107
    },
    {
     "scenario": "month-end-close",
@@ -459,7 +459,7 @@
     "false_clear": false,
     "confidence": 0.0,
     "band": "anchors_all_used",
-    "latency_s": 1.085
+    "latency_s": 2.503
    },
    {
     "scenario": "month-end-close",
@@ -471,7 +471,7 @@
     "false_clear": false,
     "confidence": 0.0,
     "band": "learned_cycle",
-    "latency_s": 1.099
+    "latency_s": 1.175
    },
    {
     "scenario": "month-end-close",
@@ -483,7 +483,7 @@
     "false_clear": false,
     "confidence": 0.0,
     "band": "arithmetic_only",
-    "latency_s": 0.991
+    "latency_s": 2.162
    },
    {
     "scenario": "month-end-close",
@@ -495,7 +495,7 @@
     "false_clear": false,
     "confidence": 0.0,
     "band": "learned_cycle",
-    "latency_s": 0.403
+    "latency_s": 0.717
    },
    {
     "scenario": "month-end-close",
@@ -507,7 +507,7 @@
     "false_clear": false,
     "confidence": 0.0,
     "band": "learned_cycle",
-    "latency_s": 1.035
+    "latency_s": 2.742
    },
    {
     "scenario": "month-end-close",
@@ -519,7 +519,7 @@
     "false_clear": false,
     "confidence": 0.0,
     "band": "learned_cycle",
-    "latency_s": 1.125
+    "latency_s": 1.714
    },
    {
     "scenario": "month-end-close",
@@ -531,7 +531,7 @@
     "false_clear": false,
     "confidence": 0.87,
     "band": "fully_anchored",
-    "latency_s": 0.297
+    "latency_s": 0.554
    },
    {
     "scenario": "month-end-close",
@@ -543,7 +543,7 @@
     "false_clear": false,
     "confidence": 0.87,
     "band": "fully_anchored",
-    "latency_s": 0.31
+    "latency_s": 0.506
    },
    {
     "scenario": "month-end-close",
@@ -555,7 +555,7 @@
     "false_clear": false,
     "confidence": 0.0,
     "band": "learned_cycle",
-    "latency_s": 3.992
+    "latency_s": 7.694
    },
    {
     "scenario": "month-end-close",
@@ -567,7 +567,7 @@
     "false_clear": false,
     "confidence": 0.0,
     "band": "learned_cycle",
-    "latency_s": 4.764
+    "latency_s": 5.298
    }
   ]
  }

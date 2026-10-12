@@ -35,7 +35,7 @@ as the vendors' public material shows, and what AmongResolver does instead.
 
 | # | The merchant's problem | What a rule-based engine does | What AmongResolver does | Evidence |
 |---|---|---|---|---|
-| 1 | A payout is many payments, and nothing in the bank credit names them | Matches on a configured key; without one, raises an exception or falls back to amount or oldest-first rules | Identifies the members with linkage, a learned payout cycle and exact subset-sum, to the paisa | True sets 0% with arithmetic alone, 95% with linkage and 92% cleared without review (93-95% and 92-93% on benchmark seeds not used for tuning); 24% to 57% with references stripped; 0 wrong clears |
+| 1 | A payout is many payments, and nothing in the bank credit names them | Matches on a configured key; without one, raises an exception or falls back to amount or oldest-first rules | Identifies the members with linkage, a learned payout cycle and exact subset-sum, to the paisa | True sets 0% with arithmetic alone, <!--fig:bench_identified-->95%<!--/fig--> with linkage and <!--fig:bench_cleared-->92%<!--/fig--> cleared without review (<!--fig:heldout_identified-->93–95%<!--/fig--> and <!--fig:heldout_cleared-->92–93%<!--/fig--> on benchmark seeds not used for tuning); <!--fig:rr_stripped_exact:pct0-->24%<!--/fig--> to <!--fig:rr_learned_exact:pct0-->57%<!--/fig--> with references stripped; 0 wrong clears |
 | 2 | Several different sets of payments add up to the same payout | Oldest-first matching picks one | Proves whether another set also fits, refuses if one does, and names the one payment that decides it | FIFO-style matching wrong in 12 of 12 fixed-price cases; AmongResolver wrong in none |
 | 3 | A payment is missing and an unrelated payment has exactly its amount | Clears if the amounts fit | Withholds, and names the payment that completes the total without a reference | Blind test; `FAILURE_LOG.md`, entry 46 |
 | 4 | The processor's own settlement report could be wrong | Treats it as the source of truth to match against | Re-derives each payout without Razorpay's ids, checks the bank credit by UTR and amount, and audits every fee and tax | Live: a Rs 10 bank shortfall and a Rs 43.09 fee overcharge found |
@@ -45,7 +45,7 @@ as the vendors' public material shows, and what AmongResolver does instead.
 | 8 | T+2 working days across second Saturdays and festivals | A fixed date-tolerance window | Learns each merchant's payout cycle in calendar and in working days and uses whichever fits; ages open items in working days | Tested across Ganesh Chaturthi and a second Saturday |
 | 9 | Scanned or photographed bank statements | Manual keying or a separate OCR service | Reads them in the browser and accepts a line only if every running balance proves it | 23 of 24 noisy scans read exactly; 0 wrong readings accepted |
 | 10 | Using AI without letting it move money | AI suggestions accepted within a configured tolerance | A model may only propose; code checks each proposal against the pool, the paid-out ledger, the tolerance, the calendar and the evidence, and a test fails if a model ever decides a payout | 0 wrong proposals past the verifier |
-| 11 | Knowing how far to trust an automatic result | Matched or unmatched | Shows a confidence calibrated against measured outcomes ("right 98% of the time at this score") | Calibration error 0.0824 to 0.0419; no band claims more than was measured |
+| 11 | Knowing how far to trust an automatic result | Matched or unmatched | Shows a confidence calibrated against measured outcomes ("right 98% of the time at this score") | Calibration error <!--fig:cal_oos_raw-->0.0824<!--/fig--> to <!--fig:cal_oos_shown-->0.0425<!--/fig-->; no band claims more than was measured |
 | 12 | Understanding why a payout did not clear | An exception code | A plain-language reason in rupees, the deciding question, and answers to questions grounded in the recorded result | 29 of 29 fact questions answered; 15 of 15 declined where the record cannot answer |
 | 13 | A customer whose name resembles a sanctioned party | Handled in a separate screening system, if at all | Screens inside reconciliation; an exact hit blocks, a near spelling is flagged for a person, and the payout still reconciles | `FAILURE_LOG.md`, entry 49 |
 | 14 | Keeping payment data in-house | Hosted subscription | Self-hostable: the engine runs on one machine, with the data on it, and its source is public | 2,000,000 records reconciled on one development machine |
@@ -71,8 +71,8 @@ with the engine's evidence stage (linkage) switched off and on.
 
 | | Arithmetic alone | AmongResolver |
 |---|---|---|
-| True sets identified | 0% | 95% |
-| Auto-cleared | 0% | 92% |
+| True sets identified | 0% | <!--fig:bench_identified-->95%<!--/fig--> |
+| Auto-cleared | 0% | <!--fig:bench_cleared-->92%<!--/fig--> |
 | Wrong clears | 0 | 0 |
 
 Result file: `engine/docs/benchmarks/baseline_comparison.json`. Linkage decides
@@ -164,7 +164,7 @@ design, and can be re-run from the repository.
 | What is measured | Vendors (published) | AmongResolver (measured) |
 |---|---|---|
 | Volume and speed | BlackLine: millions of transactions per minute; 7 million a month for SiriusXM. Osfin: a retailer with more than 1 million transactions a month. | 2,000,000 records in one file in 165 s on one machine. 200,000 payments in one payout proved in 16.75 s. The hosted demo accepts about 60,000 rows per upload. |
-| Auto-match rate | BlackLine up to 99.9%; Trintech 99% and above; Osfin 98% and above; HighRadius 90 to 95%. | 133 of 133 clearable payouts with evidence cleared on the blind test. 104 others refused by design. |
+| Auto-match rate | BlackLine up to 99.9%; Trintech 99% and above; Osfin 98% and above; HighRadius 90 to 95%. | <!--fig:blind_clear_ok-->133<!--/fig--> of <!--fig:blind_clear_ok-->133<!--/fig--> clearable payouts with evidence cleared on the blind test. <!--fig:blind_refused-->104<!--/fig--> others refused by design. |
 | Wrong-match rate | Not published by any vendor reviewed. | 0 across 474 blind settlements, 1,050 edge batches and the limits test. |
 | Payouts with no reference | Not published. | Not cleared on arithmetic alone. 57% identified exactly on stripped third-party data with a learned payout cycle, 0 wrong. |
 | Tolerance | Configured per customer. | 5 paise, fixed. 5 short clears with the shortfall shown; 6 short is refused. |

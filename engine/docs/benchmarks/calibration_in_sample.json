@@ -1,0 +1,53 @@
+{
+  "pairs": 180,
+  "overall_accuracy": 0.7667,
+  "mean_confidence": 0.6765,
+  "ece": 0.0902,
+  "mce": 0.2,
+  "brier": 0.0439,
+  "above_gate": 138,
+  "above_gate_wrong": 0,
+  "buckets": [
+    {
+      "range": "[0.00, 0.50)",
+      "n": 37,
+      "predicted": 0.15,
+      "observed": 0.0,
+      "gap": -0.15
+    },
+    {
+      "range": "[0.70, 0.85)",
+      "n": 5,
+      "predicted": 0.8,
+      "observed": 1.0,
+      "gap": 0.2
+    },
+    {
+      "range": "[0.85, 0.93)",
+      "n": 76,
+      "predicted": 0.8761,
+      "observed": 1.0,
+      "gap": 0.1239
+    },
+    {
+      "range": "[0.93, 1.01)",
+      "n": 62,
+      "predicted": 0.9548,
+      "observed": 1.0,
+      "gap": 0.0452
+    }
+  ],
+  "overconfident_buckets": [],
+  "underconfident_buckets": [
+    "[0.70, 0.85)",
+    "[0.85, 0.93)"
+  ],
+  "run": {
+    "measured_at_utc": "2026-09-21T16:30:57+00:00",
+    "scenarios": 180,
+    "seed": 7,
+    "commit": "5bab4a8",
+    "solver_workers": 1,
+    "note": "benchmark.run_scenario pins CP-SAT to one worker."
+  }
+}

@@ -480,6 +480,9 @@ def _rate_card(gateway_bps, tax_bps, flat) -> FeeRateCard:
         else DEFAULT_RATE_CARD.tax_withholding_bps,
         flat_fee_cents=flat if flat is not None
         else DEFAULT_RATE_CARD.flat_fee_cents,
+        # UPI, netbanking and international cards keep their own fees; cards
+        # and wallets take the rate given here.
+        method_rates=DEFAULT_RATE_CARD.method_rates,
     )
 
 

@@ -11,11 +11,12 @@ written to the audit trail. Nothing here writes to a ledger.
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Optional
 
 from schema import NormalizedTxn, SettlementBatch, MatchResult, MatchMethod, ExceptionRecord
-from fee_decomposition import compute_fee_breakdown, FeeRateCard, DEFAULT_RATE_CARD
+from fee_decomposition import (compute_fee_breakdown, FeeRateCard, DEFAULT_RATE_CARD,
+                               per_method_weights, per_method_breakdown)
 from subset_sum import (
     AMBIGUOUS_CONFIDENCE,
     SubsetSumConfig,
@@ -352,6 +353,28 @@ def reconcile_batch(
                f"within {settlement_window_days}-day window",
     )
 
+    # Fees per payment method. On a day that mixes methods whose fees differ,
+    # no single gross target fits the members, so each payment is matched at
+    # its own net against the net payout (fee_decomposition.per_method_weights).
+    method_weights = (per_method_weights(rate_card, windowed_candidates)
+                      if fee_breakdown.basis != "declared" else None)
+    solve_target, solve_cfg = gross_target, cfg
+    if method_weights:
+        solve_target = batch.net_amount_cents + rate_card.flat_fee_cents
+        solve_cfg = replace(cfg, weights=method_weights)
+        audit.log_decision(
+            batch_id=batch.batch_id,
+            agent="fee_decomposition",
+            detail=(
+                f"The payments state methods whose fees differ, so one gross target "
+                f"fits no set: each is matched at its amount less its own method's fee "
+                f"and {rate_card.tax_withholding_bps}bps withholding, against the net "
+                f"payout of {solve_target}c. An ESTIMATE from the rate card; if the "
+                f"processor charged differently, nothing sums and the settlement is "
+                f"withheld."
+            ),
+        )
+
     # Agent 2b: linkage — constrain candidates BEFORE the solver.
     #
     # Subset-sum cannot identify a settlement on its own: the solver may use
@@ -425,7 +448,7 @@ def reconcile_batch(
         )
 
     _solved = _solve_in_tiers(
-        batch, solver_candidates, windowed_candidates, link_result, gross_target, cfg
+        batch, solver_candidates, windowed_candidates, link_result, solve_target, solve_cfg
     )
     result = _solved.result
     solver_candidates = _solved.solver_candidates
@@ -446,8 +469,22 @@ def reconcile_batch(
     _apply_confidence_gate(batch, result, solver_candidates, link_result)
 
     # Agent 3b: tiebreak ambiguous matches via fuzzy plausibility scoring
-    _tiebreak_if_ambiguous(batch, result, windowed_candidates, gross_target, cfg,
+    _tiebreak_if_ambiguous(batch, result, windowed_candidates, solve_target, solve_cfg,
                            enable_tiebreak, learned_keys=link_result.learned_keys)
+
+    # Solved on nets; everything from here reads gross. The deductions are the
+    # members' own, each at its method's fee, so the tie-out stays exact.
+    if method_weights and result.matched_txn_ids:
+        members = members_of(result, windowed_candidates)
+        fee_breakdown = per_method_breakdown(batch, rate_card, members)
+        gross_target = fee_breakdown.gross_target_cents(batch.net_amount_cents)
+        result.matched_sum_cents = sum(t.amount_cents for t in members)
+        result.target_cents = gross_target
+        result.reasoning += (
+            f" Fees estimated per payment method: the members' nets sum to the "
+            f"payout, and their gross {result.matched_sum_cents}c against "
+            f"{fee_breakdown.total_deductions_cents}c of deductions is the target."
+        )
 
     exceptions, unmatched = _collect_unmatched(
         batch, result, candidates, windowed_candidates, gross_target, fuzz_cfg

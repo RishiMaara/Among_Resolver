@@ -123,12 +123,12 @@ def main() -> int:
     b["measured_at_utc"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
     b["commit"] = commit()
 
-    os.makedirs("docs/benchmarks", exist_ok=True)
-    with open("docs/benchmarks/latest.json", "w", encoding="utf-8") as f:
+    os.makedirs("engine/docs/benchmarks", exist_ok=True)
+    with open("engine/docs/benchmarks/latest.json", "w", encoding="utf-8") as f:
         json.dump(b, f, indent=2)
         f.write("\n")
 
-    print("\nWrote docs/benchmarks/latest.json")
+    print("\nWrote engine/docs/benchmarks/latest.json")
     for k, v in b.items():
         print(f"  {k:<28} {v}")
     return 0

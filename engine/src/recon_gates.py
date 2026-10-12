@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 from schema import MatchResult, SettlementBatch, NormalizedTxn, ExceptionRecord
 from linkage import (LinkageResult, link_confidence, txn_key, members_of, tokenize_ref, _raw_ref,
-                     description_tokens)
+                     description_tokens, CONFIDENCE_BANDS)
 import audit
 
 
@@ -143,6 +143,19 @@ def _withhold_if_unevidenced(
         and bool(anchors_in_pool - matched_keys)
     )
 
+    # Every member names the settlement, but so do more records than the
+    # unanchored limit, and the match left some out: the naming did not choose
+    # the members, the arithmetic did, over 2^n subsets of the named records,
+    # and the density argument above applies to them as it does to any pool.
+    # A fee target off by a blended rate found such a subset among 25 records
+    # carrying the settlement's id, and it cleared (FAILURE_LOG 61).
+    anchors_undetermined = (
+        matched_anchored
+        and matched_keys <= anchor_keys
+        and len(anchors_in_pool) > UNANCHORED_AUTOCLEAR_LIMIT
+        and bool(anchors_in_pool - matched_keys)
+    )
+
     # All anchors used, but a matched record neither names the settlement nor
     # shares a reference with the records that do: admitted by amount and
     # timing alone. That is evidence-identical to an unrelated payment of the
@@ -174,6 +187,30 @@ def _withhold_if_unevidenced(
                         f"auto-clear on amount and timing alone."),
             )
             return
+
+    if result.cleared and anchors_undetermined:
+        result.cleared = False
+        result.ambiguous = True
+        result.withheld_reason = "no_corroborating_evidence"
+        # Chosen by arithmetic, so it claims what arithmetic alone claims: such
+        # sets were right 0 of 3 times on the mixed-method benchmark.
+        result.confidence = min(result.confidence, CONFIDENCE_BANDS["arithmetic_only"])
+        left_out = len(anchors_in_pool - matched_keys)
+        result.reasoning += (
+            f" Withheld from auto-clear: all {len(matched_keys)} matched record(s) "
+            f"name this settlement, but so do {len(anchors_in_pool)} records, and "
+            f"{left_out} of them were left out. With that many, the arithmetic chose "
+            f"which ones, not the reference, so this is proposed for a person to "
+            f"confirm, at the confidence arithmetic alone carries."
+        )
+        audit.log_decision(
+            batch_id=batch.batch_id,
+            agent="linkage",
+            detail=(f"{len(anchors_in_pool)} records name the settlement and the match "
+                    f"uses {len(matched_keys)}: the subset was chosen by arithmetic. "
+                    f"Refusing to auto-clear."),
+        )
+        return
 
     if result.cleared and (
         partially_anchored

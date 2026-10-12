@@ -1,0 +1,69 @@
+{
+  "tuning_seeds": [
+    "7",
+    "101"
+  ],
+  "held_out_seeds": [
+    "202",
+    "303"
+  ],
+  "seeds": {
+    "7": {
+      "auto_cleared_correct_pct": 92.0,
+      "truth_identified_pct": 95.0,
+      "false_clear_count": 0
+    },
+    "101": {
+      "auto_cleared_correct_pct": 92.0,
+      "truth_identified_pct": 95.0,
+      "false_clear_count": 0
+    },
+    "202": {
+      "auto_cleared_correct_pct": 92.0,
+      "truth_identified_pct": 93.0,
+      "false_clear_count": 0
+    },
+    "303": {
+      "auto_cleared_correct_pct": 93.0,
+      "truth_identified_pct": 95.0,
+      "false_clear_count": 0
+    }
+  },
+  "control_descriptions_erased_seed_7": {
+    "auto_cleared_correct_pct": 62.0,
+    "truth_identified_pct": 65.0,
+    "false_clear_count": 0
+  },
+  "member_feed_declared_seed_7": {
+    "auto_cleared_correct_pct": 92.0,
+    "truth_identified_pct": 95.0,
+    "false_clear_count": 0
+  },
+  "mixed_methods": {
+    "7": {
+      "methods_seen": {
+        "auto_cleared_correct_pct": 91.0,
+        "truth_identified_pct": 95.0,
+        "false_clear_count": 0
+      },
+      "methods_hidden": {
+        "auto_cleared_correct_pct": 3.0,
+        "truth_identified_pct": 4.0,
+        "false_clear_count": 1
+      }
+    },
+    "202": {
+      "methods_seen": {
+        "auto_cleared_correct_pct": 92.0,
+        "truth_identified_pct": 92.0,
+        "false_clear_count": 0
+      },
+      "methods_hidden": {
+        "auto_cleared_correct_pct": 5.0,
+        "truth_identified_pct": 5.0,
+        "false_clear_count": 2
+      }
+    }
+  },
+  "measured_at_utc": "2026-09-30T11:55:40+00:00"
+}
