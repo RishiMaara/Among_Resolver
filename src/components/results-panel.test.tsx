@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { act, render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { ResultsPanel } from "@/components/results-panel";
 import type { ReconcileResult } from "@/lib/engine-types";
 
@@ -518,5 +518,26 @@ describe("what the engine noticed in the files", () => {
   it("shows nothing when there is nothing to report", () => {
     render(<ResultsPanel results={base()} />);
     expect(screen.queryByText("What we noticed in your files")).not.toBeInTheDocument();
+  });
+});
+
+describe("the report arrives in stages", () => {
+  // Mounted whole, the report made the browser lay out every section in one
+  // task when the toast measured itself: 1.45 s with the CPU slowed 4x.
+  it("shows the verdict at once and the rest over the following frames", async () => {
+    vi.useFakeTimers({
+      toFake: ["setTimeout", "clearTimeout", "requestAnimationFrame", "cancelAnimationFrame"],
+    });
+    try {
+      render(<ResultsPanel results={base()} staged />);
+      expect(screen.getByText(/^CLEARED$/)).toBeInTheDocument();
+      expect(screen.queryByText(/Exceptions \(0\)/)).not.toBeInTheDocument();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+      expect(screen.getByText(/Exceptions \(0\)/)).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

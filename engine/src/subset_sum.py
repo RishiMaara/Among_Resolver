@@ -40,6 +40,12 @@ class SubsetSumConfig:
     cores on small machines without over-subscribing large ones. Set
     explicitly in resource-constrained environments (containers, CI).
     """
+    weights: dict[str, int] | None = None
+    """What each record contributes to the target, by txn_key, where that is
+    not its amount. Fees estimated per payment method set it: a UPI payment
+    and a card payment of the same amount contribute different nets, so no
+    single gross target fits a mixed day (fee_decomposition.per_method_weights).
+    A record missing from the map contributes its amount."""
 
 
 def filter_candidates_by_settlement_window(
@@ -72,6 +78,7 @@ def _solve_cpsat(
     num_search_workers: int = 1,
     forced_ids: set[str] | None = None,
     status_out: list | None = None,
+    weights: dict[str, int] | None = None,
 ) -> tuple[list[NormalizedTxn], int] | None:
     """
     One CP-SAT solve for a subset within tolerance of the target.
@@ -90,7 +97,9 @@ def _solve_cpsat(
     include = [model.new_bool_var(f"include_{i}") for i in range(n)]
     keys = [txn_key(c) for c in candidates]
 
-    total = sum(candidates[i].amount_cents * include[i] for i in range(n))
+    w = [weights.get(keys[i], candidates[i].amount_cents) if weights else
+         candidates[i].amount_cents for i in range(n)]
+    total = sum(w[i] * include[i] for i in range(n))
     model.add(total >= target_cents - tolerance_cents)
     model.add(total <= target_cents + tolerance_cents)
 
@@ -136,9 +145,8 @@ def _solve_cpsat(
     if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
         return None
 
-    matched = [candidates[i] for i in range(n) if solver.Value(include[i])]
-    achieved_sum = sum(t.amount_cents for t in matched)
-    return matched, achieved_sum
+    chosen = [i for i in range(n) if solver.Value(include[i])]
+    return [candidates[i] for i in chosen], sum(w[i] for i in chosen)
 
 
 def find_exact_subset(
@@ -148,12 +156,14 @@ def find_exact_subset(
     time_limit_s: float = 15.0,
     num_search_workers: int = 1,
     forced_ids: set[str] | None = None,
+    weights: dict[str, int] | None = None,
 ) -> tuple[list[NormalizedTxn], int] | None:
     """Public entry point — CP-SAT solve, no forbidden solutions."""
     return _solve_cpsat(
         candidates, target_cents, tolerance_cents, time_limit_s,
         num_search_workers=num_search_workers,
         forced_ids=forced_ids,
+        weights=weights,
     )
 
 
@@ -167,6 +177,7 @@ def _probe_for_alternate_subset(
     num_search_workers: int = 1,
     forced_ids: set[str] | None = None,
     outcome: dict | None = None,
+    weights: dict[str, int] | None = None,
 ) -> str | None:
     """
     Bounded ambiguity check: ask for up to `probe_limit` different subsets.
@@ -193,6 +204,7 @@ def _probe_for_alternate_subset(
             num_search_workers=num_search_workers,
             forced_ids=forced_ids,
             status_out=statuses,
+            weights=weights,
         )
         if alt is None:
             # Out of time is not the same as out of alternates: say which.
@@ -283,11 +295,15 @@ def match_batch(
         candidates, target_cents, config.tolerance_cents,
         config.solver_time_limit_s, config.num_search_workers,
         forced_ids=forced_ids,
+        weights=config.weights,
     )
 
     if result is None:
         from fuzzy_match import approximate_subset_sum_greedy
-        approx_txns, approx_sum = approximate_subset_sum_greedy(candidates, target_cents)
+        # The greedy pass sums amounts; against a target in weights it would
+        # compare two different quantities, so it does not run.
+        approx_txns, approx_sum = ((None, 0) if config.weights else
+                                   approximate_subset_sum_greedy(candidates, target_cents))
         
         if approx_txns:
             return MatchResult(
@@ -295,7 +311,9 @@ def match_batch(
                 matched_txn_ids=[t.source_txn_id for t in approx_txns],
                 matched_keys=[txn_key(t) for t in approx_txns],
                 method=MatchMethod.FUZZY_SEMANTIC,
-                confidence=0.4,
+                # A greedy set that does not sum claims nothing: this said 0.4
+                # and has never fired on any measured corpus (FAILURE_LOG 58).
+                confidence=0.0,
                 matched_sum_cents=approx_sum,
                 target_cents=target_cents,
                 cleared=False,  # ALWAYS False for approximation
@@ -326,6 +344,7 @@ def match_batch(
         num_search_workers=config.num_search_workers,
         forced_ids=forced_ids,
         outcome=probe,
+        weights=config.weights,
     )
     if alt_description is not None:
         ambiguous = True

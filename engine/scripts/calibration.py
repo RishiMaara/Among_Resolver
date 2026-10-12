@@ -143,6 +143,10 @@ def summarise(pairs: list[Pair]) -> dict:
         "buckets": stats,
         "overconfident_buckets": [b["range"] for b in overconfident],
         "underconfident_buckets": [b["range"] for b in underconfident],
+        # The claim that matters: how many predictions could clear, and how
+        # many of those were wrong.
+        "above_gate": sum(1 for p in pairs if p.confidence >= 0.85),
+        "above_gate_wrong": sum(1 for p in pairs if p.confidence >= 0.85 and not p.correct),
     }
 
 

@@ -659,8 +659,54 @@ export function ResultsSkeleton({ progress }: { progress: number }) {
   );
 }
 
-export function ResultsPanel({ results }: { results: ReconcileResult }) {
+/**
+ * How much of the report is on the page: 1 at first, then one more stage per
+ * painted frame, up to `total`.
+ *
+ * The report mounted whole, and the first read of an element's size after it
+ * (the toast measuring itself) made the browser lay out every section in one
+ * go: 556 ms with the CPU slowed 4x. The verdict and the payments come first;
+ * each later stage mounts after the previous one has been painted, so no
+ * frame carries the whole report. Tests render it whole (`staged` false).
+ */
+function useStages(total: number, staged: boolean, key: unknown): number {
+  const [shown, setShown] = useState(staged ? 1 : total);
+  useEffect(() => {
+    if (!staged) return;
+    setShown(1);
+    let frame = 0;
+    let timer = 0;
+    const reveal = (n: number) => {
+      if (n > total) return;
+      // After the next paint: a timeout set inside a frame callback runs
+      // once that frame has been drawn.
+      frame = requestAnimationFrame(() => {
+        timer = window.setTimeout(() => {
+          setShown(n);
+          reveal(n + 1);
+        }, 0);
+      });
+    };
+    reveal(2);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [total, staged, key]);
+  return shown;
+}
+
+const STAGED = import.meta.env.MODE !== "test";
+
+export function ResultsPanel({
+  results,
+  staged = STAGED,
+}: {
+  results: ReconcileResult;
+  staged?: boolean;
+}) {
   const s = results.summary;
+  const stage = useStages(4, staged, results);
 
   // Plain-language headline, independent of pool size, so a tiny
   // percentage next to a success badge doesn't read as a contradiction.
@@ -785,114 +831,120 @@ export function ResultsPanel({ results }: { results: ReconcileResult }) {
         cleared={!!s.cleared}
       />
 
-      {results.investigation && <InvestigationCard found={results.investigation} />}
+      {stage >= 2 && results.investigation && <InvestigationCard found={results.investigation} />}
 
       {/* Compliance sits above the cash position: what a reviewer may not
           touch has to be settled before where the money is means anything. */}
-      <ComplianceReview review={results.compliance_review} batchId={s.batch_id} />
+      {stage >= 2 && <ComplianceReview review={results.compliance_review} batchId={s.batch_id} />}
 
-      {results.cash_position && <CashPosition cash={results.cash_position} batchId={s.batch_id} />}
+      {stage >= 2 && results.cash_position && (
+        <CashPosition cash={results.cash_position} batchId={s.batch_id} />
+      )}
 
       {/* A fee audit of a withheld proposal would be a verdict on payments
           that may not be members, so it is shown on a clear only. */}
-      {s.cleared && results.fee_audit && <FeeAudit audit={results.fee_audit} />}
+      {stage >= 3 && s.cleared && results.fee_audit && <FeeAudit audit={results.fee_audit} />}
 
-      <SettlementQA batchId={s.batch_id} />
+      {stage >= 3 && <SettlementQA batchId={s.batch_id} />}
 
-      <AuditTrail
-        trail={results.audit_trail ?? []}
-        batchId={s.batch_id}
-        head={results.audit_head}
-      />
+      {stage >= 4 && (
+        <AuditTrail
+          trail={results.audit_trail ?? []}
+          batchId={s.batch_id}
+          head={results.audit_head}
+        />
+      )}
 
-      <div className="surface-card p-6">
-        <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
-          <FileWarning className="size-5 text-muted-foreground" />
-          Exceptions ({results.exceptions.length})
-        </h3>
-        {results.exceptions_summary && results.exceptions_summary.total_at_stake_cents > 0 && (
-          // The number a controller asks first — how much is stuck — which a
-          // bare count hides. The list below is ordered by it.
-          <p className="-mt-2 mb-4 text-sm text-muted-foreground">
-            {inr(results.exceptions_summary.total_at_stake_cents)} waiting on review
-            {results.exceptions_summary.share_of_target != null &&
-              ` (${(results.exceptions_summary.share_of_target * 100).toFixed(1)}% of the settlement)`}
-            , largest first.
-          </p>
-        )}
-        {(results.exceptions_summary?.by_category?.length ?? 0) > 0 && (
-          <div className="-mt-2 mb-4 flex flex-wrap gap-2">
-            {results.exceptions_summary?.by_category?.map((c) => (
-              <span
-                key={c.category}
-                className="rounded-full border border-border bg-muted/50 px-2 py-0.5 text-[11px]"
-                title={`Goes to ${c.owner}`}
-              >
-                {c.label} · {c.count} · {inr(c.value_cents)}
-              </span>
-            ))}
-          </div>
-        )}
-        {results.open_items && results.open_items.opened + results.open_items.closed > 0 && (
-          <p className="-mt-2 mb-4 text-xs text-muted-foreground">
-            This run opened {results.open_items.opened} and closed {results.open_items.closed} open
-            item(s) — money still waiting, carried across runs and aged in working days.{" "}
-            <Link to="/payouts" className="underline">
-              See what is waiting
-            </Link>
-            .
-          </p>
-        )}
-        {results.exceptions.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No exceptions found. Perfect match.</p>
-        ) : (
-          <div className="space-y-2">
-            {results.exceptions.slice(0, 10).map((ex: ExceptionRecord, i: number) => (
-              // Amber, not red. An exception is the engine routing work to a
-              // human, which is the behaviour that produces zero false
-              // clears. Painting it as an error argues against the product.
-              <div
-                key={i}
-                className="flex flex-col gap-1 rounded-r-[10px] border-l-2 px-3 py-3 text-sm"
-                style={{
-                  borderColor: "var(--s-withheld)",
-                  background: "color-mix(in oklab, var(--s-withheld) 6%, transparent)",
-                }}
-              >
-                <span className="flex items-baseline justify-between gap-3">
-                  <span className="font-semibold" style={{ color: "var(--s-withheld)" }}>
-                    {ex.category_label ??
-                      ex.reason.replace(/_/g, " ").replace(/^./, (ch) => ch.toUpperCase())}
+      {stage >= 4 && (
+        <div className="surface-card p-6">
+          <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
+            <FileWarning className="size-5 text-muted-foreground" />
+            Exceptions ({results.exceptions.length})
+          </h3>
+          {results.exceptions_summary && results.exceptions_summary.total_at_stake_cents > 0 && (
+            // The number a controller asks first — how much is stuck — which a
+            // bare count hides. The list below is ordered by it.
+            <p className="-mt-2 mb-4 text-sm text-muted-foreground">
+              {inr(results.exceptions_summary.total_at_stake_cents)} waiting on review
+              {results.exceptions_summary.share_of_target != null &&
+                ` (${(results.exceptions_summary.share_of_target * 100).toFixed(1)}% of the settlement)`}
+              , largest first.
+            </p>
+          )}
+          {(results.exceptions_summary?.by_category?.length ?? 0) > 0 && (
+            <div className="-mt-2 mb-4 flex flex-wrap gap-2">
+              {results.exceptions_summary?.by_category?.map((c) => (
+                <span
+                  key={c.category}
+                  className="rounded-full border border-border bg-muted/50 px-2 py-0.5 text-[11px]"
+                  title={`Goes to ${c.owner}`}
+                >
+                  {c.label} · {c.count} · {inr(c.value_cents)}
+                </span>
+              ))}
+            </div>
+          )}
+          {results.open_items && results.open_items.opened + results.open_items.closed > 0 && (
+            <p className="-mt-2 mb-4 text-xs text-muted-foreground">
+              This run opened {results.open_items.opened} and closed {results.open_items.closed}{" "}
+              open item(s) — money still waiting, carried across runs and aged in working days.{" "}
+              <Link to="/payouts" className="underline">
+                See what is waiting
+              </Link>
+              .
+            </p>
+          )}
+          {results.exceptions.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No exceptions found. Perfect match.</p>
+          ) : (
+            <div className="space-y-2">
+              {results.exceptions.slice(0, 10).map((ex: ExceptionRecord, i: number) => (
+                // Amber, not red. An exception is the engine routing work to a
+                // human, which is the behaviour that produces zero false
+                // clears. Painting it as an error argues against the product.
+                <div
+                  key={i}
+                  className="flex flex-col gap-1 rounded-r-[10px] border-l-2 px-3 py-3 text-sm"
+                  style={{
+                    borderColor: "var(--s-withheld)",
+                    background: "color-mix(in oklab, var(--s-withheld) 6%, transparent)",
+                  }}
+                >
+                  <span className="flex items-baseline justify-between gap-3">
+                    <span className="font-semibold" style={{ color: "var(--s-withheld)" }}>
+                      {ex.category_label ??
+                        ex.reason.replace(/_/g, " ").replace(/^./, (ch) => ch.toUpperCase())}
+                    </span>
+                    {typeof ex.amount_at_stake_cents === "number" && (
+                      <span className="shrink-0 tabular-nums text-xs text-muted-foreground">
+                        {ex.amount_known === false
+                          ? `${inr(ex.amount_at_stake_cents)}+ at stake`
+                          : `${inr(ex.amount_at_stake_cents)} at stake`}
+                      </span>
+                    )}
                   </span>
-                  {typeof ex.amount_at_stake_cents === "number" && (
-                    <span className="shrink-0 tabular-nums text-xs text-muted-foreground">
-                      {ex.amount_known === false
-                        ? `${inr(ex.amount_at_stake_cents)}+ at stake`
-                        : `${inr(ex.amount_at_stake_cents)} at stake`}
+                  <span className="text-muted-foreground">{ex.diagnosis_note}</span>
+                  {ex.next_action && (
+                    <span className="text-[12.5px]">
+                      {ex.owner && <span className="font-medium">For {ex.owner}: </span>}
+                      {ex.next_action}
                     </span>
                   )}
-                </span>
-                <span className="text-muted-foreground">{ex.diagnosis_note}</span>
-                {ex.next_action && (
-                  <span className="text-[12.5px]">
-                    {ex.owner && <span className="font-medium">For {ex.owner}: </span>}
-                    {ex.next_action}
-                  </span>
-                )}
-                {(ex.findings ?? []).map((f: ComplianceFindingDetailData, j: number) => (
-                  <ComplianceFindingDetail key={j} finding={f} />
-                ))}
-              </div>
-            ))}
-            {results.exceptions.length > 10 && (
-              <p className="mt-4 text-xs italic text-muted-foreground">
-                …and {results.exceptions.length - 10} more. Click any node on the pipeline above to
-                read that agent's lines.
-              </p>
-            )}
-          </div>
-        )}
-      </div>
+                  {(ex.findings ?? []).map((f: ComplianceFindingDetailData, j: number) => (
+                    <ComplianceFindingDetail key={j} finding={f} />
+                  ))}
+                </div>
+              ))}
+              {results.exceptions.length > 10 && (
+                <p className="mt-4 text-xs italic text-muted-foreground">
+                  …and {results.exceptions.length - 10} more. Click any node on the pipeline above
+                  to read that agent's lines.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <p className="font-mono text-[11px] text-muted-foreground">
         Audit trail · {results.audit_trail?.length ?? 0} entries · click any node above to read its

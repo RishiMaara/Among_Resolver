@@ -25,6 +25,8 @@ from fee_model import (  # noqa: E402,F401 - re-exported; callers import them he
     FeeAuditCategory,
     FeeAuditFinding,
     MethodRateCard,
+    normalize_method,
+    stated_method,
     _paise,
     _stated_paise,
     _gross_cents,
@@ -46,13 +48,9 @@ def _detect_payment_method(txn) -> str:
     Indian gateways typically include a 'method' or 'payment_method' field.
     If not present, attempt to infer from the memo.
     """
-    extra = getattr(txn, "extra", {}) or {}
-
-    # Direct field
-    for key in ("payment_method", "method", "pay_method", "instrument"):
-        val = str(extra.get(key, "")).strip().lower()
-        if val:
-            return _normalize_method(val)
+    stated = stated_method(txn)
+    if stated:
+        return stated
 
     # Memo-based inference (fragile, noted as such)
     memo = getattr(txn, "memo_normalized", "") or ""
@@ -66,24 +64,6 @@ def _detect_payment_method(txn) -> str:
         return "wallet"
 
     return "unknown"
-
-
-def _normalize_method(raw: str) -> str:
-    """Map gateway-specific method names to canonical ones."""
-    raw = raw.lower().strip()
-    if raw in ("card", "credit_card", "debit_card", "cc", "dc", "visa",
-               "mastercard", "rupay", "amex"):
-        return "card"
-    if raw in ("upi", "upi_collect", "upi_intent", "upi_qr"):
-        return "upi"
-    if raw in ("netbanking", "net_banking", "neft", "imps", "rtgs"):
-        return "netbanking"
-    if raw in ("wallet", "paytm", "phonepe", "mobikwik", "freecharge",
-               "amazon_pay", "airtel_money"):
-        return "wallet"
-    if raw in ("international", "intl_card", "international_card"):
-        return "international_card"
-    return raw
 
 
 def fee_fields(extra: dict) -> tuple[int | None, int | None]:

@@ -154,12 +154,13 @@ seed 7:
 | | false clears | cleared and right | truth identified | correct abstentions |
 |---|---|---|---|---|
 | Subset-sum only *(baseline)* | 0 | **0.0%** | 0.0% | 100% |
-| Linkage, member feed undeclared | **0** | **92%** | 95% | 100% |
-| Linkage, member feed declared | **0** | **92%** | 95% | 100% |
+| Linkage, member feed undeclared | **0** | **<!--fig:bench_cleared-->92%<!--/fig-->** | <!--fig:bench_identified-->95%<!--/fig--> | 100% |
+| Linkage, member feed declared | **0** | **<!--fig:declared_cleared-->92%<!--/fig-->** | <!--fig:declared_identified-->95%<!--/fig--> | 100% |
 
-On seeds 202 and 303, never looked at while tuning: 92% and 93% cleared, 93%
-and 95% identified, 0 false clears. With every description erased: 62% and
-65%, the figures before identifiers were read from descriptions.
+On seeds 202 and 303, never looked at while tuning: <!--fig:heldout_cleared-->92–93%<!--/fig--> cleared,
+<!--fig:heldout_identified-->93–95%<!--/fig--> identified, 0 false clears. With every description erased:
+<!--fig:control_cleared-->62%<!--/fig--> cleared and <!--fig:control_identified-->65%<!--/fig--> identified, the figures before identifiers were
+read from descriptions. Where payment methods are mixed across tiers: <!--fig:mixed_seen_cleared-->91–92%<!--/fig--> cleared when seen, falling to <!--fig:mixed_hidden_cleared-->3–5%<!--/fig--> when methods are hidden.
 
 Per family, true set identified:
 
@@ -242,7 +243,7 @@ narration or ERP memo carries it is not measured here.
 
 **Declaring the member feed is configuration, not intelligence.** It once
 bought 6.7 points; since descriptions are read it buys nothing on the
-benchmark (92% either way), but it remains the stronger claim where
+benchmark (<!--fig:bench_cleared-->92%<!--/fig--> either way), but it remains the stronger claim where
 descriptions are bare.
 
 **Blocking is unrecoverable.** A true member dropped at the linkage stage can
@@ -273,9 +274,9 @@ three scenarios' anchored clears — nothing from the scenario being measured
 
 | stripped condition, 37 settlements | exact set identified | auto-cleared | false clears |
 |---|---:|---:|---:|
-| before (hand weights only) | 9 (24.3%) | 8 | 0 |
+| before (hand weights only) | 9 (<!--fig:rr_stripped_exact:pct1-->24.3%<!--/fig-->) | 8 | 0 |
 | learned linkage, no history | 9 (24.3%) | 8 | 0 |
-| learned linkage, cycle learned from other scenarios | **21 (56.8%)** | 8 | 0 |
+| learned linkage, cycle learned from other scenarios | **21 (<!--fig:rr_learned_exact:pct1-->56.8%<!--/fig-->)** | 8 | 0 |
 
 ### On real payments
 
@@ -304,7 +305,7 @@ The first two rows read 8 (21.6%) until the tiebreak was confined to the
 declared member feed (FAILURE_LOG 31), which made one more settlement's
 proposal the exact set. Auto-clears and false clears did not move.
 
-The anchored condition is unchanged (94.6% identified, 34 auto-cleared, 0
+The anchored condition is unchanged (<!--fig:rr_anchored_exact:pct1-->94.6%<!--/fig--> identified, 34 auto-cleared, 0
 false clears), and so are this project's own benchmark and the 1,050-case edge
 suite (0 false clears in both). Auto-clears do not rise, deliberately: the new
 matches come from a band whose own proposals were right 7 of 7 times, and seven
@@ -344,8 +345,8 @@ they are absent, and that case is not measured here.
 
 | corpus | predictions | ECE | Brier | at/above 0.85 | wrong above the gate |
 |---|---:|---:|---:|---:|---:|
-| own benchmark *(in-sample)* | 180 | 0.0902 | 0.0295 | 138 | **0** |
-| ReconRiver *(out-of-sample)* | 74 | 0.0824 | 0.0333 | 42 | **0** |
+| own benchmark *(in-sample)* | 180 | <!--fig:cal_in_ece-->0.0902<!--/fig--> | 0.0295 | <!--fig:cal_in_above_gate-->138<!--/fig--> | **0** |
+| ReconRiver *(out-of-sample)* | 74 | <!--fig:cal_oos_raw-->0.0824<!--/fig--> | 0.0333 | 42 | **0** |
 
 Every prediction at or above the gate was the exact true set, on our corpus and
 on one the gate was never tuned against. Above it the number errs low, which

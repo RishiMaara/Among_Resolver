@@ -235,8 +235,21 @@ def _net_from_gross(gross_cents: int) -> int:
     return gross_cents - gw - tax - DEFAULT_RATE_CARD.flat_fee_cents
 
 
+# A day of Indian gateway payments, for --mixed-methods: the processor's own
+# arithmetic, written here rather than imported from the engine, so the
+# benchmark checks the engine instead of agreeing with it by construction.
+METHODS = ("card", "upi", "netbanking", "wallet")
+METHOD_SHARE = (45, 35, 15, 5)
+
+
+def _processor_net(amount: int, method: str) -> int:
+    fee = {"upi": 0, "netbanking": 500}.get(method, round(amount * 200 / 10_000))
+    return amount - fee - round(amount * 100 / 10_000)
+
+
 def build_scenario(idx: int, family: str, solvable: bool, density: str,
-                   rng: random.Random, declare_source: bool = False) -> Scenario:
+                   rng: random.Random, declare_source: bool = False,
+                   methods: bool = False) -> Scenario:
     pool_size = DENSITIES[density]
     subset_size = rng.choice([3, 4, 5]) if family != "large_subset" else rng.choice([10, 15])
     subset_size = min(subset_size, max(3, pool_size // 6))
@@ -259,6 +272,15 @@ def build_scenario(idx: int, family: str, solvable: bool, density: str,
         ))
 
     gross = sum(t.amount_cents for t in truth)
+    # Own stream, so the scenarios are otherwise identical to a normal run.
+    mrng = random.Random(idx * 7919 + 17)
+    if methods:
+        for t in truth:
+            t.extra = {"method": mrng.choices(METHODS, weights=METHOD_SHARE)[0]}
+        net = sum(_processor_net(t.amount_cents, t.extra["method"]) for t in truth)
+        # Decoys are built to collide with what the solver matches, which on a
+        # mixed day is the net: card decoys of this gross carry that net.
+        gross = round(net / 0.97)
 
     for i in range(pool_size - subset_size):
         candidates.append(_txn(
@@ -320,6 +342,11 @@ def build_scenario(idx: int, family: str, solvable: bool, density: str,
         for t in truth[1:]:
             t.ref_id_canonical = f"ORPHAN{idx}_{t.source_txn_id}"
 
+    if methods:
+        for c in candidates:
+            decoy = "_NEAR_" in c.source_txn_id or "_DECOY_" in c.source_txn_id
+            c.extra = {"method": "card" if decoy else
+                       mrng.choices(METHODS, weights=METHOD_SHARE)[0]}
     candidates.extend(truth)
 
     # Multi-source reality. Every true member is mirrored into the ERP feed,
@@ -335,7 +362,7 @@ def build_scenario(idx: int, family: str, solvable: bool, density: str,
 
     batch = SettlementBatch(
         batch_id=f"BENCH_{idx:04d}_{family}_{density}",
-        net_amount_cents=_net_from_gross(gross),
+        net_amount_cents=net if methods else _net_from_gross(gross),
         currency="INR",
         settled_at_utc=BASE_TIME + timedelta(hours=120),
         # True members are always GATEWAY records; the ERP entries are
@@ -486,6 +513,13 @@ def main():
     ap.add_argument("--blank-memos", action="store_true",
                     help="Erase every description, so a result can be shown not to "
                          "depend on what the descriptions carry.")
+    ap.add_argument("--mixed-methods", action="store_true",
+                    help="Give every gateway payment a stated method (card, UPI, "
+                         "netbanking, wallet) and compute each payout per payment, "
+                         "as a processor does.")
+    ap.add_argument("--method-blind", action="store_true",
+                    help="With --mixed-methods: hide the methods from the engine, "
+                         "which is how it reconciled before fees per method.")
     args = ap.parse_args()
 
     rng = random.Random(args.seed)
@@ -495,7 +529,12 @@ def main():
         family, solvable, _ = FAMILIES[i % len(FAMILIES)]
         density = densities[(i // len(FAMILIES)) % len(densities)]
         scenarios.append(build_scenario(i, family, solvable, density, rng,
-                                        declare_source=args.declare_source))
+                                        declare_source=args.declare_source,
+                                        methods=args.mixed_methods))
+    if args.method_blind:
+        for sc in scenarios:
+            for t in sc.candidates:
+                t.extra = {}
     if args.blank_memos:
         # After generation, so the random stream and every scenario are
         # identical to a normal run; only the descriptions differ.

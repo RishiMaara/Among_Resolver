@@ -1,0 +1,112 @@
+{
+  "_about": "Every figure the documents mark with <!--fig:name-->, and the result file and field it comes from. Rewrite the documents with `python engine/scripts/sync_figures.py`; tests/test_published_figures.py fails if one disagrees. Formats: int, pct0, pct2, dec4; `paths` gives a range over several results.",
+  "figures": {
+    "bench_identified": {
+      "file": "engine/docs/benchmarks/baseline_comparison.json",
+      "path": "with_linkage.truth_identified_pct",
+      "format": "pct0"
+    },
+    "bench_cleared": {
+      "file": "engine/docs/benchmarks/baseline_comparison.json",
+      "path": "with_linkage.auto_clear_correct_pct",
+      "format": "pct0"
+    },
+    "heldout_cleared": {
+      "file": "engine/docs/benchmarks/benchmark_seeds.json",
+      "paths": [
+        "seeds.202.auto_cleared_correct_pct",
+        "seeds.303.auto_cleared_correct_pct"
+      ],
+      "format": "pct0"
+    },
+    "heldout_identified": {
+      "file": "engine/docs/benchmarks/benchmark_seeds.json",
+      "paths": [
+        "seeds.202.truth_identified_pct",
+        "seeds.303.truth_identified_pct"
+      ],
+      "format": "pct0"
+    },
+    "control_cleared": {
+      "file": "engine/docs/benchmarks/benchmark_seeds.json",
+      "path": "control_descriptions_erased_seed_7.auto_cleared_correct_pct",
+      "format": "pct0"
+    },
+    "mixed_hidden_cleared": {
+      "file": "engine/docs/benchmarks/benchmark_seeds.json",
+      "paths": [
+        "mixed_methods.7.methods_hidden.auto_cleared_correct_pct",
+        "mixed_methods.202.methods_hidden.auto_cleared_correct_pct"
+      ],
+      "format": "pct0"
+    },
+    "mixed_seen_cleared": {
+      "file": "engine/docs/benchmarks/benchmark_seeds.json",
+      "paths": [
+        "mixed_methods.7.methods_seen.auto_cleared_correct_pct",
+        "mixed_methods.202.methods_seen.auto_cleared_correct_pct"
+      ],
+      "format": "pct0"
+    },
+    "blind_clear_ok": {
+      "file": "engine/docs/benchmarks/blind_test_777001.json",
+      "path": "totals.engine.CLEAR_OK",
+      "format": "int"
+    },
+    "blind_refused": {
+      "file": "engine/docs/benchmarks/blind_test_777001.json",
+      "path": "totals.engine.REFUSED",
+      "format": "int"
+    },
+    "rr_anchored_exact": {
+      "file": "engine/docs/benchmarks/learned_linkage.json",
+      "path": "anchored.after.exact_set_identified_pct",
+      "format": "pct2"
+    },
+    "rr_stripped_exact": {
+      "file": "engine/docs/benchmarks/learned_linkage.json",
+      "path": "stripped.before.exact_set_identified_pct",
+      "format": "pct2"
+    },
+    "rr_learned_exact": {
+      "file": "engine/docs/benchmarks/learned_linkage.json",
+      "path": "stripped.with_history.exact_set_identified_pct",
+      "format": "pct2"
+    },
+    "cal_in_ece": {
+      "file": "engine/docs/benchmarks/calibration_in_sample.json",
+      "path": "ece",
+      "format": "dec4"
+    },
+    "cal_in_above_gate": {
+      "file": "engine/docs/benchmarks/calibration_in_sample.json",
+      "path": "above_gate",
+      "format": "int"
+    },
+    "cal_oos_raw": {
+      "file": "engine/docs/benchmarks/calibration_fit.json",
+      "path": "cross.0.ece_raw",
+      "format": "dec4"
+    },
+    "cal_oos_shown": {
+      "file": "engine/docs/benchmarks/calibration_fit.json",
+      "path": "cross.0.ece_calibrated",
+      "format": "dec4"
+    },
+    "declared_cleared": {
+      "file": "engine/docs/benchmarks/benchmark_seeds.json",
+      "path": "member_feed_declared_seed_7.auto_cleared_correct_pct",
+      "format": "pct0"
+    },
+    "declared_identified": {
+      "file": "engine/docs/benchmarks/benchmark_seeds.json",
+      "path": "member_feed_declared_seed_7.truth_identified_pct",
+      "format": "pct0"
+    },
+    "control_identified": {
+      "file": "engine/docs/benchmarks/benchmark_seeds.json",
+      "path": "control_descriptions_erased_seed_7.truth_identified_pct",
+      "format": "pct0"
+    }
+  }
+}

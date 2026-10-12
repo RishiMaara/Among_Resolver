@@ -573,11 +573,16 @@ function Index() {
       setResults(data);
       setStatus("done");
 
-      if (data.summary.cleared) {
-        toast.success("Reconciliation complete — Batch Cleared!");
-      } else {
-        toast.warning("Reconciliation complete — Action Required");
-      }
+      // After the report's first paint. The toast measures its own height as
+      // it mounts, and measuring in the same task as the report forced the
+      // browser to lay out the whole report there and then.
+      const cleared = !!data.summary.cleared;
+      requestAnimationFrame(() =>
+        window.setTimeout(() => {
+          if (cleared) toast.success("Reconciliation complete — Batch Cleared!");
+          else toast.warning("Reconciliation complete — Action Required");
+        }, 0),
+      );
     } catch (e: unknown) {
       stopped = true;
       window.clearInterval(poll);
